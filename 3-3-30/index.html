@@ -24,7 +24,7 @@
   --good: #176B3B;
   --on-good: #FFFFFF;
   --good-wash: #DCEFE3;
-  --warn: #9A5B00;
+  --warn: #8F5400;
   --warn-wash: #F6E8CF;
   --bad: #B3261E;
   --primary: #14181D;
@@ -63,7 +63,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--pull); outline-offset: 2px; }
 h1, h2, h3 { margin: 0; text-wrap: balance; }
-.h-display, .ex-name, .blk-name, .h2 { overflow-wrap: anywhere; hyphens: auto; }
+.h-display, .ex-name, .blk-name, .h2, .ex-card-head b, .hist .line > span, .sum-row b, .member b { overflow-wrap: anywhere; hyphens: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 p { margin: 0; }
 
@@ -96,6 +96,7 @@ p { margin: 0; }
 /* Generic blocks */
 .stack { display: grid; gap: 14px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.card > * { min-width: 0; }
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .h-display { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: .005em; }
 .h2 { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.05; }
@@ -164,7 +165,9 @@ p { margin: 0; }
 .up .btn { background: var(--good); color: var(--on-good); }
 .tabsel { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; max-width: 100%; }
 .tabsel.scroll { overflow-x: auto; justify-self: start; }
-.tabsel button { border: 0; background: transparent; border-radius: 8px; padding: 6px 12px; min-height: 36px; font-weight: 700; font-size: 14px; color: var(--ink-2); flex: none; white-space: nowrap; }
+.tabsel button { border: 0; background: transparent; border-radius: 8px; padding: 6px 12px; min-height: 36px; font-weight: 700; font-size: 14px; color: var(--ink-2); }
+.tabsel:not(.scroll) { flex-wrap: wrap; }
+.tabsel.scroll button { flex: none; white-space: nowrap; }
 .tabsel button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
 
 /* Stats */
@@ -177,6 +180,7 @@ p { margin: 0; }
 /* Charts */
 .chart-wrap { position: relative; }
 .chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart:focus:not(:focus-visible) { outline: none; }
 .chart text { font-family: var(--body); fill: var(--muted); font-size: 11px; }
 .chart .grid { stroke: var(--line); stroke-width: 1; }
 .chart .xh { stroke: var(--ink-2); stroke-width: 1; }
@@ -213,14 +217,15 @@ p { margin: 0; }
 .hist .sets { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; grid-column: 2 / 4; }
 
 /* Team */
-.member { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding-block: 12px; border-top: 1px solid var(--line); }
+.member { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding-block: 12px; border-top: 1px solid var(--line); }
 .member:first-child { border-top: 0; padding-top: 0; }
 .mdots { display: inline-flex; gap: 4px; }
 .mdots i { width: 10px; height: 10px; border-radius: 50%; background: var(--surface-2); border: 1.5px solid var(--line); display: block; }
 .mdots i.on { background: var(--good); border-color: var(--good); }
 
 /* Forms */
-label.f { display: grid; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.f { display: grid; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink-2); min-width: 0; }
+::placeholder { color: var(--muted); opacity: 1; }
 input[type="text"], input[type="number"], input[type="date"], select, textarea {
   width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 12px; min-height: 44px; font-size: 16px; }
 textarea { min-height: 72px; resize: vertical; }
@@ -251,9 +256,9 @@ textarea { min-height: 72px; resize: vertical; }
 .steps i.done.pull, .steps i.cur.pull { background: var(--pull); }
 .steps i.done.legs, .steps i.cur.legs { background: var(--legs); }
 .steps i.cur { opacity: .55; }
-.ex-name { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: .98; letter-spacing: .005em; }
+.ex-name { font-family: var(--display); font-weight: 900; font-size: clamp(28px, 8.5vw, 40px); line-height: .98; letter-spacing: .005em; }
 .clock { background: var(--clock-bg); border-radius: 18px; padding: 18px 16px 14px; display: grid; gap: 10px; justify-items: center; color: #9AA3AD; }
-.clock svg.led { width: min(100%, 360px); height: auto; display: block; }
+.clock svg.led { width: min(100%, 300px); height: auto; display: block; }
 .led .seg { fill: var(--led-off); }
 .led .seg.on { fill: var(--led-on); }
 .led.lead .seg.on { fill: var(--led-lead); }
@@ -339,7 +344,7 @@ textarea { min-height: 72px; resize: vertical; }
   </div>
 </nav>
 
-<div class="runner" id="runner" hidden></div>
+<div class="runner" id="runner" role="dialog" aria-modal="true" aria-label="Training" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -449,7 +454,9 @@ const S = {
   loaded: false,            // members list known (or gave up waiting)
   membersSeen: false,       // a members snapshot actually arrived
   migrating: false,         // moving device-only data into the shared logbook
-  hidden: new Set(),        // shared sessions a read-only viewer removed on this device
+  hidden: new Set(),        // sessions removed on this device while device-only
+  dirty: new Set(),         // sessions changed on this device while device-only
+  profileDirty: false,
   people: {},               // uid -> resolved Profile (name, avatarUrl, color)
   meInfo: null,
   notice: '',
@@ -463,17 +470,19 @@ const NOTICE_DENIED = 'Opslaan in het gedeelde logboek lukt niet met jouw rechte
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[A-Za-z0-9_.~:@+-]{1,80}$/;
 const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+const clampN = (v, lo, hi) => Math.min(hi, Math.max(lo, num(v)));
+const validYmd = d => typeof d === 'string' && DATE_RE.test(d) && ymd(parseYmd(d)) === d && d >= '2020-01-01' && d <= '2099-12-31';
 const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
 function normSession(s, id) {
-  if (!s || typeof s !== 'object' || !Array.isArray(s.blocks) || !DATE_RE.test(s.date)) return null;
+  if (!s || typeof s !== 'object' || !Array.isArray(s.blocks) || !validYmd(s.date)) return null;
   const sid = typeof id === 'string' ? id : str(s.id, 80);
   if (!ID_RE.test(sid)) return null;
   const blocks = s.blocks.filter(b => b && typeof b === 'object' && Object.hasOwn(SLOT, b.slot)).slice(0, 6).map(b => ({
-    slot: b.slot, ex: str(b.ex, 60) || 'onbekend', name: str(b.name, 60), kg: num(b.kg), bw: !!b.bw,
+    slot: b.slot, ex: ID_RE.test(b.ex) ? b.ex : 'onbekend', name: str(b.name, 60), kg: clampN(b.kg, -300, 1000), bw: !!b.bw,
     sets: (Array.isArray(b.sets) ? b.sets : []).slice(0, 300)
-      .map(x => ({ r: Math.max(0, Math.round(num(x && x.r))), kg: x && x.kg != null ? num(x.kg) : num(b.kg), t: x && x.t != null ? Math.max(0, Math.round(num(x.t))) : null }))
+      .map(x => ({ r: Math.round(clampN(x && x.r, 0, 200)), kg: clampN(x && x.kg != null ? x.kg : b.kg, -300, 1000), t: x && x.t != null ? Math.round(clampN(x.t, 0, BLOCK_SEC)) : null }))
       .filter(x => x.r > 0),
-    total: Math.max(0, Math.round(num(b.total))), dur: Math.max(0, Math.round(num(b.dur))),
+    total: Math.round(clampN(b.total, 0, 3000)), dur: Math.round(clampN(b.dur, 0, BLOCK_SEC)),
     done: !!b.done, skipped: !!b.skipped, cut: !!b.cut,
   }));
   return {
@@ -487,8 +496,8 @@ function normProfile(p) {
   if (!p || typeof p !== 'object') return null;
   const days = [...new Set((Array.isArray(p.days) ? p.days : [1, 3, 5]).map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))];
   const custom = (Array.isArray(p.custom) ? p.custom : [])
-    .filter(c => c && typeof c.k === 'string' && ID_RE.test(c.k) && Object.hasOwn(SLOT, c.s)).slice(0, 60)
-    .map(c => ({ k: c.k, n: str(c.n, 40) || c.k, s: c.s, step: num(c.step, 2.5) > 0 ? num(c.step, 2.5) : 2.5, start: num(c.start), bw: !!c.bw, dbl: !!c.dbl }));
+    .filter(c => c && typeof c.k === 'string' && ID_RE.test(c.k) && !(c.k in Object.prototype) && Object.hasOwn(SLOT, c.s)).slice(0, 60)
+    .map(c => ({ k: c.k, n: str(c.n, 40) || c.k, s: c.s, step: clampN(c.step, 0.5, 50) || 2.5, start: clampN(c.start, -300, 1000), bw: !!c.bw, dbl: !!c.dbl }));
   const plans = {};
   for (const t of ['A', 'B', 'C']) {
     const pl = p.plans && p.plans[t];
@@ -496,9 +505,9 @@ function normProfile(p) {
   }
   const weights = {};
   if (p.weights && typeof p.weights === 'object') {
-    for (const [k, v] of Object.entries(p.weights).slice(0, 300)) if (ID_RE.test(k) && Number.isFinite(Number(v))) weights[k] = Number(v);
+    for (const [k, v] of Object.entries(p.weights).slice(0, 300)) if (ID_RE.test(k) && Number.isFinite(Number(v))) weights[k] = clampN(v, -300, 1000);
   }
-  return { v: 1, nick: str(p.nick, 30), joined: num(p.joined), start: DATE_RE.test(p.start) ? p.start : START,
+  return { v: 1, nick: str(p.nick, 30), joined: num(p.joined), start: validYmd(p.start) ? p.start : START,
     days: days.length ? days : [1, 3, 5], mode: p.mode === 'same' ? 'same' : 'abc', plans, custom, weights };
 }
 
@@ -514,7 +523,8 @@ function readOwnLocal() {
   if (!raw || typeof raw !== 'object') return null;
   const sessions = new Map();
   for (const [id, s] of Object.entries(raw.sessions || {})) { const n = normSession(s, id); if (n) sessions.set(id, n); }
-  return { profile: normProfile(raw.profile), sessions, hidden: Array.isArray(raw.hidden) ? raw.hidden.filter(x => typeof x === 'string') : [] };
+  const ids = v => (Array.isArray(v) ? v.filter(x => typeof x === 'string' && ID_RE.test(x)) : []);
+  return { profile: normProfile(raw.profile), sessions, hidden: ids(raw.hidden), dirty: ids(raw.dirty), profileDirty: !!raw.profileDirty };
 }
 function loadOwnLocal() {
   const raw = readOwnLocal();
@@ -523,11 +533,15 @@ function loadOwnLocal() {
     m.profile = raw.profile || m.profile;
     m.sessions = raw.sessions;
     S.hidden = new Set(raw.hidden);
+    S.dirty = new Set(raw.dirty);
+    S.profileDirty = raw.profileDirty;
   }
 }
+/* Device copy of the own logbook. `dirty`/`profileDirty` mark what changed here and
+   must win over the shared copy once this viewer can write again. */
 function saveOwnLocal() {
   const m = me();
-  LS.set(LKEY(), { profile: m.profile, sessions: Object.fromEntries(m.sessions), hidden: [...S.hidden] });
+  LS.set(LKEY(), { profile: m.profile, sessions: Object.fromEntries(m.sessions), hidden: [...S.hidden], dirty: [...S.dirty], profileDirty: !!S.profileDirty });
 }
 
 async function initStore() {
@@ -564,22 +578,36 @@ async function initStore() {
 }
 
 /* Device-only data (from an earlier read-only visit or a failed write) moves into the
-   shared logbook as soon as this viewer can write there. */
+   shared logbook as soon as this viewer can write there. Each item leaves the device
+   copy only after it is stored, so an interrupted move resumes next visit. */
 async function migrateLocal(local) {
   S.migrating = true;
+  const m = me();
+  if (local.profile && !m.profile) m.profile = local.profile;
+  for (const [id, sess] of local.sessions) if (!m.sessions.has(id)) m.sessions.set(id, sess);
   scheduleRender();
+  const dirty = new Set(local.dirty);
+  const persist = () => LS.set(LKEY(), { profile: local.profile, sessions: Object.fromEntries(local.sessions), hidden: [...local.hidden], dirty: [...dirty], profileDirty: !!local.profileDirty });
+  let moved = 0;
   try {
-    const own = await S.db.doc('members/' + S.uid).get();
-    if (local.profile && !own.exists) await dbWrite('members/' + S.uid, local.profile);
-    let moved = 0;
-    for (const s of local.sessions.values()) {
-      const path = 'members/' + S.uid + '/sessions/' + s.id;
-      if (!(await S.db.doc(path).get()).exists) { await dbWrite(path, s); moved++; }
+    if (local.profile) {
+      const own = await S.db.doc('members/' + S.uid).get();
+      if (!own.exists || local.profileDirty) await dbWrite('members/' + S.uid, local.profile);
+      local.profile = null; local.profileDirty = false; persist();
+    }
+    for (const sess of [...local.sessions.values()]) {
+      const path = 'members/' + S.uid + '/sessions/' + sess.id;
+      if (dirty.has(sess.id) || !(await S.db.doc(path).get()).exists) { await dbWrite(path, sess); moved++; }
+      local.sessions.delete(sess.id); dirty.delete(sess.id); persist();
+    }
+    for (const id of [...local.hidden]) {
+      await dbWrite('members/' + S.uid + '/sessions/' + id, null, true);
+      local.hidden = local.hidden.filter(x => x !== id); persist();
     }
     LS.del(LKEY());
-    if (moved) toast(`${moved} training${moved === 1 ? '' : 'en'} van dit toestel staan nu in het gedeelde logboek.`);
+    if (moved) toast(`${moved === 1 ? '1 training van dit toestel staat' : moved + ' trainingen van dit toestel staan'} nu in het gedeelde logboek.`);
   } catch (e) {
-    if (!handleWriteError(e, true)) { /* keep the local copy; try again next visit */ }
+    if (!handleWriteError(e, true)) toast('Nog niet alles van dit toestel staat in het gedeelde logboek. De app probeert het bij je volgende bezoek opnieuw.');
   }
   S.migrating = false;
   scheduleRender();
@@ -591,7 +619,7 @@ function useOwnLocal(reason) {
   S.notice = reason || S.notice;
   const m = me();
   const keep = { profile: m.profile, sessions: new Map(m.sessions) };
-  if (!wasLocal) loadOwnLocal();
+  if (!wasLocal) { S.dirty = new Set(); loadOwnLocal(); }
   if (!m.profile) m.profile = keep.profile;
   for (const [id, s] of keep.sessions) if (!m.sessions.has(id) && !S.hidden.has(id)) m.sessions.set(id, s);
   saveOwnLocal();
@@ -704,9 +732,9 @@ async function saveProfile(p) {
   const clean = normProfile(p);
   me().profile = clean;
   scheduleRender();
-  if (S.ownLocal) { saveOwnLocal(); return true; }
+  if (S.ownLocal) { S.profileDirty = true; saveOwnLocal(); return true; }
   try { await dbWrite('members/' + S.uid, clean); return true; }
-  catch (e) { if (handleWriteError(e)) { me().profile = clean; saveOwnLocal(); return true; } return false; }
+  catch (e) { if (handleWriteError(e)) { me().profile = clean; S.profileDirty = true; saveOwnLocal(); return true; } return false; }
 }
 let profileTimer = null;
 function saveProfileSoon(p) {
@@ -719,28 +747,40 @@ async function saveSession(s, opts = {}) {
   const clean = normSession(clone(s));
   if (!clean) return false;
   me().sessions.set(clean.id, clean);
+  S.hidden.delete(clean.id);
   scheduleRender();
-  if (S.ownLocal) { saveOwnLocal(); return true; }
+  if (S.ownLocal) { S.dirty.add(clean.id); saveOwnLocal(); return true; }
   try { await dbWrite('members/' + S.uid + '/sessions/' + clean.id, clean); return true; }
   catch (e) {
-    if (handleWriteError(e, opts.quiet)) { me().sessions.set(clean.id, clean); saveOwnLocal(); return true; }
+    if (handleWriteError(e, opts.quiet)) { me().sessions.set(clean.id, clean); S.dirty.add(clean.id); saveOwnLocal(); return true; }
     return false;
   }
 }
 async function deleteSession(id) {
+  const prev = me().sessions.get(id);
   me().sessions.delete(id);
   scheduleRender();
-  if (S.ownLocal) { S.hidden.add(id); saveOwnLocal(); return true; }
+  if (S.ownLocal) { S.hidden.add(id); S.dirty.delete(id); saveOwnLocal(); return true; }
   try { await dbWrite('members/' + S.uid + '/sessions/' + id, null, true); return true; }
-  catch (e) { if (handleWriteError(e)) { S.hidden.add(id); me().sessions.delete(id); saveOwnLocal(); return true; } return false; }
+  catch (e) {
+    if (handleWriteError(e)) { S.hidden.add(id); me().sessions.delete(id); saveOwnLocal(); return true; }
+    if (prev) { me().sessions.set(id, prev); scheduleRender(); }
+    return false;
+  }
 }
 
 /* ------------------------------------------------------------------ *
  * Domain logic
  * ------------------------------------------------------------------ */
+/* A late joiner starts this week, or next Monday when no training day is left this week. */
+function lateStart(today) {
+  if (today <= START) return START;
+  const mon = mondayOf(today);
+  return [1, 3, 5].some(d => addDays(mon, (d + 6) % 7) >= today) ? mon : addDays(mon, 7);
+}
 function defaultProfile(nick) {
   const today = todayYmd();
-  return { v: 1, nick: nick || '', joined: Date.now(), start: today > START ? mondayOf(today) : START, days: [1, 3, 5], mode: DEFAULT_MODE,
+  return { v: 1, nick: nick || '', joined: Date.now(), start: lateStart(today), days: [1, 3, 5], mode: DEFAULT_MODE,
     plans: clone(DEFAULT_PLANS), custom: [], weights: {} };
 }
 function exInfo(key, profile) {
@@ -767,7 +807,7 @@ function avatarHtml(id, size) {
   if (r?.avatarUrl && !(S.members.get(id)?.profile?.nick && !r.name)) {
     return `<span class="avatar" style="${dims}"><img src="${esc(r.avatarUrl)}" alt=""></span>`;
   }
-  const bg = r?.color && /^#[0-9a-f]{3,8}$|^rgb/i.test(r.color) ? r.color : '#48505A';
+  const bg = r?.color && /^(#[0-9a-f]{3,8}|rgba?\([\d.\s,%\/]+\))$/i.test(r.color) ? r.color : '#48505A';
   return `<span class="avatar" style="${dims}background:${esc(bg)}">${esc(name.trim().charAt(0).toUpperCase() || '?')}</span>`;
 }
 
@@ -812,9 +852,13 @@ function setsText(b, info) {
   if (setKgs(b).length <= 1 || b.bw) return sets.map(x => x.r).join(' · ');
   return sets.map(x => `${x.r}×${kgShort(x.kg ?? b.kg, info)}`).join(' · ');
 }
+/* The weight a block counts at: the lightest weight from the first heaviest set on,
+   so warm-up ramps are ignored but drop sets count. */
 function workKg(b) {
-  const ks = (b.sets || []).map(x => x.kg).filter(k => k != null);
-  return ks.length ? Math.max(...ks) : b.kg;
+  const sets = (b.sets || []).filter(x => x.kg != null);
+  if (!sets.length) return b.kg;
+  const hi = Math.max(...sets.map(x => x.kg));
+  return Math.min(...sets.slice(sets.findIndex(x => x.kg === hi)).map(x => x.kg));
 }
 
 /* Compare a block with the previous one of the same exercise. More kg is always harder
@@ -878,6 +922,7 @@ function targetText(adv, kg) {
   const last = adv.last;
   const k = Number(kg) || 0, lk = Number(last.kg) || 0;
   if (k > lk) return `<b>${last.total}</b> herhalingen op het zwaardere gewicht`;
+  if (k < lk) return 'zoveel mogelijk herhalingen (lichter dan vorige keer telt niet als verbetering)';
   return `<b>${last.total + 1}+</b> herhalingen`;
 }
 function kgLabel(kg, info) {
@@ -906,7 +951,7 @@ function blockKgLabel(b, info) {
 }
 function plannedKg(profile, key) {
   const info = exInfo(key, profile);
-  const w = profile?.weights?.[key];
+  const w = profile?.weights && Object.hasOwn(profile.weights, key) ? profile.weights[key] : null;
   if (w != null) return { kg: w, suggested: false };
   const hist = history(S.uid, key);
   if (hist.length) return { kg: hist[hist.length - 1].kg, suggested: false };
@@ -987,10 +1032,12 @@ function scheduleRender() {
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the view's HTML; put keyboard focus back on the same control. */
-const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'ex', 'm', 'dir', 'tab', 'fmt'];
+const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'ex', 'm', 'dir', 'tab', 'fmt', 'n', 'v'];
 function focusSel(a) {
   if (!a || a === document.body || !a.closest) return null;
   if (a.id) return '#' + CSS.escape(a.id);
+  if (a.tagName === 'SUMMARY') { const d = a.closest('details[data-hist]'); if (d) return `details[data-hist="${CSS.escape(d.dataset.hist)}"] > summary`; }
+  if (a.tagName === 'A' && a.getAttribute('href')) return `a[href="${CSS.escape(a.getAttribute('href'))}"]`;
   if (a.dataset && a.dataset.act) return `[data-act="${CSS.escape(a.dataset.act)}"]` + FOCUS_KEYS.filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('');
   const ch = a.closest('[data-chart]');
   if (ch) return `[data-chart="${CSS.escape(ch.dataset.chart)}"] svg`;
@@ -1025,6 +1072,8 @@ function render() {
   v.innerHTML = html;
   if (UI.tab === 'progress') bindCharts(v);
   restoreFocus(v, fsel);
+  const pc = v.querySelector('.tabsel.scroll [aria-pressed="true"]');
+  if (pc) { const t = pc.parentElement; t.scrollLeft += pc.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - pc.offsetWidth) / 2; }
   maybeReopen();
 }
 
@@ -1047,7 +1096,11 @@ function renderHeader() {
   $('#syncText').textContent = S.mode === 'loading' ? 'Verbinden…' : sharedOn ? 'Gedeeld' : 'Op dit toestel';
   const av = $('#meAvatar');
   if (S.uid && av) av.outerHTML = avatarHtml(S.uid).replace('<span class="avatar"', '<span class="avatar" id="meAvatar" aria-hidden="true"');
-  $('#notice').innerHTML = S.notice ? `<div class="notice"><span>${esc(S.notice)}</span><button class="btn link" data-act="dismissNotice" style="justify-self:start">Begrepen</button></div>` : '';
+  const nb = $('#notice');
+  if (nb.dataset.txt !== S.notice) {
+    nb.dataset.txt = S.notice;
+    nb.innerHTML = S.notice ? `<div class="notice"><span>${esc(S.notice)}</span><button class="btn link" data-act="dismissNotice" style="justify-self:start">Begrepen</button></div>` : '';
+  }
 }
 
 const SKELETON = `<div class="skeleton">Je logboek wordt geladen…</div>`;
@@ -1055,14 +1108,16 @@ const SKELETON = `<div class="skeleton">Je logboek wordt geladen…</div>`;
 /* ---------- Training tab ---------- */
 function viewTrain() {
   const p = myProfile();
-  if (S.mode === 'loading' || S.migrating) return SKELETON;
-  if (!p && S.mode === 'shared' && !S.ownLocal && !S.membersSeen && !S.loaded) return SKELETON;
+  if (S.mode === 'loading' || (S.migrating && !p)) return SKELETON;
+  // Never offer 'Ik doe mee' before we know this person has no profile yet.
+  if (!p && S.mode === 'shared' && !S.ownLocal && !S.membersSeen) return SKELETON;
   if (!p) return viewOnboarding();
   const today = todayYmd();
   const start = p.start || START;
   const pre = today < start;
   const wkDay = pre ? start : today;
   const draft = loadDraft();
+  const draftId = draft ? draft.session.id : null;
   const wk = weekSessions(S.uid, wkDay);
   const doneToday = !pre && wk.some(s => s.date === today && s.status === 'done');
   const next = nextTrainingDay(p, doneToday ? addDays(today, 1) : today);
@@ -1082,35 +1137,39 @@ function viewTrain() {
     head = `<div class="eyebrow">${esc(cap(fmtLong(today)))} · rustdag</div><h1 class="h-display">Volgende training: ${esc(fmtLong(next))}</h1>`;
   }
 
-  // Week strip: three slots, filled in order of the trainings done this week
+  // Week strip: the trainings done this week, plus the planned days still open
   const days = (p.days?.length ? p.days : [1, 3, 5]).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
   const mon = mondayOf(wkDay);
   const planned = days.map(d => addDays(mon, (d + 6) % 7));
-  const cells = [0, 1, 2].map(i => {
-    const s = wk[i];
-    if (s) {
-      const nb = doneBlocks(s).length, live = s.status !== 'done';
-      return `<div class="wday ${live ? 'live' : 'done'}"><b>${WD[parseYmd(s.date).getDay()]} ${parseYmd(s.date).getDate()}</b><span>${live ? 'bezig · ' : '✓ '}${nb} ${nb === 1 ? 'blok' : 'blokken'}</span></div>`;
+  const open = planned.filter(d => !wk.some(x => x.date === d));
+  const fill = open.filter(d => d >= today).concat(open.filter(d => d < today).reverse()).slice(0, Math.max(0, 3 - wk.length));
+  const items = wk.slice(0, 3).map(x => ({ d: x.date, s: x })).concat(fill.map(d => ({ d }))).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  const cells = items.map(it => {
+    const dd = parseYmd(it.d);
+    if (it.s) {
+      const nb = doneBlocks(it.s).length, live = it.s.status !== 'done';
+      return `<div class="wday ${live ? 'live' : 'done'}"><b>${WD[dd.getDay()]} ${dd.getDate()}</b><span>${live ? 'bezig · ' : '✓ '}${nb} ${nb === 1 ? 'blok' : 'blokken'}</span></div>`;
     }
-    const d = planned[i] || planned[planned.length - 1];
-    return `<div class="wday${i === wk.length ? ' next' : ''}"><b>${WD[parseYmd(d).getDay()]} ${parseYmd(d).getDate()}</b><span>training ${i + 1}</span></div>`;
+    const missed = !pre && it.d < today;
+    return `<div class="wday${it.d === next ? ' next' : ''}"><b>${WD[dd.getDay()]} ${dd.getDate()}</b><span>${missed ? 'gemist' : it.d === next ? 'volgende' : 'gepland'}</span></div>`;
   }).join('');
 
   const tplSel = p.mode === 'abc'
     ? `<div class="tabsel" role="group" aria-label="Kies training">${['A', 'B', 'C'].map(t => `<button data-act="pickTpl" data-tpl="${t}" aria-pressed="${t === tpl}">${t}</button>`).join('')}</div>`
     : '';
-  const blocks = SLOT_ORDER.map(slot => blockPlanRow(p, slot, plan[slot], isToday && !pre)).join('');
+  const blocks = SLOT_ORDER.map(slot => blockPlanRow(p, slot, plan[slot], isToday && !pre, draftId)).join('');
 
   const resume = draft ? `
     <div class="card" style="border-color:var(--push)">
-      <div class="row"><span class="pill live">Bezig</span><span class="small grow">Training van ${esc(fmtShort(draft.session.date))}, blok ${Math.min(3, (draft.idx | 0) + 1)} van 3</span></div>
+      <div class="row"><span class="pill live">Bezig</span><span class="small grow">Training van ${esc(fmtShort(draft.session.date))}, ${draft.phase === 'finish' ? 'klaar om op te slaan' : `blok ${Math.min(3, (draft.idx | 0) + 1)} van 3`}</span></div>
       <div class="row wrap"><button class="btn primary" data-act="resume">Ga verder</button><button class="btn ghost" data-act="discardDraft">${UI.confirm === 'discardDraft' ? 'Zeker? Tik nogmaals' : 'Weggooien'}</button></div>
     </div>` : '';
 
   const cw = cycleWeek(wkDay, start);
-  const cycleNote = pre || (cw.round === 1 && cw.w === 1)
+  const cn = cycleWeek(pre ? start : next, start);
+  const cycleNote = pre || (cn.round === 1 && cn.w === 1)
     ? 'Week 1 is je basismeting: noteer alles, volgende week ga je het verbeteren.'
-    : `Ronde ${cw.round}, week ${cw.w} van ${CYCLE_WEEKS}: zelfde oefeningen, hogere score.`;
+    : `Ronde ${cn.round}, week ${cn.w} van ${CYCLE_WEEKS}: zelfde oefeningen, meer herhalingen.`;
   const review = !pre && ((cw.w === CYCLE_WEEKS && wk.length >= 3) || (cw.w === 1 && cw.round > 1 && wk.length === 0)) ? `
     <div class="card">
       <div class="eyebrow">${CYCLE_WEEKS} weken erop</div>
@@ -1118,7 +1177,7 @@ function viewTrain() {
       <button class="btn ghost" data-act="tab" data-tab="plan" style="justify-self:start">Schema aanpassen</button>
     </div>` : '';
 
-  const last = trainings(S.uid).slice(-1)[0];
+  const last = trainings(S.uid).filter(x => x.id !== draftId).slice(-1)[0];
   const lastCard = last ? `
     <div class="card">
       <div class="row"><div class="eyebrow grow">Laatste training · ${esc(fmtShort(last.date))}</div><button class="btn link" data-act="tab" data-tab="progress">Alles bekijken</button></div>
@@ -1149,16 +1208,16 @@ function viewTrain() {
     </div>`;
 }
 
-function blockPlanRow(p, slot, key, today) {
+function blockPlanRow(p, slot, key, today, excludeId) {
   const info = exInfo(key, p);
   const pk = plannedKg(p, key);
-  const adv = advice(history(S.uid, key), info);
+  const adv = advice(history(S.uid, key).filter(h => h.sid !== excludeId), info);
   let tip;
   if (adv.first) {
     tip = `<div class="tipline">Basismeting: kies een gewicht dat je uitgerust 5 à 10 keer netjes kunt tillen.</div>`;
   } else {
     const l = adv.last;
-    tip = `<div class="tipline"><span>Vorige keer (${esc(fmtDM(l.date))}): <b>${l.total} herh.</b> · ${esc(blockKgLabel(l, info))}${scored(l) ? ` · score ${fmtNum(Math.round(blockVolume(l)))} kg` : ''}</span></div>
+    tip = `<div class="tipline"><span>Vorige keer (${esc(fmtDM(l.date))}): <b>${l.total}\u00a0herh.</b> · ${esc(blockKgLabel(l, info))}${scored(l) ? ` · score ${fmtNum(Math.round(blockVolume(l)))}\u00a0kg` : ''}</span></div>
       <div class="tipline"><span>${today ? 'Doel vandaag' : 'Doel'}: ${targetText(adv, pk.kg)}</span></div>`;
     if (adv.up != null && Number(pk.kg) < adv.up) {
       tip += `<div class="up"><span class="grow">Tip: ${esc(adv.why)} Probeer ${esc(kgLabel(adv.up, info))}.</span><button class="btn sm" data-act="applyUp" data-ex="${esc(key)}" data-kg="${adv.up}">Overnemen</button></div>`;
@@ -1189,17 +1248,20 @@ function sessionSummaryRows(s) {
   return `<div>${(s.blocks || []).map(b => {
     const info = exInfo(b.ex, p);
     const ok = b.done && !b.skipped;
-    const sub = ok ? `${blockKgLabel(b, info)}${scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))} kg` : ''}${b.cut ? ' · ingekort' : ''}` : 'overgeslagen';
-    return `<div class="sum-row ${b.slot}"><span class="bar"></span><span class="grow"><b>${esc(b.name || info.n)}</b><br><span class="tiny">${esc(sub)}</span></span><span class="num" style="font-weight:700">${ok ? b.total + ' herh.' : '–'}</span></div>`;
+    const sub = ok ? `${blockKgLabel(b, info)}${scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))}\u00a0kg` : ''}${b.cut ? ' · ingekort' : ''}` : b.skipped || s.status === 'done' ? 'overgeslagen' : 'nog te doen';
+    return `<div class="sum-row ${b.slot}"><span class="bar"></span><span class="grow"><b>${esc(b.name || info.n)}</b><br><span class="tiny">${esc(sub)}</span></span><span class="num" style="font-weight:700">${ok ? b.total + '\u00a0herh.' : '–'}</span></div>`;
   }).join('')}</div>`;
 }
 
 function viewOnboarding() {
   const hint = S.meInfo?.name || '';
   const shared = S.mode === 'shared' && !S.ownLocal;
-  const late = todayYmd() > START;
+  const today = todayYmd();
+  const late = today > START;
+  const ls = lateStart(today);
+  const wkTxt = ls <= today ? 'deze week' : esc(fmtLong(ls));
   const when = late
-    ? (shared ? `Jullie zijn ${esc(fmtLong(START))} begonnen; jij begint deze week met je basismeting.` : 'Je begint deze week met je basismeting.')
+    ? (shared ? `Jullie zijn ${esc(fmtLong(START))} begonnen; jij begint ${wkTxt} met je basismeting.` : `Je begint ${wkTxt} met je basismeting.`)
     : `Jullie starten ${esc(fmtLong(START))}.`;
   return `
     <div class="stack" style="gap:8px">
@@ -1213,7 +1275,8 @@ function viewOnboarding() {
         <input type="text" id="joinNick" maxlength="30" placeholder="${esc(hint || 'Je voornaam')}" autocomplete="nickname" enterkeyhint="go"></label>
       <button class="btn big primary" type="submit">Ik doe mee</button>
       <p class="tiny">${shared ? 'Je trainingen worden gedeeld met iedereen die deze pagina kan openen.' : 'Je trainingen worden op dit toestel bewaard. Maak af en toe een backup via Schema.'}</p>
-    </form>`;
+    </form>
+    <div class="row wrap"><span class="small grow">Al eerder bijgehouden op een ander toestel?</span><button class="btn sm ghost" data-act="importPick">Backup terugzetten</button><input type="file" id="importFile" accept=".json,application/json" hidden></div>`;
 }
 
 /* ---------- Progress tab ---------- */
@@ -1250,7 +1313,7 @@ function viewProgress() {
       <div class="tile"><span class="lbl">Trainingen</span><span class="val">${ts.length}</span></div>
       <div class="tile"><span class="lbl">Deze week</span><span class="val">${thisWeek}<small>/3</small></span></div>
       <div class="tile"><span class="lbl">Weken op rij</span><span class="val">${streakWeeks(pid)}</span></div>
-      <div class="tile"><span class="lbl">Totaal getild</span><span class="val">${vol >= 10000 ? fmtNum(Math.round(vol / 100) / 10) + '<small> ton</small>' : fmtNum(Math.round(vol)) + '<small> kg</small>'}</span></div>
+      <div class="tile"><span class="lbl">Totale score</span><span class="val">${vol >= 10000 ? fmtNum(Math.round(vol / 100) / 10) + '<small> ton</small>' : fmtNum(Math.round(vol)) + '<small> kg</small>'}</span></div>
     </div>`;
 
   const keys = [];
@@ -1264,8 +1327,8 @@ function viewProgress() {
     const first = h[0], last = h[h.length - 1];
     const rec = h.length > 1 && recordKind(last, h.slice(0, -1));
     const line = h.length > 1
-      ? `Begin: ${first.total} herh. · ${esc(blockKgLabel(first, info))} &nbsp;→&nbsp; nu: <b>${last.total} herh.</b> · ${esc(blockKgLabel(last, info))}`
-      : `Basismeting: <b>${first.total} herh.</b> · ${esc(blockKgLabel(first, info))}`;
+      ? `Begin: ${first.total}\u00a0herh. · ${esc(blockKgLabel(first, info))} &nbsp;→&nbsp; nu: <b>${last.total}\u00a0herh.</b> · ${esc(blockKgLabel(last, info))}${last.cut ? ' · ingekort' : ''}`
+      : `Basismeting: <b>${first.total}\u00a0herh.</b> · ${esc(blockKgLabel(first, info))}`;
     const color = k.slot === 'legs' ? 'var(--legs-mark)' : `var(--${k.slot})`;
     return `
       <div class="card">
@@ -1293,6 +1356,7 @@ function viewProgress() {
 
   return `
     ${who}
+    ${isMe ? '' : `<div class="eyebrow">Voortgang van ${esc(displayName(pid))}</div>`}
     ${tiles}
     <div class="card"><div class="row"><div class="eyebrow grow">Trainingen per week</div><span class="tiny">doel: 3</span></div><div class="adh">${adh}</div></div>
     <div class="row wrap"><div class="eyebrow grow">Per oefening</div>${metricSel}</div>
@@ -1326,7 +1390,8 @@ function niceScale(min, max, n) {
   const raw = (max - min) / n;
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const norm = raw / mag;
-  const step = Math.max(1, (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag);
+  let step = Math.max(1, (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag);
+  if (!Number.isFinite(step) || min + step === min) step = Math.max(1, (max - min) / n || 1);
   return [Math.max(0, Math.floor(min / step) * step), Math.ceil(max / step) * step, step];
 }
 function chartSvg(id, pts, color, metric, isExample, info) {
@@ -1340,28 +1405,29 @@ function chartSvg(id, pts, color, metric, isExample, info) {
   CHARTS[id].xs = pts.map((p, i) => x(i));
   CHARTS[id].ys = pts.map(p => y(p.y));
   let grid = '';
-  for (let v = lo; v <= hi + 1e-9; v += step) {
+ for (let i = 0, nT = Math.min(12, Math.round((hi - lo) / step)); i <= nT; i++) {
+    const v = lo + i * step;
     grid += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" style="font-variant-numeric:tabular-nums">${fmtNum(v)}</text>`;
   }
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.y).toFixed(1)}`).join('');
   const area = pts.length > 1 ? `${line}L${x(pts.length - 1).toFixed(1)},${y(lo).toFixed(1)}L${x(0).toFixed(1)},${y(lo).toFixed(1)}Z` : '';
-  // Weight labels where the weight changed (and at the start); skip labels that would collide.
-  let kgl = '', lastLabelX = -Infinity;
-  pts.forEach((p, i) => {
-    if (!(i === 0 || p.kg !== pts[i - 1].kg)) return;
-    if (i === 0 && p.bw && p.kg === 0) return;
+  // Weight labels where the weight changed; placed right to left so the current weight always shows.
+  let kgl = '', placedX = Infinity;
+  const changes = pts.map((p, i) => i).filter(i => (i === 0 || pts[i].kg !== pts[i - 1].kg) && !(i === 0 && pts[i].bw && pts[i].kg === 0));
+  for (let j = changes.length - 1; j >= 0; j--) {
+    const i = changes[j];
     kgl += `<line x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${T - 6}" y2="${(H - B).toFixed(1)}" class="grid"/>`;
     const lx = Math.min(Math.max(x(i), L + 22), W - R - 22);
-    if (lx - lastLabelX < 46) return;
-    lastLabelX = lx;
-    kgl += `<text x="${lx.toFixed(1)}" y="${T - 12}" text-anchor="middle">${esc(kgShort(p.kg, info || {}))} kg</text>`;
-  });
+    if (placedX - lx < 46) continue;
+    placedX = lx;
+    kgl += `<text x="${lx.toFixed(1)}" y="${T - 12}" text-anchor="middle">${esc(kgShort(pts[i].kg, info || {}))} kg</text>`;
+  }
   const lastI = pts.length - 1;
   const xl = `<text x="${x(0).toFixed(1)}" y="${H - 6}" text-anchor="${pts.length === 1 ? 'middle' : 'start'}">${esc(fmtDM(pts[0].date))}</text>` +
     (pts.length > 1 ? `<text x="${x(lastI).toFixed(1)}" y="${H - 6}" text-anchor="end">${esc(fmtDM(pts[lastI].date))}</text>` : '');
   const ly = y(pts[lastI].y);
   const endY = ly - 10 < T + 2 ? ly + 18 : ly - 10;
-  const endLabel = `<text x="${Math.min(x(lastI) - (pts.length === 1 ? 0 : 8), W - R).toFixed(1)}" y="${endY.toFixed(1)}" text-anchor="${pts.length === 1 ? 'middle' : 'end'}" style="fill:var(--ink);font-weight:700;font-size:12px">${fmtNum(pts[lastI].y)}</text>`;
+  const endLabel = `<text x="${Math.min(x(lastI) - (pts.length === 1 ? 0 : 8), W - R).toFixed(1)}" y="${endY.toFixed(1)}" text-anchor="${pts.length === 1 ? 'middle' : 'end'}" paint-order="stroke" stroke="var(--surface)" stroke-width="3" stroke-linejoin="round" style="fill:var(--ink);font-weight:700;font-size:12px">${fmtNum(pts[lastI].y)}</text>`;
   const label = metric === 'vol' ? 'score in kg per blok' : 'herhalingen per blok';
   return `<div class="chart-wrap" data-chart="${esc(id)}">
     <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${pts.length} trainingen" ${isExample ? '' : 'tabindex="0"'}>
@@ -1561,6 +1627,9 @@ function loadDraft() {
   if (!d || !d.session) return null;
   const s = normSession(d.session);
   if (!s || s.blocks.length !== 3) return null;
+  // Finished on another device meanwhile: the shared copy wins.
+  const stored = S.uid ? S.members.get(S.uid)?.sessions.get(s.id) : null;
+  if (stored && stored.status === 'done' && !(R.session && R.session.id === s.id)) { LS.del(DRAFT_KEY()); return null; }
   return Object.assign({}, d, { session: s, idx: Math.min(2, Math.max(0, d.idx | 0)) });
 }
 function saveDraft() {
@@ -1617,7 +1686,7 @@ function closeRunner() {
   setBackgroundInert(false);
   R.session = null;
   render();
-  const back = (UI.runReturn && $('#main ' + UI.runReturn)) || $('[data-act="resume"]') || $('[data-act="startSession"]');
+  const back = [UI.runReturn && $('#main ' + UI.runReturn), $('[data-act="resume"]'), $('[data-act="startSession"]')].find(el => el && !el.disabled);
   if (back) { try { back.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 const blk = () => R.session.blocks[R.idx];
@@ -1656,11 +1725,19 @@ function beginBlock() {
   R.phase = 'run'; R.t0 = Date.now(); R.pausedMs = 0; R.pausedAt = 0; R.lastRem = BLOCK_SEC;
   beep(1175, 0.35); buzz(200);
   saveDraft(); renderRunner(); startTick();
-  // Let training buddies see "traint nu" from the first block on.
-  if (R.idx === 0 && !me().sessions.has(R.session.id) && !isTrial(R.session, S.uid)) {
-    R.session.updatedAt = Date.now();
-    saveSession(R.session, { quiet: true });
-  }
+  markLive();
+  keepPadInView();
+}
+/* During a block the rep pad must stay reachable without scrolling. */
+function keepPadInView() {
+  const pad = $('#runner .pad');
+  if (pad && pad.getBoundingClientRect().bottom > window.innerHeight) pad.scrollIntoView({ block: 'end' });
+}
+/* Let training buddies see "traint nu" while a block runs. */
+function markLive() {
+  if (!R.session || isTrial(R.session, S.uid)) return;
+  const st = me().sessions.get(R.session.id);
+  if (!st || st.paused) { R.session.updatedAt = Date.now(); saveSession(Object.assign(clone(R.session), { paused: false }), { quiet: true }); }
 }
 function endBlock(auto) {
   const b = blk();
@@ -1767,7 +1844,8 @@ function renderRunner() {
   const info = exInfo(b.ex, p);
   const prev = prevBlock();
   const tot = b.sets.reduce((a, s) => a + s.r, 0);
-  const liveB = Object.assign({}, b, { total: tot });
+  const liveB = Object.assign({}, b, { total: tot, kg: b.sets.length ? workKg(b) : b.kg });
+  const trial = isTrial(R.session, S.uid);
   const steps = R.session.blocks.map((x, i) => `<i class="${x.slot} ${i < R.idx || x.done ? 'done' : i === R.idx ? 'cur' : ''}"></i>`).join('');
   const rem = R.phase === 'lead' ? Math.max(0, Math.ceil((R.leadEnd - Date.now()) / 1000)) : R.phase === 'over' ? 0 : Math.ceil(BLOCK_SEC - elapsed());
   const status = { ready: 'Klaar om te starten', lead: 'Pak je gewicht', run: rem > 60 ? `Nog ${Math.ceil(rem / 60)} minuten` : 'Laatste minuut', paused: 'Gepauzeerd', over: b.cut ? 'Blok gestopt' : 'Tijd!' }[R.phase];
@@ -1787,18 +1865,18 @@ function renderRunner() {
   if (R.phase === 'over') {
     const c = compare(liveB, prev);
     const rk = tot > 0 ? recordKind(liveB, history(S.uid, b.ex, R.session.id)) : null;
-    const title = rk === 'reps' ? 'Nieuw record!' : rk === 'kg' ? 'Nieuw record: zwaarder, evenveel herhalingen!' : !tot ? 'Geen herhalingen ingetikt.' : c ? VERDICT_TEXT[c.verdict] : 'Basismeting staat erin.';
+    const title = rk === 'reps' ? 'Nieuw record!' : rk === 'kg' ? 'Nieuw record: zwaarder, evenveel herhalingen!' : !tot ? 'Geen herhalingen ingetikt.' : c ? VERDICT_TEXT[c.verdict] : trial ? 'Proefblok klaar.' : 'Basismeting staat erin.';
     cmp = `<div class="result${rk ? ' pr' : ''}">
       <b style="font-size:18px">${title}</b>
-      <span class="small">${prev ? `Vorige keer: ${prev.total} herh. · ${esc(blockKgLabel(prev, info))}${c && tot ? ` · <b class="delta ${c.tone}">${c.text}</b>` : ''}` : 'Volgende keer probeer je dit te verslaan.'}</span>
+      <span class="small">${prev ? `Vorige keer: ${prev.total}\u00a0herh. · ${esc(blockKgLabel(prev, info))}${c && tot ? ` · <b class="delta ${c.tone}">${c.text}</b>` : ''}` : trial ? `Telt nog niet mee. Je basismeting doe je vanaf ${esc(fmtLong(startOf(S.uid)))}.` : 'Volgende keer probeer je dit te verslaan.'}</span>
       ${b.cut ? '<span class="tiny">Je stopte dit blok voor 10:00. Het telt mee, maar wordt niet je nieuwe doel.</span>' : '<span class="tiny">Was je laatste set nog bezig bij 0:00? Tik de herhalingen in die vóór 0:00 klaar waren.</span>'}
     </div>`;
   } else if (prev) {
-    cmp = `<div class="cmp"><span>Te verslaan: <b>${prev.total} herh.</b> · ${esc(blockKgLabel(prev, info))}</span><span data-ghost></span></div>`;
+    cmp = `<div class="cmp"><span>Te verslaan: <b>${prev.total}\u00a0herh.</b> · ${esc(blockKgLabel(prev, info))}</span><span data-ghost></span></div>`;
   } else {
-    cmp = `<div class="cmp"><span>Eerste keer met deze oefening: dit is je basismeting.</span></div>`;
+    cmp = `<div class="cmp"><span>${trial ? 'Proeftraining: dit telt nog niet als basismeting.' : 'Eerste keer met deze oefening: dit is je basismeting.'}</span></div>`;
   }
-  const twlLine = scored(liveB) && tot > 0 ? `<span class="tiny">score ${fmtNum(Math.round(blockVolume(liveB)))} kg</span>` : `<span class="tiny">${b.sets.length} ${b.sets.length === 1 ? 'set' : 'sets'}</span>`;
+  const twlLine = scored(liveB) && tot > 0 ? `<span class="tiny">score ${fmtNum(Math.round(blockVolume(liveB)))}\u00a0kg</span>` : `<span class="tiny">${b.sets.length} ${b.sets.length === 1 ? 'set' : 'sets'}</span>`;
 
   const padOn = R.phase === 'run' || R.phase === 'paused' || R.phase === 'over';
   const pad = Array.from({ length: 15 }, (_, i) => i + 1).map(n => `<button data-act="set" data-n="${n}" class="${R.lastSet === n ? 'last' : ''}" aria-label="Set van ${n} herhalingen"${padOn ? '' : ' disabled'}>${n}</button>`).join('');
@@ -1825,7 +1903,7 @@ function renderRunner() {
         </div>
         ${padOn && b.sets.length ? '<span class="tiny">geldt voor je volgende set</span>' : ''}
       </div>
-      ${info.tip ? `<span class="tiny">${esc(info.tip)}</span>` : ''}
+      ${info.tip && (R.phase === 'ready' || R.phase === 'over') ? `<span class="tiny">${esc(info.tip)}</span>` : ''}
     </div>
     <div class="clock" data-k="">
       <div class="ledbox" style="width:100%;display:grid;justify-items:center">${ledSvg(clockText(rem), (R.phase === 'lead' ? 'lead' : '') + (R.phase === 'paused' ? ' paused' : ''))}</div>
@@ -1845,6 +1923,7 @@ function renderRunner() {
   </div>`;
   if (R.phase === 'run' || R.phase === 'paused') updateGhost();
   restoreFocus(el, fsel);
+  if (fsel && !el.contains(document.activeElement)) { const f = el.querySelector('.run-ctrl button'); if (f) { try { f.focus({ preventScroll: true }); } catch { /* ignore */ } } }
 }
 function runMenu() {
   return `<div class="card" style="border-color:var(--ink)">
@@ -1877,11 +1956,11 @@ function runnerFinish() {
     const ok = b.done && !b.skipped;
     const c = ok ? compare(b, prev) : null;
     const rk = ok ? recordKind(b, h) : null;
-    return `<div class="sum-row ${b.slot}"><span class="bar"></span><span class="grow"><b>${esc(b.name || info.n)}</b>${rk ? ' <span class="pill good">record</span>' : ''}<br><span class="tiny">${ok ? esc(blockKgLabel(b, info)) + (scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))} kg` : '') + (b.cut ? ' · ingekort' : '') : 'overgeslagen'}</span></span>
+    return `<div class="sum-row ${b.slot}"><span class="bar"></span><span class="grow"><b>${esc(b.name || info.n)}</b>${rk ? ' <span class="pill good">record</span>' : ''}<br><span class="tiny">${ok ? esc(blockKgLabel(b, info)) + (scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))}\u00a0kg` : '') + (b.cut ? ' · ingekort' : '') : 'overgeslagen'}</span></span>
       <span style="text-align:right"><b class="num" style="font-size:20px">${ok ? b.total : '–'}</b>${c ? `<br><span class="delta ${c.tone}">${c.text}</span>` : ''}</span></div>`;
   }).join('');
   return `<div class="run-in">
-    <div class="stack" style="gap:6px"><div class="eyebrow">Training klaar · ${esc(fmtShort(s.date))}${isTrial(s, S.uid) ? ' · proef' : ''}</div><h2 class="h-display">${total} herhalingen${twl > 0 ? `, ${fmtNum(Math.round(twl))} kg verzet` : ''}</h2></div>
+    <div class="stack" style="gap:6px"><div class="eyebrow">Training klaar · ${esc(fmtShort(s.date))}${isTrial(s, S.uid) ? ' · proef' : ''}</div><h2 class="h-display">${total} herhalingen</h2>${twl > 0 ? `<span class="small">Score: ${fmtNum(Math.round(twl))}\u00a0kg (gewicht × herhalingen)</span>` : ''}</div>
     <div class="card">${rows}</div>
     <div class="card">
       <b>Hoe voelde het?</b>
@@ -1915,7 +1994,7 @@ async function finishAndSave() {
  * ------------------------------------------------------------------ */
 function openSheet(html, label) {
   const sh = $('#sheet');
-  if (sh.hidden) { const a = document.activeElement; UI.sheetReturn = a && a !== document.body ? a : null; }
+  if (sh.hidden) { const a = document.activeElement; UI.sheetReturn = a && a !== document.body ? (focusSel(a) || a) : null; }
   sh.innerHTML = `<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="${esc(label || 'Venster')}">${html}</div>`;
   sh.hidden = false;
   setBackgroundInert(true);
@@ -1927,8 +2006,10 @@ function closeSheet() {
   sh.hidden = true; sh.innerHTML = ''; UI.sheet = null;
   setBackgroundInert(!$('#runner').hidden);
   const r = UI.sheetReturn; UI.sheetReturn = null;
-  scheduleRender();
-  if (r && r.isConnected) { try { r.focus({ preventScroll: true }); } catch { /* ignore */ } }
+  if (document.activeElement && document.activeElement !== document.body) { try { document.activeElement.blur(); } catch { /* ignore */ } }
+  render();
+  const t = typeof r === 'string' ? document.querySelector(r) : r && r.isConnected ? r : null;
+  if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 function sessionForm(s, isNew) {
@@ -1939,12 +2020,12 @@ function sessionForm(s, isNew) {
     const hasOpt = allExercises(p).some(e => e.k === b.ex);
     const sets = (b.sets || []).map(x => x.r).join(' ');
     const kgVal = info.dbl ? (Number(b.kg) || 0) / 2 : b.kg;
-    const kgLbl = info.bw ? 'Extra kg (hulp = min)' : info.dbl ? 'Kg per dumbbell' : 'Gewicht (kg)';
+    const kgLbl = kgFieldLabel(info);
     return `<div class="card" style="gap:10px">
       <div class="row"><span class="chip ${b.slot}">${SLOT[b.slot].label}</span><label class="row tiny right"><input type="checkbox" name="skip${i}" ${b.skipped ? 'checked' : ''}> overgeslagen</label></div>
       <select name="ex${i}" aria-label="Oefening">${hasOpt ? '' : `<option value="${esc(b.ex)}" selected>${esc(b.name || b.ex)}</option>`}${opts}</select>
       <div class="row">
-        <label class="f grow" for="kg${i}">${kgLbl}<input type="text" id="kg${i}" name="kg${i}" inputmode="decimal" value="${esc(String(kgVal).replace('.', ','))}" data-dbl="${info.dbl ? 1 : 0}"></label>
+        <label class="f grow" for="kg${i}"><span class="kglbl">${kgLbl}</span><input type="text" id="kg${i}" name="kg${i}" inputmode="decimal" value="${esc(String(kgVal).replace('.', ','))}" data-dbl="${info.dbl ? 1 : 0}"></label>
         <label class="f grow" for="tot${i}">Herhalingen totaal<input type="number" id="tot${i}" name="tot${i}" min="0" step="1" inputmode="numeric" value="${b.total || ''}"></label>
       </div>
       <label class="f" for="sets${i}">Sets (optioneel)<input type="text" id="sets${i}" name="sets${i}" inputmode="numeric" placeholder="bijv. 8 8 7 6 6 5" value="${esc(sets)}" data-orig="${esc(sets)}"></label>
@@ -1959,6 +2040,8 @@ function sessionForm(s, isNew) {
     <button class="btn big primary" type="submit">Opslaan</button>
   </form>`;
 }
+const kgFieldLabel = info => (info.bw ? 'Extra kg (hulp = min)' : info.dbl ? 'Kg per dumbbell' : 'Gewicht (kg)');
+const parseKg = v => { const t = String(v ?? '').trim().replace(/\s*kg$/i, '').replace(',', '.'); return t === '' ? 0 : Number(t); };
 function parseSets(str) { return String(str || '').split(/[\s,;·+\/.\-]+/).map(x => parseInt(x, 10)).filter(n => n > 0 && n < 200); }
 
 async function submitSessionForm(form) {
@@ -1969,18 +2052,23 @@ async function submitSessionForm(form) {
   if (!base) { closeSheet(); return; }
   const setInputs = [...form.querySelectorAll('[name^="sets"]')];
   if (setInputs.some(el => el.value !== el.dataset.orig && /[^\d\s,;·+\/.\-]/.test(el.value))) { toast('Typ je sets als losse getallen, bijvoorbeeld 8 8 7.'); return; }
+  const kgBad = [...form.querySelectorAll('[name^="kg"]')].find(el => !Number.isFinite(parseKg(el.value)));
+  if (kgBad) { toast('Vul het gewicht in als getal, bijvoorbeeld 14 of 12,5.'); try { kgBad.focus(); } catch { /* ignore */ } return; }
+  const orig = isNew ? null : me().sessions.get(id);
   const fd = new FormData(form);
   const date = String(fd.get('date') || '');
-  if (!DATE_RE.test(date) || date < '2020-01-01' || date > '2099-12-31') { toast('Kies een geldige datum.'); return; }
+  if (!validYmd(date)) { toast('Kies een geldige datum.'); return; }
   base.date = date;
   base.note = String(fd.get('note') || '').trim().slice(0, 400);
   base.blocks.forEach((b, i) => {
     const ex = String(fd.get('ex' + i) || b.ex);
     const info = exInfo(ex, p);
     const oldKg = Number(b.kg) || 0;
-    const kgIn = Number(String(fd.get('kg' + i) || '0').replace(',', '.'));
+    const kgEl = form.querySelector('#kg' + i);
+    const kgIn = parseKg(kgEl ? kgEl.value : fd.get('kg' + i));
+    const fieldDbl = kgEl ? kgEl.dataset.dbl === '1' : !!info.dbl;
     b.ex = ex; b.name = info.n; b.bw = !!info.bw;
-    b.kg = Number.isFinite(kgIn) ? Math.round((info.dbl ? kgIn * 2 : kgIn) * 10) / 10 : oldKg;
+    b.kg = Number.isFinite(kgIn) ? Math.round(clampN(fieldDbl ? kgIn * 2 : kgIn, -300, 1000) * 10) / 10 : oldKg;
     if (!info.bw) b.kg = Math.max(0, b.kg);
     b.skipped = !!fd.get('skip' + i);
     if (b.kg !== oldKg) b.sets = (b.sets || []).map(x => (x.kg == null || Number(x.kg) === oldKg ? Object.assign({}, x, { kg: b.kg }) : x));
@@ -1988,7 +2076,13 @@ async function submitSessionForm(form) {
     const setsChanged = setsIn.value !== setsIn.dataset.orig;
     if (setsChanged) {
       const old = b.sets || [];
-      b.sets = parseSets(setsIn.value).map((r, j) => (old[j] ? Object.assign({}, old[j], { r }) : { r, kg: b.kg, t: null }));
+      const parsed = parseSets(setsIn.value), align = parsed.length < old.length;
+      let j0 = 0;
+      b.sets = parsed.map((r, j) => {
+        if (align) { const k = old.findIndex((o, x) => x >= j0 && o.r === r); if (k >= 0) { j0 = k + 1; return Object.assign({}, old[k]); } }
+        const o = align ? old[j0++] : old[j];
+        return o ? Object.assign({}, o, { r }) : { r, kg: b.kg, t: null };
+      });
     }
     const t = parseInt(fd.get('tot' + i), 10);
     let sum = (b.sets || []).reduce((a, s) => a + s.r, 0);
@@ -2008,7 +2102,9 @@ async function submitSessionForm(form) {
   for (const b of base.blocks) {
     if (!b.done) continue;
     const later = history(S.uid, b.ex).some(h => h.sid !== base.id && h.date > base.date);
-    if (!later && pp.weights[b.ex] !== b.kg) { pp.weights[b.ex] = b.kg; changed = true; }
+    const o = orig && orig.blocks.find(x => x.slot === b.slot);
+    const touched = !o || !o.done || o.ex !== b.ex || o.kg !== b.kg;
+    if (!later && touched && pp.weights[b.ex] !== b.kg) { pp.weights[b.ex] = b.kg; changed = true; }
   }
   if (changed) saveProfile(pp);
   closeSheet(); toast('Opgeslagen.');
@@ -2093,7 +2189,7 @@ const ACT = {
   },
   goNow() { beginBlock(); },
   pause() { if (R.phase !== 'run') return; R.phase = 'paused'; R.pausedAt = Date.now(); stopTick(); saveDraft(); renderRunner(); },
-  resumeClock() { if (R.phase !== 'paused') return; R.pausedMs += Date.now() - R.pausedAt; R.pausedAt = 0; R.phase = 'run'; wakeOn(); saveDraft(); renderRunner(); startTick(); },
+  resumeClock() { if (R.phase !== 'paused') return; R.pausedMs += Date.now() - R.pausedAt; R.pausedAt = 0; R.phase = 'run'; wakeOn(); saveDraft(); renderRunner(); startTick(); markLive(); },
   endEarly() {
     if (R.confirm !== 'end') { armConfirm('end', R); renderRunner(); return; }
     R.confirm = null; endBlock(false);
@@ -2106,7 +2202,7 @@ const ACT = {
     b.total = b.sets.reduce((a, s) => a + s.r, 0);
     R.lastSet = n;
     buzz(25);
-    saveDraft(); renderRunner();
+    saveDraft(); renderRunner(); keepPadInView();
     const t = $('#runner .total'); if (t) { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
   },
   undo() { const b = blk(); b.sets.pop(); b.total = b.sets.reduce((a, s) => a + s.r, 0); R.lastSet = b.sets.length ? b.sets[b.sets.length - 1].r : null; saveDraft(); renderRunner(); },
@@ -2124,7 +2220,11 @@ const ACT = {
     advance();
   },
   toggleSound() { prefs.sound = !prefs.sound; savePrefs(); if (prefs.sound) { audio(); beep(880, 0.08); } renderRunner(); },
-  runMenu() { R.menuPaused = R.phase === 'run'; if (R.menuPaused) ACT.pause(); R.confirm = 'menu'; R.confirm2 = null; renderRunner(); },
+  runMenu() {
+    if (R.phase === 'lead') { stopTick(); R.phase = 'ready'; R.lastRem = null; saveDraft(); }
+    R.menuPaused = R.phase === 'run'; if (R.menuPaused) ACT.pause();
+    R.confirm = 'menu'; R.confirm2 = null; renderRunner();
+  },
   menuBack() {
     R.confirm = null;
     if (R.menuPaused && R.phase === 'paused') { R.menuPaused = false; ACT.resumeClock(); return; }
@@ -2167,9 +2267,11 @@ function advance() {
 async function discardActive() {
   const d = loadDraft();
   const id = R.session?.id || d?.session?.id;
+  const stored = id ? me().sessions.get(id) : null;
+  // Only an unfinished copy is ours to delete; a finished one stays.
+  if (stored && stored.status !== 'done' && !(await deleteSession(id))) return;
   LS.del(DRAFT_KEY());
   if (R.session) closeRunner();
-  if (id && me().sessions.has(id)) await deleteSession(id);
   toast('Training weggegooid.');
   scheduleRender();
 }
@@ -2190,7 +2292,10 @@ document.addEventListener('toggle', e => {
   const d = e.target;
   if (d.tagName === 'DETAILS' && d.dataset.hist) { if (d.open) UI.histOpen.add(d.dataset.hist); else UI.histOpen.delete(d.dataset.hist); }
 }, true);
-document.addEventListener('input', e => { if (e.target.id === 'runNote' && R.session) R.session.note = e.target.value.slice(0, 400); });
+let noteTimer = null;
+document.addEventListener('input', e => {
+  if (e.target.id === 'runNote' && R.session) { R.session.note = e.target.value.slice(0, 400); clearTimeout(noteTimer); noteTimer = setTimeout(saveDraft, 400); }
+});
 document.addEventListener('submit', async e => {
   const f = e.target;
   e.preventDefault();
@@ -2202,12 +2307,13 @@ document.addEventListener('submit', async e => {
     if (btn) { if (btn.disabled) return; btn.disabled = true; }
     // Never overwrite a profile that exists but has not arrived yet.
     if (S.mode === 'shared' && !S.ownLocal) {
-      try {
-        const ex = await S.db.doc('members/' + S.uid).get();
-        if (ex.exists) { me().profile = normProfile(ex.data()); if (btn) btn.disabled = false; render(); return; }
-      } catch { /* fall through */ }
+      let ex;
+      try { ex = await S.db.doc('members/' + S.uid).get(); }
+      catch { if (btn) btn.disabled = false; toast('Je profiel kon niet worden gecontroleerd. Probeer het zo opnieuw.'); return; }
+      if (ex.exists) { me().profile = normProfile(ex.data()); if (btn) btn.disabled = false; render(); return; }
     }
-    const ok = await saveProfile(defaultProfile(nick));
+    const dev = S.mode === 'shared' ? readOwnLocal() : null;
+    const ok = await saveProfile(dev && dev.profile ? Object.assign(dev.profile, nick ? { nick } : {}) : defaultProfile(nick));
     if (btn) btn.disabled = false;
     render();
     if (ok) toast(nick ? `Welkom, ${nick}!` : 'Welkom!');
@@ -2218,6 +2324,19 @@ document.addEventListener('submit', async e => {
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.id === 'importFile') { importData(el.files && el.files[0]); el.value = ''; return; }
+  if (el.form && el.form.dataset.form === 'session' && /^ex\d$/.test(el.name || '')) {
+    // Switching exercise: show the weight field in the new exercise's unit.
+    const inp = el.form.querySelector('#kg' + el.name.slice(2));
+    const info = exInfo(el.value, myProfile());
+    const n = parseKg(inp.value);
+    const total = (Number.isFinite(n) ? n : 0) * (inp.dataset.dbl === '1' ? 2 : 1);
+    const wasBw = inp.closest('label').querySelector('.kglbl').textContent.startsWith('Extra');
+    const kg = info.bw !== wasBw ? Number(plannedKg(myProfile(), el.value).kg) || 0 : total;
+    inp.value = String(info.dbl ? kg / 2 : kg).replace('.', ',');
+    inp.dataset.dbl = info.dbl ? '1' : '0';
+    inp.closest('label').querySelector('.kglbl').textContent = kgFieldLabel(info);
+    return;
+  }
   const field = el.dataset.field;
   if (!field) return;
   if (field === 'sound' || field === 'lead') { prefs[field] = el.checked; savePrefs(); return; }
@@ -2229,7 +2348,7 @@ document.addEventListener('change', e => {
   }
   if (field === 'plan') {
     const { tpl, slot } = el.dataset;
-    if (el.value === '__new') { addCustomExercise(tpl, slot); return; }
+    if (el.value === '__new') { el.value = planFor(p, tpl)[slot]; addCustomExercise(tpl, slot); return; }
     p.plans[tpl] = Object.assign({}, planFor(p, tpl), { [slot]: el.value });
     saveProfile(p);
   }
@@ -2310,19 +2429,24 @@ async function importData(file) {
   try { obj = JSON.parse(await file.text()); } catch { toast('Dit bestand kan ik niet lezen. Kies een .json-backup van deze app.'); return; }
   if (!obj || obj.app !== '3-3-30-logboek' || !Array.isArray(obj.sessions)) { toast('Dit is geen backup van het 3-3-30 Logboek.'); return; }
   const incoming = normProfile(obj.profile);
-  if (!myProfile() && incoming) await saveProfile(incoming);
+  const cur0 = myProfile();
+  // A fresh logbook takes over the backup's schema, start date and weights.
+  if (incoming && (!cur0 || !sessionsOf(S.uid).some(countsAsTraining))) await saveProfile(Object.assign(incoming, cur0 && cur0.nick ? { nick: cur0.nick } : {}));
   else if (incoming && incoming.custom.length) {
     const cur = myProfile();
     const add = incoming.custom.filter(c => !allExercises(cur).some(e => e.k === c.k));
     if (add.length) await saveProfile(Object.assign(clone(cur), { custom: (cur.custom || []).concat(add) }));
   }
-  let n = 0, bad = 0;
+  let n = 0, bad = 0, failed = 0;
   for (const raw of obj.sessions) {
     const s = normSession(raw);
     if (!s || !s.blocks.length || JSON.stringify(s).length > 200 * 1024) { bad++; continue; }
     if (me().sessions.has(s.id)) continue;
-    if (await saveSession(s)) n++;
+    if (await saveSession(s, { quiet: true })) n++;
+    else { failed++; me().sessions.delete(s.id); }
   }
+  scheduleRender();
+  if (failed) { toast(`${failed} training${failed === 1 ? '' : 'en'} konden niet worden opgeslagen. Probeer het terugzetten zo opnieuw.`); return; }
   toast((n ? `${n} training${n === 1 ? '' : 'en'} teruggezet.` : 'Alle trainingen uit deze backup stonden er al.') + (bad ? ` ${bad} onleesbare overgeslagen.` : ''));
 }
 

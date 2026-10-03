@@ -63,7 +63,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--pull); outline-offset: 2px; }
 h1, h2, h3 { margin: 0; text-wrap: balance; }
-.h-display, .ex-name, .blk-name, .h2, .ex-card-head b, .hist .line > span, .sum-row b, .member b { overflow-wrap: anywhere; hyphens: auto; }
+.h-display, .ex-name, .blk-name, .h2, .ex-card-head b, .hist .line > span, .sum-row b, .member b, .hist .body p { overflow-wrap: anywhere; hyphens: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 p { margin: 0; }
 
@@ -208,7 +208,8 @@ p { margin: 0; }
 .hist { display: grid; gap: 0; }
 .hist details { border-top: 1px solid var(--line); }
 .hist details:first-child { border-top: 0; }
-.hist summary { list-style: none; cursor: pointer; padding-block: 12px; display: flex; align-items: center; gap: 10px; }
+.hist summary { list-style: none; cursor: pointer; padding-block: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.hist summary .grow { flex: 1 1 8em; }
 .hist summary::-webkit-details-marker { display: none; }
 .hist summary .chev { transition: transform .15s; color: var(--muted); }
 .hist details[open] summary .chev { transform: rotate(90deg); }
@@ -497,7 +498,7 @@ function normProfile(p) {
   const days = [...new Set((Array.isArray(p.days) ? p.days : [1, 3, 5]).map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))];
   const custom = (Array.isArray(p.custom) ? p.custom : [])
     .filter(c => c && typeof c.k === 'string' && ID_RE.test(c.k) && !(c.k in Object.prototype) && Object.hasOwn(SLOT, c.s)).slice(0, 60)
-    .map(c => ({ k: c.k, n: str(c.n, 40) || c.k, s: c.s, step: clampN(c.step, 0.5, 50) || 2.5, start: clampN(c.start, -300, 1000), bw: !!c.bw, dbl: !!c.dbl }));
+    .map(c => ({ k: c.k, n: str(c.n, 40) || c.k, s: c.s, step: Number(c.step) > 0 ? clampN(c.step, 0.5, 50) : 2.5, start: clampN(c.start, -300, 1000), bw: !!c.bw, dbl: !!c.dbl }));
   const plans = {};
   for (const t of ['A', 'B', 'C']) {
     const pl = p.plans && p.plans[t];
@@ -537,6 +538,20 @@ function loadOwnLocal() {
     S.profileDirty = raw.profileDirty;
   }
 }
+/* After a direct write succeeds, an older pending device copy of that item must not
+   overwrite it on a later visit. */
+function dropPending(id) {
+  if (S.ownLocal || S.migrating) return;
+  const raw = LS.get(LKEY(), null);
+  if (!raw || typeof raw !== 'object') return;
+  if (id === null) { raw.profile = null; raw.profileDirty = false; }
+  else {
+    if (raw.sessions) delete raw.sessions[id];
+    raw.dirty = (raw.dirty || []).filter(x => x !== id);
+    raw.hidden = (raw.hidden || []).filter(x => x !== id);
+  }
+  LS.set(LKEY(), raw);
+}
 /* Device copy of the own logbook. `dirty`/`profileDirty` mark what changed here and
    must win over the shared copy once this viewer can write again. */
 function saveOwnLocal() {
@@ -564,7 +579,7 @@ async function initStore() {
     if (canWrite === false) useOwnLocal(NOTICE_VIEWER);
     else {
       const local = readOwnLocal();
-      if (local && (local.profile || local.sessions.size)) migrateLocal(local);
+      if (local && (local.profile || local.sessions.size || local.hidden.length)) migrateLocal(local);
     }
     subscribeMembers();
     subscribeSessions(uid);
@@ -678,6 +693,7 @@ function subscribeSessions(id) {
     const next = new Map();
     for (const d of snap.docs) { const n = normSession(d.data(), d.id); if (n) next.set(d.id, n); }
     m.sessions = next;
+    if (id === S.uid && !S.ownSeen) { S.ownSeen = true; maybeReopen(); }
     scheduleRender();
   }, () => { S.subs.delete(key); });
   S.subs.set(key, unsub);
@@ -733,7 +749,7 @@ async function saveProfile(p) {
   me().profile = clean;
   scheduleRender();
   if (S.ownLocal) { S.profileDirty = true; saveOwnLocal(); return true; }
-  try { await dbWrite('members/' + S.uid, clean); return true; }
+  try { await dbWrite('members/' + S.uid, clean); dropPending(null); return true; }
   catch (e) { if (handleWriteError(e)) { me().profile = clean; S.profileDirty = true; saveOwnLocal(); return true; } return false; }
 }
 let profileTimer = null;
@@ -750,7 +766,7 @@ async function saveSession(s, opts = {}) {
   S.hidden.delete(clean.id);
   scheduleRender();
   if (S.ownLocal) { S.dirty.add(clean.id); saveOwnLocal(); return true; }
-  try { await dbWrite('members/' + S.uid + '/sessions/' + clean.id, clean); return true; }
+  try { await dbWrite('members/' + S.uid + '/sessions/' + clean.id, clean); dropPending(clean.id); return true; }
   catch (e) {
     if (handleWriteError(e, opts.quiet)) { me().sessions.set(clean.id, clean); S.dirty.add(clean.id); saveOwnLocal(); return true; }
     return false;
@@ -761,7 +777,7 @@ async function deleteSession(id) {
   me().sessions.delete(id);
   scheduleRender();
   if (S.ownLocal) { S.hidden.add(id); S.dirty.delete(id); saveOwnLocal(); return true; }
-  try { await dbWrite('members/' + S.uid + '/sessions/' + id, null, true); return true; }
+  try { await dbWrite('members/' + S.uid + '/sessions/' + id, null, true); dropPending(id); return true; }
   catch (e) {
     if (handleWriteError(e)) { S.hidden.add(id); me().sessions.delete(id); saveOwnLocal(); return true; }
     if (prev) { me().sessions.set(id, prev); scheduleRender(); }
@@ -930,10 +946,10 @@ function kgLabel(kg, info) {
   const n = Number(kg);
   if (info.bw) {
     if (n === 0) return 'lichaamsgewicht';
-    return n > 0 ? `+${fmtNum(n)} kg` : `${fmtNum(-n)} kg hulp`;
+    return n > 0 ? `+${fmtNum(n)}\u00a0kg` : `${fmtNum(-n)}\u00a0kg\u00a0hulp`;
   }
-  if (info.dbl) return `2 × ${fmtNum(n / 2)} kg`;
-  return `${fmtNum(n)} kg`;
+  if (info.dbl) return `2\u00a0×\u00a0${fmtNum(n / 2)}\u00a0kg`;
+  return `${fmtNum(n)}\u00a0kg`;
 }
 function kgShort(kg, info) {
   const n = Number(kg) || 0;
@@ -945,7 +961,7 @@ function blockKgLabel(b, info) {
   const ks = setKgs(b);
   if (ks.length > 1 && !b.bw) {
     const lo = Math.min(...ks), hi = Math.max(...ks);
-    return info.dbl ? `2 × ${fmtNum(lo / 2)}–${fmtNum(hi / 2)} kg` : `${fmtNum(lo)}–${fmtNum(hi)} kg`;
+    return info.dbl ? `2\u00a0×\u00a0${fmtNum(lo / 2)}–${fmtNum(hi / 2)}\u00a0kg` : `${fmtNum(lo)}–${fmtNum(hi)}\u00a0kg`;
   }
   return kgLabel(b.kg, info);
 }
@@ -1054,7 +1070,7 @@ function restoreFocus(root, sel) {
 function render() {
   const a = document.activeElement;
   if (a && a.closest && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') { renderDeferred = true; return; }
-  const fsel = a && a.closest && a.closest('#main') ? focusSel(a) : null;
+  const fsel = a && a.closest && (a.closest('#main') || a.closest('#notice')) ? focusSel(a) : null;
   renderHeader();
   for (const t of ['train', 'progress', 'team', 'plan']) {
     $('#view-' + t).hidden = UI.tab !== t;
@@ -1072,6 +1088,8 @@ function render() {
   v.innerHTML = html;
   if (UI.tab === 'progress') bindCharts(v);
   restoreFocus(v, fsel);
+  const fa = document.activeElement;
+  if (fsel && (!fa || fa === document.body || fa.closest('[hidden]'))) { const t = $('.tab[aria-selected="true"]'); if (t) t.focus({ preventScroll: true }); }
   const pc = v.querySelector('.tabsel.scroll [aria-pressed="true"]');
   if (pc) { const t = pc.parentElement; t.scrollLeft += pc.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - pc.offsetWidth) / 2; }
   maybeReopen();
@@ -1080,7 +1098,7 @@ function render() {
 /* After a reload in the middle of a block, go straight back to the clock. */
 let reopenChecked = false;
 function maybeReopen() {
-  if (reopenChecked || R.session || S.mode === 'loading' || !myProfile()) return;
+  if (reopenChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
   reopenChecked = true;
   const d = loadDraft();
   if (d && (d.phase === 'run' || d.phase === 'over')) openRunner(true);
@@ -1110,7 +1128,7 @@ function viewTrain() {
   const p = myProfile();
   if (S.mode === 'loading' || (S.migrating && !p)) return SKELETON;
   // Never offer 'Ik doe mee' before we know this person has no profile yet.
-  if (!p && S.mode === 'shared' && !S.ownLocal && !S.membersSeen) return SKELETON;
+  if (!p && S.mode === 'shared' && !S.membersSeen) return SKELETON;
   if (!p) return viewOnboarding();
   const today = todayYmd();
   const start = p.start || START;
@@ -1128,7 +1146,7 @@ function viewTrain() {
   let head;
   if (pre) {
     const n = daysBetween(today, start);
-    head = `<div class="eyebrow">Jullie starten over ${n} ${n === 1 ? 'dag' : 'dagen'}</div><h1 class="h-display">${esc(cap(fmtLong(start)))}</h1>`;
+    head = `<div class="eyebrow">${start > START ? 'Je begint' : 'Jullie starten'} over ${n} ${n === 1 ? 'dag' : 'dagen'}</div><h1 class="h-display">${esc(cap(fmtLong(start)))}</h1>`;
   } else if (doneToday) {
     head = `<div class="eyebrow">Vandaag gedaan</div><h1 class="h-display">Goed bezig. Volgende: ${esc(fmtLong(next))}</h1>`;
   } else if (isToday) {
@@ -1373,18 +1391,19 @@ function historyItem(s, pid) {
     const info = exInfo(b.ex, prof);
     const ok = b.done && !b.skipped;
     const sets = setsText(b, info);
-    return `<div class="line"><span class="chip ${b.slot}">${SLOT[b.slot].label}</span><span>${esc(b.name || info.n)} <span class="tiny">${esc(blockKgLabel(b, info))}${b.cut ? ' · ingekort' : ''}</span></span><b class="num">${ok ? b.total + ' herh.' : '–'}</b>${ok && sets ? `<span class="sets">sets: ${esc(sets)}${scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))} kg` : ''}</span>` : ''}</div>`;
+    return `<div class="line"><span class="chip ${b.slot}">${SLOT[b.slot].label}</span><span>${esc(b.name || info.n)} <span class="tiny">${esc(blockKgLabel(b, info))}${b.cut ? ' · ingekort' : ''}</span></span><b class="num">${ok ? b.total + '\u00a0herh.' : '–'}</b>${ok && sets ? `<span class="sets">sets: ${esc(sets)}${scored(b) ? ` · score ${fmtNum(Math.round(blockVolume(b)))}\u00a0kg` : ''}</span>` : ''}</div>`;
   }).join('');
   const feel = s.feel ? `<span class="pill">voelde ${esc((FEEL[s.feel - 1] || '').toLowerCase())}</span>` : '';
   const note = s.note ? `<p class="small">${esc(s.note)}</p>` : '';
   const status = trial ? '<span class="pill">proef</span>' : s.status !== 'done' ? '<span class="pill warn">niet afgerond</span>' : '';
   const actions = isMe ? `<div class="row wrap"><button class="btn sm ghost" data-act="edit" data-id="${esc(s.id)}">Bewerken</button>${s.status !== 'done' ? `<button class="btn sm ghost" data-act="finishOld" data-id="${esc(s.id)}">Markeer als klaar</button>` : ''}<button class="btn sm danger" data-act="del" data-id="${esc(s.id)}">${UI.confirm === 'del:' + s.id ? 'Zeker? Tik nogmaals' : 'Verwijderen'}</button></div>` : '';
   const wn = weekNo(s.date, prof?.start || START);
-  return `<details data-hist="${esc(s.id)}"${UI.histOpen.has(s.id) ? ' open' : ''}><summary><span class="grow"><b>${esc(cap(fmtShort(s.date)))}</b> <span class="tiny">${trial ? '' : 'wk ' + wn}${s.tpl && prof?.mode === 'abc' ? ' · ' + esc(s.tpl) : ''}</span></span>${status}${feel}<span class="num" style="font-weight:700">${total} herh.</span><span class="chev" aria-hidden="true">›</span></summary><div class="body">${lines}${note}${actions}</div></details>`;
+  return `<details data-hist="${esc(s.id)}"${UI.histOpen.has(s.id) ? ' open' : ''}><summary><span class="grow"><b>${esc(cap(fmtShort(s.date)))}</b> <span class="tiny">${trial ? '' : 'wk ' + wn}${s.tpl && prof?.mode === 'abc' ? ' · ' + esc(s.tpl) : ''}</span></span>${status}${feel}<span class="num" style="font-weight:700">${total}\u00a0herh.</span><span class="chev" aria-hidden="true">›</span></summary><div class="body">${lines}${note}${actions}</div></details>`;
 }
 
 /* Line chart with a crosshair tooltip (mouse, touch and arrow keys). */
 const CHARTS = {};
+const CHART_SEL = {};
 function niceScale(min, max, n) {
   if (min === max) { min = Math.max(0, min - 5); max = max + 5; }
   const raw = (max - min) / n;
@@ -1412,15 +1431,16 @@ function chartSvg(id, pts, color, metric, isExample, info) {
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.y).toFixed(1)}`).join('');
   const area = pts.length > 1 ? `${line}L${x(pts.length - 1).toFixed(1)},${y(lo).toFixed(1)}L${x(0).toFixed(1)},${y(lo).toFixed(1)}Z` : '';
   // Weight labels where the weight changed; placed right to left so the current weight always shows.
-  let kgl = '', placedX = Infinity;
+  let kgl = '', placedX = Infinity, placedTxt = null;
   const changes = pts.map((p, i) => i).filter(i => (i === 0 || pts[i].kg !== pts[i - 1].kg) && !(i === 0 && pts[i].bw && pts[i].kg === 0));
   for (let j = changes.length - 1; j >= 0; j--) {
     const i = changes[j];
     kgl += `<line x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${T - 6}" y2="${(H - B).toFixed(1)}" class="grid"/>`;
     const lx = Math.min(Math.max(x(i), L + 22), W - R - 22);
-    if (placedX - lx < 46) continue;
-    placedX = lx;
-    kgl += `<text x="${lx.toFixed(1)}" y="${T - 12}" text-anchor="middle">${esc(kgShort(pts[i].kg, info || {}))} kg</text>`;
+    const txt = kgShort(pts[i].kg, info || {});
+    if (placedX - lx < 46 || txt === placedTxt) continue;
+    placedX = lx; placedTxt = txt;
+    kgl += `<text x="${lx.toFixed(1)}" y="${T - 12}" text-anchor="middle">${esc(txt)} kg</text>`;
   }
   const lastI = pts.length - 1;
   const xl = `<text x="${x(0).toFixed(1)}" y="${H - 6}" text-anchor="${pts.length === 1 ? 'middle' : 'start'}">${esc(fmtDM(pts[0].date))}</text>` +
@@ -1453,7 +1473,7 @@ function bindCharts(root) {
     let cur = -1;
     const show = i => {
       if (i < 0 || i >= c.pts.length) return;
-      cur = i;
+      cur = i; CHART_SEL[id] = i;
       const p = c.pts[i];
       xh.setAttribute('x1', c.xs[i]); xh.setAttribute('x2', c.xs[i]); xh.setAttribute('visibility', 'visible');
       dot.setAttribute('cx', c.xs[i]); dot.setAttribute('cy', c.ys[i]); dot.setAttribute('visibility', 'visible');
@@ -1482,9 +1502,9 @@ function bindCharts(root) {
     svg.addEventListener('keydown', ev => {
       if (ev.key === 'ArrowLeft') { show(Math.max(0, (cur < 0 ? c.pts.length : cur) - 1)); ev.preventDefault(); }
       if (ev.key === 'ArrowRight') { show(Math.min(c.pts.length - 1, cur + 1)); ev.preventDefault(); }
-      if (ev.key === 'Escape') hide();
+      if (ev.key === 'Escape') { hide(); delete CHART_SEL[id]; }
     });
-    svg.addEventListener('focus', () => { if (svg.matches(':focus-visible') && cur < 0) show(c.pts.length - 1); });
+    svg.addEventListener('focus', () => { if (svg.matches(':focus-visible') && cur < 0) show(CHART_SEL[id] ?? c.pts.length - 1); });
   });
 }
 
@@ -1510,7 +1530,7 @@ function viewTeam() {
       <div style="display:grid;gap:3px;min-width:0">
         <div class="row wrap" style="gap:6px 8px"><b>${esc(displayName(id))}</b>${mine}${live ? '<span class="pill live">traint nu</span>' : ''}</div>
         <div class="row wrap" style="gap:8px"><span class="mdots" role="img" aria-label="${wk} van 3 trainingen deze week">${dots}</span><span class="tiny">${wk}/3 deze week · ${streak} ${streak === 1 ? 'week' : 'weken'} op rij</span></div>
-        <span class="tiny">${last ? 'Laatst: ' + esc(fmtShort(last.date)) + ' · ' + doneBlocks(last).reduce((a, b) => a + b.total, 0) + ' herhalingen' : 'Nog geen training'}</span>
+        <span class="tiny">${last ? 'Laatst: ' + esc(fmtShort(last.date)) + ' · ' + doneBlocks(last).reduce((a, b) => a + b.total, 0) + '\u00a0herhalingen' : 'Nog geen training'}</span>
       </div>
       <div style="text-align:right;display:grid;gap:2px">${st.n ? `<span class="delta${st.beat ? ' pos' : ''}">${st.beat}/${st.n}</span><span class="tiny">blokken beter</span>` : `<span class="tiny">${ts.length} training${ts.length === 1 ? '' : 'en'}</span>`}
         ${ts.length ? `<button class="btn link" data-act="viewPerson" data-id="${esc(id)}" style="justify-self:end">Bekijk</button>` : ''}</div>
@@ -1675,6 +1695,7 @@ function openRunner(fromDraft, tpl) {
   saveDraft();
   if (R.phase === 'run') { wakeOn(); startTick(); }
   renderRunner();
+  if (R.phase === 'run' || R.phase === 'over') keepPadInView();
   const first = $('#runner .ex-name') || $('#runner [data-act]');
   if (first) { first.setAttribute('tabindex', '-1'); try { first.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
@@ -1747,7 +1768,7 @@ function endBlock(auto) {
   stopTick();
   if (auto) { beep(988, 0.7); buzz([300, 100, 300]); }
   b.total = b.sets.reduce((a, s) => a + s.r, 0);
-  saveDraft(); renderRunner();
+  saveDraft(); renderRunner(); keepPadInView();
 }
 
 /* Sound + vibration + wake lock — all optional and failure-tolerant. */
@@ -2189,7 +2210,7 @@ const ACT = {
   },
   goNow() { beginBlock(); },
   pause() { if (R.phase !== 'run') return; R.phase = 'paused'; R.pausedAt = Date.now(); stopTick(); saveDraft(); renderRunner(); },
-  resumeClock() { if (R.phase !== 'paused') return; R.pausedMs += Date.now() - R.pausedAt; R.pausedAt = 0; R.phase = 'run'; wakeOn(); saveDraft(); renderRunner(); startTick(); markLive(); },
+  resumeClock() { if (R.phase !== 'paused') return; R.pausedMs += Date.now() - R.pausedAt; R.pausedAt = 0; R.phase = 'run'; wakeOn(); saveDraft(); renderRunner(); startTick(); markLive(); keepPadInView(); },
   endEarly() {
     if (R.confirm !== 'end') { armConfirm('end', R); renderRunner(); return; }
     R.confirm = null; endBlock(false);
@@ -2244,6 +2265,7 @@ const ACT = {
     if (!doneBlocks(R.session).length) { toast('Er is nog niets om op te slaan.'); return; }
     R.session.blocks.forEach(x => { if (!x.done) x.skipped = true; });
     R.phase = 'finish'; R.confirm = null; R.menuPaused = false; stopTick(); wakeOff(); saveDraft(); renderRunner();
+    const h = $('#runner h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
   },
   discardRun() {
     if (R.confirm2 !== 'discard') { R.confirm2 = 'discard'; renderRunner(); return; }
@@ -2316,6 +2338,7 @@ document.addEventListener('submit', async e => {
     const ok = await saveProfile(dev && dev.profile ? Object.assign(dev.profile, nick ? { nick } : {}) : defaultProfile(nick));
     if (btn) btn.disabled = false;
     render();
+    { const t = $('.tab[aria-selected="true"]'); if (t) t.focus({ preventScroll: true }); }
     if (ok) toast(nick ? `Welkom, ${nick}!` : 'Welkom!');
   }
   if (f.dataset.form === 'session') submitSessionForm(f);
@@ -2331,7 +2354,7 @@ document.addEventListener('change', e => {
     const n = parseKg(inp.value);
     const total = (Number.isFinite(n) ? n : 0) * (inp.dataset.dbl === '1' ? 2 : 1);
     const wasBw = inp.closest('label').querySelector('.kglbl').textContent.startsWith('Extra');
-    const kg = info.bw !== wasBw ? Number(plannedKg(myProfile(), el.value).kg) || 0 : total;
+    const kg = !!info.bw !== wasBw ? Number(plannedKg(myProfile(), el.value).kg) || 0 : total;
     inp.value = String(info.dbl ? kg / 2 : kg).replace('.', ',');
     inp.dataset.dbl = info.dbl ? '1' : '0';
     inp.closest('label').querySelector('.kglbl').textContent = kgFieldLabel(info);
@@ -2379,9 +2402,10 @@ function submitCustom(f) {
   let k = 'c-' + slug(name);
   while (allExercises(p).some(x => x.k === k)) k += '-2';
   const bw = !!fd.get('bw'), dbl = !bw && !!fd.get('dbl');
-  const kgNum = v => { const n = Number(String(v || '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
-  const step = Math.max(0.5, kgNum(fd.get('step')) || 2.5) * (dbl ? 2 : 1);
-  const start = bw ? 0 : Math.max(0, kgNum(fd.get('start'))) * (dbl ? 2 : 1);
+  const st = parseKg(fd.get('start')), sp = parseKg(fd.get('step'));
+  if (!Number.isFinite(sp) || (!bw && !Number.isFinite(st))) { toast('Vul het gewicht in als getal, bijvoorbeeld 14 of 12,5.'); return; }
+  const step = Math.max(0.5, sp || 2.5) * (dbl ? 2 : 1);
+  const start = bw ? 0 : Math.max(0, st) * (dbl ? 2 : 1);
   p.custom = (p.custom || []).concat([{ k, n: name, s: slot, step, start, bw, dbl }]);
   p.plans[tpl] = Object.assign({}, planFor(p, tpl), { [slot]: k });
   saveProfile(p); closeSheet(); toast('Oefening toegevoegd.');
@@ -2431,11 +2455,12 @@ async function importData(file) {
   const incoming = normProfile(obj.profile);
   const cur0 = myProfile();
   // A fresh logbook takes over the backup's schema, start date and weights.
-  if (incoming && (!cur0 || !sessionsOf(S.uid).some(countsAsTraining))) await saveProfile(Object.assign(incoming, cur0 && cur0.nick ? { nick: cur0.nick } : {}));
-  else if (incoming && incoming.custom.length) {
-    const cur = myProfile();
+  if (incoming && (!cur0 || !trainings(S.uid).length)) await saveProfile(Object.assign(incoming, cur0 && cur0.nick ? { nick: cur0.nick } : {}));
+  else if (incoming) {
+    const cur = clone(myProfile());
     const add = incoming.custom.filter(c => !allExercises(cur).some(e => e.k === c.k));
-    if (add.length) await saveProfile(Object.assign(clone(cur), { custom: (cur.custom || []).concat(add) }));
+    const back = incoming.start < cur.start;
+    if (add.length || back) await saveProfile(Object.assign(cur, { custom: (cur.custom || []).concat(add) }, back ? { start: incoming.start } : {}));
   }
   let n = 0, bad = 0, failed = 0;
   for (const raw of obj.sessions) {
@@ -2446,7 +2471,7 @@ async function importData(file) {
     else { failed++; me().sessions.delete(s.id); }
   }
   scheduleRender();
-  if (failed) { toast(`${failed} training${failed === 1 ? '' : 'en'} konden niet worden opgeslagen. Probeer het terugzetten zo opnieuw.`); return; }
+  if (failed) { toast(`${failed === 1 ? '1 training kon' : failed + ' trainingen konden'} niet worden opgeslagen. Probeer het terugzetten zo opnieuw.`); return; }
   toast((n ? `${n} training${n === 1 ? '' : 'en'} teruggezet.` : 'Alle trainingen uit deze backup stonden er al.') + (bad ? ` ${bad} onleesbare overgeslagen.` : ''));
 }
 

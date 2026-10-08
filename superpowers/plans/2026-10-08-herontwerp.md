@@ -2273,6 +2273,7 @@ test('a buddy’s workout opens to read only', async () => {
 test('same every time shows no letter', async () => {
   const page = await openApp({ sessions: [first()], profile: profile({ mode: 'same' }) });
   await toProgress(page);
+  assert.equal(await page.locator('.lg-row').count(), 1);
   assert.equal(await page.locator('.lg-row .lg-tpl').count(), 0);
 });
 ```

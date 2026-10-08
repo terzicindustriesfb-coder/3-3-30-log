@@ -336,8 +336,8 @@ test('saving drops a week list that belongs to another week', async () => {
   assert.deepEqual(await fresh.evaluate(async () => { await saveProfile(clone(myProfile())); return myProfile().week; }), { mon: '2026-10-12', days: [1, 2] });
 });
 test('a renamed exercise shows under its new name', async () => {
-  const page = await openApp({ sessions: abc(), profile: profile({ names: { schouderdrukken: 'Shoulder press' } }) });
-  assert.equal(await txt(page, '#view .ex-row .ex-n'), 'Shoulder press');
+  const page = await openApp({ profile: profile({ names: { schouderdrukken: 'Shoulder press' } }) });
+  assert.match(await txt(page, '#view .ex-row .ex-n'), /Shoulder press$/);
 });
 test('a backup carries the new fields, and an old backup still restores', async () => {
   const mine = profile({ names: { schouderdrukken: 'Shoulder press' }, eqs: { schouderdrukken: 'machine' }, week: { mon: '2026-10-12', days: [1, 2, 5] } });

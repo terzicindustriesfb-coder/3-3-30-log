@@ -584,8 +584,31 @@ function normProfile(p) {
   if (p.weights && typeof p.weights === 'object') {
     for (const [k, v] of Object.entries(p.weights).slice(0, 300)) if (ID_RE.test(k) && Number.isFinite(Number(v))) weights[k] = clampN(v, -300, 1000);
   }
-  return { v: 1, nick: str(p.nick, 30), joined: num(p.joined), start: validYmd(p.start) ? p.start : START,
+  const out = { v: 1, nick: str(p.nick, 30), joined: num(p.joined), start: validYmd(p.start) ? p.start : START,
     days: days.length ? days : [1, 3, 5], mode: p.mode === 'same' ? 'same' : 'abc', plans, custom, weights };
+  // Optional fields, left out when empty so an older profile stays as it was:
+  // the person's own name and weight type for an exercise from the list, and this week's own training days.
+  const names = {}, eqs = {};
+  if (p.names && typeof p.names === 'object') {
+    for (const [k, v] of Object.entries(p.names).slice(0, 100)) {
+      const lib = LIB.find(e => e.k === k);
+      const n = str(v, 400).trim().replace(/\s+/g, ' ').slice(0, 40).trim();
+      if (lib && n && n !== lib.n) names[k] = n;
+    }
+  }
+  if (p.eqs && typeof p.eqs === 'object') {
+    for (const [k, v] of Object.entries(p.eqs).slice(0, 100)) {
+      const lib = LIB.find(e => e.k === k);
+      if (lib && typeof v === 'string' && Object.hasOwn(EQUIP, v) && v !== eqOf(lib)) eqs[k] = v;
+    }
+  }
+  if (Object.keys(names).length) out.names = names;
+  if (Object.keys(eqs).length) out.eqs = eqs;
+  const w = p.week;
+  if (w && typeof w === 'object' && validYmd(w.mon) && mondayOf(w.mon) === w.mon && Array.isArray(w.days)) {
+    out.week = { mon: w.mon, days: [...new Set(w.days.map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b) };
+  }
+  return out;
 }
 
 function member(id) {
@@ -836,6 +859,8 @@ function handleWriteError(e, quiet) {
 
 async function saveProfile(p, opts = {}) {
   const clean = normProfile(p);
+  // The week list only means something in its own week.
+  if (clean && clean.week && clean.week.mon !== mondayOf(todayYmd())) delete clean.week;
   const prev = S.profileStored !== undefined && !S.ownLocal ? S.profileStored : me().profile;
   me().profile = clean;
   scheduleRender();
@@ -889,14 +914,27 @@ function defaultProfile(nick, days = [1, 3, 5]) {
   return { v: 1, nick: nick || '', joined: Date.now(), start: lateStart(today, days), days: days.slice(), mode: DEFAULT_MODE,
     plans: clone(DEFAULT_PLANS), custom: [], weights: {} };
 }
+/* An exercise as this person has it: the list entry with their own name and weight type laid over it,
+   or one of their own exercises. */
 function exInfo(key, profile) {
-  return LIB.find(e => e.k === key) || (profile?.custom || []).find(e => e.k === key)
-    || { k: key, n: key, s: 'push', step: 2.5, start: 0 };
+  const lib = LIB.find(e => e.k === key);
+  if (!lib) return (profile?.custom || []).find(e => e.k === key) || { k: key, n: key, s: 'push', step: 2.5, start: 0 };
+  const n = profile?.names?.[key];
+  const eq = profile?.eqs?.[key];
+  const q = eq && Object.hasOwn(EQUIP, eq) ? EQUIP[eq] : null;
+  if (!n && !q) return lib;
+  const out = Object.assign({}, lib);
+  if (n) out.n = n;
+  if (q) {
+    const otherKind = !!q.bw !== !!lib.bw || !!q.dbl !== !!lib.dbl;
+    Object.assign(out, { eq, step: q.step, bw: !!q.bw, dbl: !!q.dbl, start: otherKind ? q.start : lib.start });
+  }
+  return out;
 }
-function allExercises(profile) { return LIB.concat(profile?.custom || []); }
+function allExercises(profile) { return LIB.map(e => exInfo(e.k, profile)).concat(profile?.custom || []); }
 function exName(key, profile, fallback) {
-  const lib = LIB.find(e => e.k === key) || (profile?.custom || []).find(e => e.k === key);
-  return lib ? lib.n : (fallback || key);
+  const known = LIB.some(e => e.k === key) || (profile?.custom || []).some(e => e.k === key);
+  return known ? exInfo(key, profile).n : (fallback || key);
 }
 function displayName(id) {
   const p = S.members.get(id)?.profile;

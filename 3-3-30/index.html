@@ -372,6 +372,12 @@ button.lt-row:active { background: var(--surface-2); }
 .wd[data-state="planned"] { box-shadow: inset 0 0 0 1.5px var(--ring); color: var(--muted); }
 .wd[data-state="todayRest"] { border: 2px dashed var(--ink-2); }
 .wd[data-state="missed"] { border: 1.5px dashed var(--ring); }
+/* A big number with a small label under it: the target on Today, the result after a workout */
+.goal { display: grid; justify-items: end; gap: 3px; }
+.goal-n { font-family: var(--display); font-stretch: 75%; font-weight: 900; font-size: 42px; line-height: .86; font-variant-numeric: tabular-nums; }
+.goal-l { font-family: var(--display); font-stretch: 125%; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.goal-l.pos { color: var(--good); }
+.ex-sub .ex-kg { font-size: 15px; color: var(--ink-2); }
 /* Sheets */
 .sheet-sub { font-size: 14px; color: var(--muted); }
 .swap-opt { width: 100%; border: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); padding: 14px 16px; min-height: 64px;
@@ -1073,6 +1079,35 @@ const VERDICT_TEXT = {
   zwaarder: 'Heavier, slightly fewer reps — normal after a weight jump.',
   lichter: 'Lighter weight, more reps.',
 };
+/* How one finished exercise did against the score to beat from before that workout.
+   Another weight is named, not judged; a block that stopped early is not compared. */
+function verdict(b, pid, sid) {
+  if (!b || !b.done || b.skipped || !(b.total > 0)) return { kind: 'skipped', text: 'skipped', tone: '' };
+  if (b.cut) return { kind: 'cut', text: 'stopped early', tone: '' };
+  const prev = refBlock(history(pid, b.ex, sid));
+  if (!prev) return { kind: 'first', text: 'first score', tone: '' };
+  const dk = Math.round(((Number(b.kg) || 0) - (Number(prev.kg) || 0)) * 10) / 10;
+  if (dk > 0) return { kind: 'heavier', text: `+${fmtNum(dk)} kg`, tone: '' };
+  if (dk < 0) return { kind: 'lighter', text: `−${fmtNum(-dk)} kg`, tone: '' };
+  const dr = b.total - (prev.total || 0);
+  if (dr > 0) return { kind: 'up', text: `▲ +${dr}`, tone: 'pos' };
+  if (dr < 0) return { kind: 'down', text: `▼ −${-dr}`, tone: '' };
+  return { kind: 'same', text: 'same as last time', tone: '' };
+}
+/* A whole workout in a few words, for the log: "2 of 2 beaten · 1 heavier". Nothing for a practice workout. */
+function sessionSummary(s, pid) {
+  if (isTrial(s, pid)) return '';
+  const n = { up: 0, same: 0, down: 0, heavier: 0, lighter: 0, first: 0, cut: 0, skipped: 0 };
+  for (const b of s.blocks || []) n[verdict(b, pid, s.id).kind]++;
+  const compared = n.up + n.same + n.down;
+  return [
+    compared ? `${n.up} of ${compared} beaten` : '',
+    n.heavier ? `${n.heavier} heavier` : '',
+    n.lighter ? `${n.lighter} lighter` : '',
+    n.first ? `${n.first} first score${n.first === 1 ? '' : 's'}` : '',
+    n.cut ? `${n.cut} stopped early` : '',
+  ].filter(Boolean).join(' · ');
+}
 /* 'reps': more reps than ever at this weight or lighter; 'kg': same best reps, heavier. */
 function recordKind(b, hist) {
   if (!hist.length || !(b.total > 0)) return null;
@@ -1412,6 +1447,28 @@ function viewProgressPage() {
 }
 const LOAD_ERR = `<div class="card"><b>Your log couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
 
+/* The exercises of a finished workout: reps first, the verdict under them. `judged` false leaves the
+   verdicts out (a practice workout). */
+function resultRowsHtml(s, pid, judged = true) {
+  const prof = S.members.get(pid)?.profile;
+  const rows = (s.blocks || []).map(b => {
+    const info = Object.assign({}, exInfo(b.ex, prof), { bw: !!b.bw });
+    const v = verdict(b, pid, s.id);
+    const ok = v.kind !== 'skipped';
+    const label = judged || !ok ? `<span class="goal-l${v.tone ? ' ' + v.tone : ''}">${esc(v.text)}</span>` : '';
+    return `<li><div class="ex-row static">${plateHtml(b.slot)}
+      <span class="ex-main"><span class="sr-only">${esc(SLOT[b.slot].label)}: </span><span class="ex-n">${esc(blockName(b, prof))}</span>
+        <span class="ex-sub"><span class="ex-kg">${esc(blockKgLabel(b, info))}</span></span></span>
+      <span class="goal">${ok ? `<span class="goal-n">${b.total}</span>` : ''}${label}</span>
+    </div></li>`;
+  }).join('');
+  return `<ul class="ex-list">${rows}</ul>`;
+}
+/* "Lifted in total": weight × reps over the whole workout. Nothing when that is zero. */
+function totalRowHtml(s) {
+  const kg = doneBlocks(s).reduce((a, b) => a + blockVolume(b), 0);
+  return kg > 0 ? `<div class="sum-total"><span class="grow">Lifted in total</span> <b class="num">${esc(kgTotal(kg))}</b></div>` : '';
+}
 /* One day in the week strip: a filled disc (trained), a ring (planned), a dashed ring (missed, or
    today when it is a rest day) or a small dot (rest). `text` is a letter, the tick, or nothing. */
 const dayDotHtml = (state, text) => `<span class="wd" data-state="${state}" aria-hidden="true">${text || ''}</span>`;
@@ -2270,26 +2327,11 @@ function runnerFinish() {
       <button class="btn primary xl" data-act="discardEmpty">Discard workout</button>
     </div>`;
   }
-  const twl = done.reduce((a, b) => a + blockVolume(b), 0);
-  let beaten = 0, compared = 0, hadPrev = 0;
-  const rows = s.blocks.map(b => {
-    const info = exInfo(b.ex, p);
-    const prev = refBlock(history(S.uid, b.ex, s.id));
-    const ok = b.done && !b.skipped && b.total > 0;
-    const c = ok ? compare(b, prev) : null;
-    if (c) hadPrev++;
-    if (c && !b.cut) { compared++; if (c.verdict === 'beter') beaten++; }
-    const better = ok && beatPrev(b, S.uid, s.id);
-    const main = !ok ? '–' : scored(b) ? kgTotal(blockVolume(b)) : `${b.total} reps`;
-    const sub = !ok ? 'skipped' : scored(b) ? `${blockKgLabel(b, info)} × ${b.total} reps` : kgLabel(b.kg, info);
-    return `<div class="sum-row">${plateHtml(b.slot, true)}<span class="grow"><b class="ex-n" style="font-size:16px">${esc(blockName(b, p))}</b><br><span class="tiny">${esc(sub)}${b.cut ? ' · stopped early' : ''}</span></span>
-      <b class="num" style="font-size:18px;white-space:nowrap">${esc(main)}${better ? '<i class="lt-up" aria-hidden="true">▲</i><span class="sr-only">, beat last time</span>' : ''}</b></div>`;
-  }).join('');
   const trial = isTrial(s, S.uid);
-  const sub = [compared ? `${beaten} of ${compared} beat last time` : !hadPrev && !trial ? 'First time — next time, beat these numbers' : ''].filter(Boolean).join('');
+  const sub = sessionSummary(s, S.uid);
   return `<div class="run">
     <div class="head"><div class="eyebrow">${esc(dayShort(s.date))}${trial ? ' · practice' : ''}</div><h2 class="title">${trial ? 'Practice done' : 'Workout done'}</h2>${sub ? `<span class="small">${esc(sub)}</span>` : ''}</div>
-    <div class="card">${rows}${twl > 0 ? `<div class="sum-total"><span class="grow">Lifted in total</span><b class="num">${esc(kgTotal(twl))}</b></div>` : ''}</div>
+    <div class="card">${resultRowsHtml(s, S.uid, !trial)}${totalRowHtml(s)}</div>
     <button class="btn primary xl" data-act="saveSession">Save workout</button>
     <button class="btn link" data-act="finishBack" style="justify-self:center">Back to the last exercise</button>
   </div>`;

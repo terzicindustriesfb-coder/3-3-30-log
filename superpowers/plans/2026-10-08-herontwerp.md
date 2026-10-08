@@ -1092,6 +1092,7 @@ test('the finish screen of a practice workout has no verdicts', async () => {
     R.phase = 'finish'; renderRunner();
   });
   assert.equal(await txt(page, '#runner .title'), 'Practice done');
+  assert.deepEqual(await texts(page, '#runner .goal-n'), ['9', '9', '9']);
   assert.equal(await page.locator('#runner .goal-l').count(), 0);
 });
 ```

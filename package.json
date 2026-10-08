@@ -1,0 +1,6 @@
+{
+  "name": "3-3-30-log",
+  "private": true,
+  "scripts": { "test": "node --test --test-concurrency=4 --test-reporter=spec \"tests/*.test.js\"" },
+  "devDependencies": { "playwright": "1.56.0" }
+}

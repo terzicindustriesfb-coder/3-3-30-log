@@ -922,13 +922,23 @@ function sessionsOf(id) {
 const doneBlocks = s => (s.blocks || []).filter(b => b.done && !b.skipped && b.total > 0);
 const countsAsTraining = s => doneBlocks(s).length > 0;
 const isTrial = (s, id) => s.date < startOf(id);
-/* Trainings that count: at least one finished block, on or after the start date. */
-function trainings(id) { return sessionsOf(id).filter(s => countsAsTraining(s) && !isTrial(s, id)); }
+/* A workout that is over: at least one finished block, not the one open on this device,
+   and either saved as done or left behind on an earlier day. */
+function finished(id, today = todayYmd()) {
+  const draftId = id === S.uid ? loadDraft()?.session.id : null;
+  return s => countsAsTraining(s) && s.id !== draftId && (s.status === 'done' || s.date < today);
+}
+/* Trainings that count: finished, on or after the start date. */
+function trainings(id, today = todayYmd()) {
+  const over = finished(id, today);
+  return sessionsOf(id).filter(s => over(s) && !isTrial(s, id));
+}
 function history(id, exKey, beforeSessionId) {
+  const over = finished(id);
   const out = [];
   for (const s of sessionsOf(id)) {
     if (beforeSessionId && s.id === beforeSessionId) break;
-    if (isTrial(s, id)) continue;
+    if (!over(s) || isTrial(s, id)) continue;
     for (const b of doneBlocks(s)) if (b.ex === exKey) out.push(Object.assign({}, b, { date: s.date, sid: s.id }));
   }
   return out;
@@ -1321,12 +1331,8 @@ function personPick() {
   const seg = ids.length > 1 ? `<div class="seg scroll" role="group" aria-label="Whose progress and log">${ids.map(id => `<button data-act="person" data-id="${esc(id)}" aria-pressed="${id === pid}">${esc(id === S.uid ? 'Me' : displayName(id))}</button>`).join('')}</div>` : '';
   return { pid, seg };
 }
-/* Workouts shown for a person: your own unfinished draft and a buddy's half-done workout stay out. */
-function shownSessions(pid) {
-  const draftId = pid === S.uid ? loadDraft()?.session.id : null;
-  const busyElsewhere = s => s.status !== 'done' && Date.now() - (s.updatedAt || 0) < 3 * 3600e3;
-  return sessionsOf(pid).filter(s => countsAsTraining(s) && s.id !== draftId && (pid === S.uid ? !busyElsewhere(s) : s.status === 'done'));
-}
+/* Workouts shown for a person: every finished one, practice workouts included. */
+function shownSessions(pid) { return sessionsOf(pid).filter(finished(pid)); }
 /* "Beat last time" means the same everywhere: more reps at the same or a heavier weight. */
 function beatPrev(b, pid, sid) {
   const prev = refBlock(history(pid, b.ex, sid));

@@ -1115,15 +1115,55 @@ function nextTpl(id, upTo) {
 function planFor(profile, tpl) {
   return Object.assign({}, DEFAULT_PLANS.A, profile?.plans?.[tpl] || profile?.plans?.A || {});
 }
-function nextTrainingDay(profile, from) {
-  const days = profile?.days?.length ? profile.days : [1, 3, 5];
-  const start = profile?.start || START;
-  let d = from < start ? start : from;
-  for (let i = 0; i < 14; i++) {
-    if (days.includes(parseYmd(d).getDay())) return d;
-    d = addDays(d, 1);
+/* Weekday numbers (0 = Sunday) planned in the week that starts on `mon`: this week's own list
+   when it has one, otherwise the usual training days. */
+function plannedDows(profile, mon, today = todayYmd()) {
+  const w = profile?.week;
+  if (w && w.mon === mon && mon === mondayOf(today)) return w.days;
+  return profile?.days?.length ? profile.days : [1, 3, 5];
+}
+/* One person's current week, Monday first: what each day is, and the two numbers of the counter.
+   A day is planned when it is in the week's list and not before the start date; in a first week,
+   days before joining only count when trained. */
+function weekModel(id, today = todayYmd()) {
+  const p = S.members.get(id)?.profile;
+  const mon = mondayOf(today);
+  const start = p?.start || START;
+  const joined = p?.joined ? ymd(new Date(p.joined)) : '';
+  const dows = plannedDows(p, mon, today);
+  const mine = trainings(id, today).filter(s => mondayOf(s.date) === mon);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(mon, i);
+    const dow = parseYmd(date).getDay();
+    const here = mine.filter(s => s.date === date);
+    const n = here.length;
+    const planned = dows.includes(dow) && date >= start && (date >= joined || n > 0);
+    const state = n ? 'done'
+      : date === today ? (planned ? 'today' : 'todayRest')
+      : date > today ? (planned ? 'planned' : 'rest')
+      : planned ? 'missed' : 'rest';
+    days.push({ date, dow, planned, n, tpl: n ? here[n - 1].tpl : null, state });
   }
-  return from;
+  return { mon, done: mine.length, planned: days.filter(d => d.planned).length, days };
+}
+/* The coming training days and the workout each gets: planned days without a training, from today on
+   (from the start date when that is later). Looks four weeks ahead at most. */
+function upcoming(id, n = 3, today = todayYmd()) {
+  const p = S.members.get(id)?.profile;
+  if (!p) return [];
+  const start = p.start || START;
+  const trained = new Set(trainings(id, today).map(s => s.date));
+  const abc = p.mode === 'abc';
+  let tpl = (id === S.uid && UI.tpl) || nextTpl(id);
+  const out = [];
+  let d = today < start ? start : today;
+  for (let i = 0; i < 28 && out.length < n; i++, d = addDays(d, 1)) {
+    if (trained.has(d) || !plannedDows(p, mondayOf(d), today).includes(parseYmd(d).getDay())) continue;
+    out.push({ date: d, tpl: abc ? tpl : 'A' });
+    tpl = TPLS[(TPLS.indexOf(tpl) + 1) % 3];
+  }
+  return out;
 }
 
 
@@ -1291,7 +1331,7 @@ function cardState(p) {
   const draft = loadDraft();
   const wk = weekSessions(S.uid, pre ? start : today);
   const doneToday = !pre && wk.some(s => s.date === today && s.status === 'done');
-  const next = nextTrainingDay(p, doneToday ? addDays(today, 1) : today);
+  const next = (upcoming(S.uid, 1)[0] || { date: today }).date;
   const tpl = draft ? (draft.session.tpl || 'A') : UI.tpl || nextTpl(S.uid);
   return { today, start, pre, draft, wk, doneToday, next, tpl };
 }
@@ -2144,8 +2184,10 @@ async function finishAndSave() {
   LS.del(DRAFT_KEY());
   closeRunner();
   UI.tpl = null; UI.person = null; UI.logAll = false;
-  toast(`Saved. Next workout: ${fmtLong(nextTrainingDay(p, addDays(todayYmd(), 1)))}.`);
-  saveProfile(p, { quiet: true }).then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
+  const saving = saveProfile(p, { quiet: true });   // the profile in memory is up to date from here on
+  const coming = upcoming(S.uid, 1)[0];
+  toast(coming ? `Saved. Next workout: ${fmtLong(coming.date)}.` : 'Saved.');
+  saving.then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
 }
 
 /* ------------------------------------------------------------------ *

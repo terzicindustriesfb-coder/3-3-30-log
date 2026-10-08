@@ -308,6 +308,7 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
 /* The log */
 .log-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-top: 12px; }
 .log-head .h2 { flex: 1 1 10ch; }
+.log-head .btn.link, .btn.link[data-act="logAll"] { min-height: 44px; }
 .seg.scroll { min-width: 0; max-width: 100%; }
 .seg.scroll button { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; }
 .stack { grid-template-columns: minmax(0, 1fr); }
@@ -1588,7 +1589,7 @@ function weekStripHtml() {
   const buddies = buddyIds();
   const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="tab" data-tab="progress">+${buddies.length - 3} more</button>` : '';
   return `<section class="card wk" aria-label="This week" data-act="week">
-    <div class="wk-row wk-head"><span aria-hidden="true">Week</span>${dayLetters}<button type="button" class="iconbtn wk-edit" data-act="week" aria-label="Move a workout this week">${ICON.pencil}</button></div>
+    <div class="wk-row wk-head"><span aria-hidden="true">Week</span>${dayLetters}<button type="button" class="iconbtn wk-edit" data-act="week" data-from="strip" aria-label="Move a workout this week">${ICON.pencil}</button></div>
     ${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}
   </section>`;
 }
@@ -1653,7 +1654,7 @@ function viewToday(p) {
     const from = movedDay(S.uid, today);
     main = `<button class="btn ${from ? 'primary' : 'ghost'} xl" data-act="startSession" data-tpl="${tpl}">${from ? 'Train today instead' : 'Train anyway'}</button>`;
     note = `<p class="wo-note">${from ? `Moves ${esc(fmtWeekday(from))}’s workout to today.` : 'Counts as an extra workout this week.'}</p>`;
-    links = planLink + link('week', 'Change this week');
+    links = planLink + link('week', 'Change this week', ' data-from="card"');
   }
   return `${head(title)}${weekStripHtml()}
     <section class="card wo" aria-label="${situation === 'train' ? esc(title) : 'Next workout'}">
@@ -2399,6 +2400,9 @@ function refreshSheet() {
   drawCharts(panel);
   restoreFocus(panel, f);
 }
+/* For a change that is shown before it is stored (a switch, a training day): when storing it failed,
+   the sheet goes back to what is stored. */
+const redrawUnsaved = saved => { if (!saved) refreshSheet(); };
 /* The close button, the backdrop and Escape: back to the sheet this one was opened from, else close. */
 function dismissSheet() {
   const back = UI.sheet && UI.sheet.back;
@@ -2912,7 +2916,7 @@ const ACT = {
     if (!day || day.date < today || day.n > 0) return;
     const p = myProfile();
     const dows = plannedDows(p, w.mon, today);
-    saveProfile(withWeekDays(p, dows.includes(day.dow) ? dows.filter(d => d !== day.dow) : dows.concat(day.dow), today));
+    saveProfile(withWeekDays(p, dows.includes(day.dow) ? dows.filter(d => d !== day.dow) : dows.concat(day.dow), today)).then(redrawUnsaved);
     refreshSheet();
   },
   swap() { showSheet({ kind: 'swap' }); },
@@ -3035,7 +3039,7 @@ const ACT = {
     const today = todayYmd(), mon = mondayOf(today);
     const dateOf = dow => addDays(mon, (dow + 6) % 7);
     const passed = plannedDows(before, mon, today).filter(dow => dateOf(dow) < today);
-    saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today));
+    saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today)).then(redrawUnsaved);
     refreshSheet();
   },
   mode(el) { const p = clone(myProfile()); p.mode = el.dataset.mode; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); saveProfile(p); UI.tpl = null; refreshSettings(); },

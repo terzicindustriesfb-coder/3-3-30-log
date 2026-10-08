@@ -98,3 +98,10 @@ test('the log fits a 320 px phone', async () => {
   assert.equal(await page.locator('.lg-row').count(), 3);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 320);
 });
+test('the links around the log are at least 44 px high', async () => {
+  const ten = Array.from({ length: 10 }, (_, i) => session('2026-10-' + String(i + 5).padStart(2, '0'), 'ABC'[i % 3], [10, 10, 10]));
+  const page = await openApp({ today: '2026-10-21', sessions: ten });
+  await toProgress(page);
+  const heights = await page.evaluate(() => ['[data-act="manual"]', '[data-act="logAll"]'].map(s => document.querySelector(s).getBoundingClientRect().height));
+  assert.deepEqual(heights.map(h => h >= 44), [true, true], `heights: ${heights}`);
+});

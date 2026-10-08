@@ -80,3 +80,26 @@ test('the strip and the rest-day link open the sheet', async () => {
   assert.equal(await page.locator('[data-sheet="week"]').count(), 1);
   assert.equal(await page.locator('.wk-edit').getAttribute('aria-label'), 'Move a workout this week');
 });
+test('closing the sheet puts the focus back on the control that opened it', async () => {
+  const page = await openApp({ sessions: abc() });
+  await page.click('.wk-edit');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'iconbtn wk-edit');
+  await page.evaluate(() => render());                       // a redraw of the page keeps it there too
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'iconbtn wk-edit');
+  const rest = await openApp({ today: '2026-10-13', sessions: abc() });
+  await rest.click('.wo-links [data-act="week"]');
+  await rest.click('[data-sheet="week"] .btn.primary');
+  assert.equal(await rest.evaluate(() => document.activeElement.textContent), 'Change this week');
+});
+/* Makes every write to the shared log fail, the way a server error does. */
+const breakSaving = page => page.evaluate(() => { S.db.doc = () => ({ get: async () => ({ exists: false }), set: async () => { throw Object.assign(new Error('refused'), { code: 'internal' }); }, delete: async () => {} }); });
+test('when a change cannot be saved the sheet shows what is stored', async () => {
+  const page = await openApp({ sessions: abc(), crew: [] });
+  await page.click('.wk-edit');
+  await breakSaving(page);
+  await flip(page, '2026-10-15');
+  await page.waitForFunction(() => /Couldn’t save/.test(document.querySelector('#toast').textContent));
+  assert.deepEqual(await switches(page), ['14:true', '15:false', '16:true', '17:false', '18:false']);
+  assert.equal(await page.evaluate(() => 'week' in myProfile()), false);
+});

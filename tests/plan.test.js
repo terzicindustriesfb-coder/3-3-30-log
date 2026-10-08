@@ -72,3 +72,12 @@ test('the welcome screen points to Your plan', async () => {
   const page = await openApp({ profile: null });
   assert.match(await txt(page, '#view form .tiny'), /^You train on Mon, Wed and Fri — change it any time in Your plan\./);
 });
+test('when the usual days cannot be saved the sheet shows what is stored', async () => {
+  const page = await openApp({ sessions: abc(), crew: [] });
+  await page.evaluate(() => ACT.plan());
+  await page.evaluate(() => { S.db.doc = () => ({ get: async () => ({ exists: false }), set: async () => { throw Object.assign(new Error('refused'), { code: 'internal' }); }, delete: async () => {} }); });
+  await page.click('[data-sheet="plan"] [data-act="day"][data-d="5"]');
+  await page.waitForFunction(() => /Couldn’t save/.test(document.querySelector('#toast').textContent));
+  assert.deepEqual(await texts(page, '[data-sheet="plan"] [data-act="day"][aria-pressed="true"]'), ['Mon', 'Wed', 'Fri']);
+  assert.deepEqual(await page.evaluate(() => myProfile().days), [1, 3, 5]);
+});

@@ -24,6 +24,7 @@
   --on-push: #FFFFFF;
   --on-pull: #FFFFFF;
   --on-legs: #1F1700;
+  --ring: #C9C4B8;
   --good: #177A41;
   --good-wash: #E1F2E7;
   --on-good: #FFFFFF;
@@ -51,7 +52,7 @@
   :root:not([data-theme="light"]) {
     --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
     --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
-    --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
+    --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
     --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
     --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
     --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -60,7 +61,7 @@
 :root[data-theme="dark"] {
   --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
   --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
-  --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
+  --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
   --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
     --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
   --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -77,7 +78,7 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 ::placeholder { color: var(--muted); opacity: 1; }
 
-.app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(40px + env(safe-area-inset-bottom, 0px)); }
+.app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
 
 /* Top bar */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; gap: 10px;
@@ -269,7 +270,7 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
 .sheet-panel::before { content: ""; justify-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--surface-3); }
 @keyframes rise { from { transform: translateY(28px); } to { transform: none; } }
 .sheet-head { display: flex; align-items: center; gap: 12px; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 90;
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 90;
   background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-weight: 650; font-size: 14px;
   width: max-content; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgb(0 0 0 / .25); text-align: center; pointer-events: none; }
 
@@ -352,6 +353,14 @@ button.lt-row:active { background: var(--surface-2); }
 .lf-block:first-child { border-top: 0; }
 .lf-nums { align-items: end; }
 @media (max-width: 374px) { .lt-head, .lt-row { grid-template-columns: 50px repeat(3, minmax(0, 1fr)); gap: 6px; } .lt-row { padding: 8px; } .lt-cell b { font-size: 14px; white-space: normal; } .lt-sub span { white-space: normal; } .lt-ex { -webkit-line-clamp: 3; } .lt-date .lt-sum { font-size: 10.5px; } }
+/* Bottom switch: Today | Progress */
+.tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
+  box-shadow: 0 1px 2px rgb(40 30 10 / .08), 0 12px 28px -12px rgb(40 30 10 / .3); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.tabs button { border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font-weight: 750; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; }
+.tabs button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.pr-head { align-items: flex-end; flex-wrap: wrap; padding-block: 6px 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -365,6 +374,10 @@ button.lt-row:active { background: var(--surface-2); }
   <main id="main">
     <section id="view" class="view stack"><div class="skeleton">Loading your log…</div></section>
   </main>
+  <nav class="tabs" id="tabs" aria-label="Main" hidden>
+    <button data-act="tab" data-tab="today" aria-pressed="true"></button>
+    <button data-act="tab" data-tab="progress" aria-pressed="false"></button>
+  </nav>
 </div>
 
 <div class="runner" id="runner" role="dialog" aria-modal="true" aria-label="Workout" hidden></div>
@@ -1248,7 +1261,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. One page: today's workout on top, the log below.
  * ------------------------------------------------------------------ */
-const UI = { logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', chartEx: {} };
+const UI = { tab: 'today', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', chartEx: {} };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1259,7 +1272,7 @@ document.addEventListener('focusout', e => { if (e.target.id === 'runKgIn') comm
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the page's HTML; put keyboard focus back on the same control. */
-const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq'];
+const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'tab', 'date', 'from'];
 function focusSel(a) {
   if (!a || a === document.body || !a.closest) return null;
   if (a.id) return '#' + CSS.escape(a.id);
@@ -1312,6 +1325,13 @@ function renderHeader() {
   // Only worth a label when workouts are NOT going to the shared log.
   $('#sync').hidden = !(S.mode === 'local' || (S.mode === 'shared' && S.ownLocal));
   $('#gearBtn').hidden = !myProfile();
+  const tabs = $('#tabs');
+  tabs.hidden = !myProfile();
+  for (const b of tabs.querySelectorAll('button')) {
+    const t = b.dataset.tab;
+    if (!b.firstChild) b.innerHTML = `${ICON[t]}<span>${t === 'today' ? 'Today' : 'Progress'}</span>`;
+    b.setAttribute('aria-pressed', String(UI.tab === t));
+  }
   const nb = $('#notice');
   if (S.notice && S.notice === LS.get('d330.noticeSeen', '')) S.notice = '';
   if (nb.dataset.txt !== S.notice) {
@@ -1323,6 +1343,14 @@ function renderHeader() {
 const SKELETON = `<div class="skeleton">Loading your log…</div>`;
 const CHEV = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const svgIcon = d => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  today: svgIcon('<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>'),
+  progress: svgIcon('<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'),
+  pencil: svgIcon('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
+  check: svgIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  back: svgIcon('<path d="M15 6l-6 6 6 6"/>'),
+};
 const plateHtml = (slot, sm) => `<span class="plate ${slot}${sm ? ' sm' : ''}" aria-hidden="true"></span>`;
 const dayShort = d => `${WD[parseYmd(d).getDay()]} ${fmtDM(d)}`;
 const kgTotal = n => `${fmtNum(Math.round(n))} kg`;
@@ -1338,19 +1366,22 @@ function viewHome() {
     if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
     return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
   }
+  return UI.tab === 'progress' ? viewProgressPage() : viewToday(p);
+}
+/* The Progress screen: whose it is, their progress, their log. */
+function viewProgressPage() {
   const { pid, seg } = personPick();
   const m = S.members.get(pid);
-  if (pid !== S.uid && !m?.seen) {
-    const nm = esc(displayName(pid));
-    return viewToday(p) + `<div class="log-head"><h2 class="h2 grow">${nm}</h2>${seg}</div>` +
-      (m?.err ? `<div class="card"><b>${nm}’s workouts couldn’t be loaded.</b><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>` : `<div class="skeleton">Loading ${nm}’s workouts…</div>`);
+  const mine = pid === S.uid;
+  const nm = esc(displayName(pid));
+  const head = `<div class="row pr-head"><h1 class="title grow">Progress</h1>${seg}</div>`;
+  if (!mine && !m?.seen) {
+    return head + (m?.err
+      ? `<div class="card"><b>${nm}’s workouts couldn’t be loaded.</b><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`
+      : `<div class="skeleton">Loading ${nm}’s workouts…</div>`);
   }
-  if (!shownSessions(pid).length) {
-    const mine = pid === S.uid;
-    return viewToday(p) + `<div class="log-head"><h2 class="h2 grow">${mine ? 'Your progress' : esc(displayName(pid)) + '’s progress'}</h2>${seg}</div>
-      <p class="small empty">${mine ? 'After your first workout you’ll see here how many kilos you lifted per exercise, with charts per push, pull and legs.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`;
-  }
-  return viewToday(p) + viewProgress(pid, seg) + viewLog(pid);
+  const logHead = `<div class="log-head"><h2 class="h2 grow">Log</h2>${mine ? '<button class="btn link" data-act="manual">Log a past workout</button>' : ''}</div>`;
+  return head + viewProgress(pid) + logHead + logTable(pid);
 }
 const LOAD_ERR = `<div class="card"><b>Your log couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
 
@@ -1405,7 +1436,6 @@ function viewToday(p) {
       <ul class="ex-list">${rows}</ul>
       ${ups}
       ${main}
-      <button class="btn link" data-act="manual" style="justify-self:center">Log a past workout</button>
     </div>`;
 }
 
@@ -1450,11 +1480,10 @@ function beatPrev(b, pid, sid) {
   const prev = refBlock(history(pid, b.ex, sid));
   return !!prev && !b.cut && compare(b, prev)?.verdict === 'beter';
 }
-function viewProgress(pid, seg) {
+function viewProgress(pid) {
   const isMe = pid === S.uid;
   const prof = S.members.get(pid)?.profile;
   const ts = shownSessions(pid).filter(s => !isTrial(s, pid));
-  const head = `<div class="log-head"><h2 class="h2 grow">${isMe ? 'Progress' : esc(displayName(pid)) + '’s progress'}</h2>${seg}</div>`;
   // Per push / pull / legs: one line per exercise, so each line compares an exercise with itself.
   const perSlot = SLOT_ORDER.map(slot => {
     const byEx = new Map();
@@ -1467,7 +1496,7 @@ function viewProgress(pid, seg) {
     return { slot, byEx };
   });
   if (!perSlot.some(x => [...x.byEx.values()].some(l => l.length > 1))) {
-    return head + `<p class="small empty">${ts.length ? (isMe ? 'Your lines appear after you’ve done an exercise twice.' : esc(displayName(pid)) + '’s lines appear after an exercise is done twice.') : isMe ? 'Your progress per push, pull and legs shows here after your workouts.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`;
+    return `<p class="small empty">${ts.length ? (isMe ? 'Your lines appear after you’ve done an exercise twice.' : esc(displayName(pid)) + '’s lines appear after an exercise is done twice.') : isMe ? 'Your progress per push, pull and legs shows here after your workouts.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`;
   }
   const cards = perSlot.map(({ slot, byEx }) => {
     if (!byEx.size) return '';
@@ -1494,7 +1523,7 @@ function viewProgress(pid, seg) {
       </div>
     </div>`;
   }).join('');
-  return head + cards;
+  return cards;
 }
 
 /* Small line charts, drawn at the real pixel width of their box so text never scales. */
@@ -1591,11 +1620,6 @@ let chartResize = null;
 window.addEventListener('resize', () => { clearTimeout(chartResize); chartResize = setTimeout(() => drawCharts(document), 150); });
 
 /* ---------- The log: kilos per workout per exercise ---------- */
-function viewLog(pid) {
-  return `
-    <div class="log-head"><h2 class="h2 grow">${pid === S.uid ? 'Your log' : esc(displayName(pid)) + '’s log'}</h2></div>
-    ${logTable(pid)}`;
-}
 function logTable(pid) {
   const isMe = pid === S.uid;
   const prof = S.members.get(pid)?.profile;
@@ -2214,7 +2238,7 @@ async function finishAndSave() {
   if (!ok) return;
   LS.del(DRAFT_KEY());
   closeRunner();
-  UI.tpl = null; UI.person = null; UI.logAll = false;
+  UI.tab = 'today'; UI.tpl = null; UI.person = null; UI.logAll = false;
   // On a rest day this workout took the place of a planned day.
   const saving = saveProfile(moveFor(p, S.uid, s.date) || p, { quiet: true });   // the profile in memory is up to date from here on
   const coming = upcoming(S.uid, 1)[0];
@@ -2442,6 +2466,7 @@ const ACT = {
   dismissNotice() { LS.set('d330.noticeSeen', S.notice); S.notice = ''; render(); },
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
+  tab(el) { UI.tab = el.dataset.tab === 'progress' ? 'progress' : 'today'; UI.logAll = false; render(); window.scrollTo(0, 0); },
   pickTpl(el) { UI.tpl = el.dataset.tpl; render(); },
   editEx(el) { openSheet(exerciseSheet(el.dataset.tpl, el.dataset.slot), 'Edit exercise'); },
   exKg(el) {

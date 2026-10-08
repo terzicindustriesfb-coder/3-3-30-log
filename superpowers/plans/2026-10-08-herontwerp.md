@@ -158,7 +158,9 @@ function session(date, tpl, reps, opts = {}) {
   const t = at(date, opts.hm || '09:00');
   const blocks = SLOTS.map((slot, i) => {
     const r = reps[i] || 0, cut = !!(opts.cut && opts.cut[i]);
-    return { slot, ex: ex[i], name: opts.names ? opts.names[i] : ex[i], kg: kg[i], bw: !!BW[ex[i]], sets: r ? [{ r, kg: kg[i], t: 300 }] : [],
+    // Sets of eight, as in a real block (one set of 62 would trigger the "go heavier" tip everywhere).
+    const sets = Array.from({ length: Math.ceil(r / 8) }, (_, j) => ({ r: Math.min(8, r - j * 8), kg: kg[i], t: Math.min(590, 40 + j * 45) }));
+    return { slot, ex: ex[i], name: opts.names ? opts.names[i] : ex[i], kg: kg[i], bw: !!BW[ex[i]], sets,
       total: r, dur: r ? (cut ? 240 : 600) : 0, done: r > 0, skipped: !r, cut };
   });
   const status = opts.status || 'done';
@@ -739,6 +741,7 @@ test('the bottom switch shows Today and Progress', async () => {
 });
 test('no switch before there is a profile', async () => {
   const page = await openApp({ profile: null });
+  assert.equal(await page.locator('#tabs').count(), 1);
   assert.equal(await page.locator('#tabs').isHidden(), true);
 });
 test('a reload lands on Today', async () => {

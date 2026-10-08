@@ -7,9 +7,20 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 let server = null, base = '', browser = null;
 
+/* The source file is a page fragment. Its hosts (Claude, and 3-3-30/build_web.py for the website) wrap it
+   in a document with a doctype, a viewport and these base styles; the tests wrap it the same way. */
+const BASE_STYLE = ':root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}';
+function appPage() {
+  const app = fs.readFileSync(path.join(ROOT, '3-3-30', 'index.html'), 'utf8');
+  const split = app.indexOf('<div class="app" id="app">');
+  return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n` +
+    `<style>${BASE_STYLE}</style>\n${app.slice(0, split).trim()}\n</head>\n<body>\n${app.slice(split).trim()}\n</body>\n</html>\n`;
+}
+
 async function boot() {
   if (browser) return;
   server = http.createServer((req, res) => {
+    if (req.url.split('?')[0] === '/app.html') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(appPage()); return; }
     const file = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
     if (!file.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }
     fs.readFile(file, (err, buf) => {
@@ -119,7 +130,7 @@ async function openApp(opts = {}) {
     await page.addInitScript(seedLS, ['d330.own.local', { profile: o.profile, sessions: Object.fromEntries(o.sessions.map(s => [s.id, s])), hidden: [], dirty: [], profileDirty: false }]);
   }
   if (o.draft) await page.addInitScript(seedLS, ['d330.draft.' + uid, { session: o.draft, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0 }]);
-  await page.goto(base + '/3-3-30/index.html');
+  await page.goto(base + '/app.html');
   await page.waitForFunction(() => !document.querySelector('#view .skeleton'));
   await page.waitForFunction(() => S.mode !== 'shared' || [...S.members.values()].every(m => !m.profile || m.seen));
   return page;
@@ -128,4 +139,4 @@ const squash = t => t.replace(/\s+/g, ' ').trim();
 const txt = async (page, sel) => squash(await page.locator(sel).first().textContent());
 const texts = async (page, sel) => (await page.locator(sel).allTextContents()).map(squash);
 
-module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, PLANS };
+module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, PLANS, BASE_STYLE };

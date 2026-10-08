@@ -1165,6 +1165,37 @@ function upcoming(id, n = 3, today = todayYmd()) {
   }
   return out;
 }
+/* Training on a day of this week that was not planned takes the place of one planned day:
+   the earliest missed day before it, else the next planned day after it. Returns that day, or null
+   when nothing moves (the date is planned, in another week, before the start date, or nothing is left). */
+function movedDay(id, date, today = todayYmd()) {
+  const p = S.members.get(id)?.profile;
+  if (!p || date < (p.start || START) || mondayOf(date) !== mondayOf(today)) return null;
+  const w = weekModel(id, today);
+  const day = w.days.find(d => d.date === date);
+  if (!day || day.planned) return null;
+  const free = w.days.filter(d => d.planned && d.n === 0);
+  const from = free.find(d => d.date < date) || free.find(d => d.date > date);
+  return from ? from.date : null;
+}
+/* A copy of the profile with this week's own list of training days. The list is dropped when it
+   holds exactly the usual days. */
+function withWeekDays(profile, dows, today = todayYmd()) {
+  const p = clone(profile);
+  const sorted = list => [...new Set(list)].sort((a, b) => a - b);
+  const days = sorted(dows);
+  if (days.join() === sorted(p.days || [1, 3, 5]).join()) delete p.week;
+  else p.week = { mon: mondayOf(today), days };
+  return p;
+}
+/* The profile after a training on `date`: the day that gives way leaves this week's list and the
+   trained day enters it. Null when nothing moves. */
+function moveFor(profile, id, date, today = todayYmd()) {
+  const from = movedDay(id, date, today);
+  if (!from) return null;
+  const out = parseYmd(from).getDay();
+  return withWeekDays(profile, plannedDows(profile, mondayOf(today), today).filter(d => d !== out).concat(parseYmd(date).getDay()), today);
+}
 
 
 /* ------------------------------------------------------------------ *
@@ -2184,7 +2215,8 @@ async function finishAndSave() {
   LS.del(DRAFT_KEY());
   closeRunner();
   UI.tpl = null; UI.person = null; UI.logAll = false;
-  const saving = saveProfile(p, { quiet: true });   // the profile in memory is up to date from here on
+  // On a rest day this workout took the place of a planned day.
+  const saving = saveProfile(moveFor(p, S.uid, s.date) || p, { quiet: true });   // the profile in memory is up to date from here on
   const coming = upcoming(S.uid, 1)[0];
   toast(coming ? `Saved. Next workout: ${fmtLong(coming.date)}.` : 'Saved.');
   saving.then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
@@ -2342,7 +2374,7 @@ async function submitSessionForm(form) {
   const ok = await saveSession(base);
   if (!ok) return;
   // Only the newest workout of an exercise sets its planned weight.
-  const pp = clone(myProfile()); pp.weights = pp.weights || {};
+  let pp = clone(myProfile()); pp.weights = pp.weights || {};
   let changed = false;
   for (const b of base.blocks) {
     if (!b.done) continue;
@@ -2350,6 +2382,11 @@ async function submitSessionForm(form) {
     const o = orig && orig.blocks.find(x => x.slot === b.slot);
     const touched = !o || !o.done || o.ex !== b.ex || o.kg !== b.kg;
     if (!later && touched && pp.weights[b.ex] !== b.kg) { pp.weights[b.ex] = b.kg; changed = true; }
+  }
+  // A workout that lands on a rest day (new, or moved to another date) takes the place of a planned day.
+  if (isNew || (orig && orig.date !== base.date)) {
+    const moved = moveFor(pp, S.uid, base.date);
+    if (moved) { pp = moved; changed = true; }
   }
   if (changed) saveProfile(pp, { quiet: true }).then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
   // Logged other exercises than the plan? Offer to make them the plan.

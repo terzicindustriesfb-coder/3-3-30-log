@@ -435,6 +435,17 @@ form[data-form="ex"] .f .small, form[data-form="ex"] .f .tiny { font-weight: 400
 .to-beat .grow { display: grid; gap: 2px; }
 .to-beat .goal-n { font-size: 36px; }
 .ex-switch { display: grid; gap: 4px; text-align: center; }
+.pick-group { padding: 4px 14px; gap: 0; }
+.pick-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: 10px; padding: 6px 4px; min-height: 54px; }
+.pick-row + .pick-row { border-top: 1px solid var(--surface-2); }
+.pick-row .ex-n { display: block; font-size: 17px; }
+.pick-row .tiny { font-size: 13px; }
+.pick-row svg { width: 20px; height: 20px; stroke-width: 2.8; color: var(--good); }
+#exPickList { display: grid; gap: 10px; }
+#exPickList .eyebrow { padding: 2px 4px 0; }
+input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var(--line); border-radius: var(--r-sm); background: var(--surface); padding: 11px 13px; min-height: 48px; font-size: 16px;
+  -webkit-appearance: none; appearance: none; }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -499,6 +510,7 @@ const EQUIP = {
   bw: { label: 'Bodyweight', step: 2.5, start: 0, bw: true },
 };
 const EQUIP_ORDER = ['barbell', 'dbpair', 'db', 'machine', 'bw'];
+const EQ_SHORT = { barbell: 'Barbell', dbpair: 'Dumbbells', db: 'One dumbbell', machine: 'Machine / cable', bw: 'Bodyweight' };
 /* Best guess from a typed name; the user can change it. */
 function guessEquip(name) {
   const n = String(name || '').toLowerCase();
@@ -2416,6 +2428,8 @@ function dismissSheet() {
   else closeSheet();
 }
 
+/* "Mon, Wed and Fri". */
+const andList = list => (list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`);
 /* What the three groups mean, in a sentence each. */
 const SLOT_HELP = {
   push: 'You press the weight away from you. Trains chest, shoulders and triceps.',
@@ -2479,11 +2493,10 @@ function weekSheet() {
   const sun = addDays(w.mon, 6);
   const range = `Mon ${w.mon.slice(0, 7) === sun.slice(0, 7) ? parseYmd(w.mon).getDate() : fmtDM(w.mon)} – Sun ${fmtDM(sun)}`;
   const names = usual.map(d => WD[d]);
-  const usualText = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   return `<div class="sheet-head"><div class="grow" style="display:grid;gap:2px"><b class="h2">This week</b><span class="sheet-sub">${esc(range)} · tap a day to train or rest</span></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <section class="card wkd-list" aria-label="Days of this week">${rows}</section>
-    <p class="wk-foot">Only this week changes. Your usual days stay ${esc(usualText)}. <button type="button" class="btn link" data-act="plan">Change usual days</button></p>
+    <p class="wk-foot">Only this week changes. Your usual days stay ${esc(andList(names))}. <button type="button" class="btn link" data-act="plan">Change usual days</button></p>
     <button type="button" class="btn primary xl" data-act="closeSheet">Done</button>`;
 }
 SHEETS.week = { label: 'This week', html: weekSheet };
@@ -2517,7 +2530,8 @@ function exStep(st) {
   const info = exInfo(st.key, myProfile());
   return (st.eq === eqOf(info) && info.step) || EQUIP[st.eq].step;
 }
-function exSheet(st) {
+function exSheet(st) { return st.view === 'pick' ? exPickHtml(st) : st.view === 'new' ? exNewHtml(st) : exEditHtml(st); }
+function exEditHtml(st) {
   const p = myProfile();
   const info = exInfo(st.key, p);
   const q = EQUIP[st.eq];
@@ -2548,6 +2562,98 @@ function exSheet(st) {
   </form>`;
 }
 SHEETS.ex = { label: 'Exercise', html: exSheet };
+/* Another view of the sheet: drawn from the top, with focus on `focus` or else on its first control. */
+function exView(view, focus) {
+  const st = UI.sheet, panel = $('#sheet .sheet-panel');
+  if (!st || st.kind !== 'ex' || !panel) return;
+  st.view = view;
+  panel.innerHTML = exSheet(st);
+  panel.setAttribute('aria-label', $('.h2', panel)?.textContent || SHEETS.ex.label);
+  panel.scrollTop = 0;
+  const f = (focus && $(focus, panel)) || $('input:not([type=hidden]),select,textarea,button', panel);
+  if (f) { try { f.focus({ preventScroll: true }); } catch { /* ignore */ } }
+}
+/* Choose another exercise for this place in the plan: search, your plan first, then the rest of the group. */
+function exPickHtml(st) {
+  const word = SLOT[st.slot].label.toLowerCase();
+  return `<div data-view="pick" style="display:grid;gap:12px">
+    <div class="sheet-head"><button type="button" class="iconbtn" data-act="exBack" aria-label="Back">${ICON.back}</button><b class="h2 grow">Choose a ${word} exercise</b></div>
+    <div class="legend pick-help">${slotHelpHtml(st.slot)}</div>
+    <input type="search" id="exSearch" maxlength="40" value="${esc(st.q || '')}" placeholder="Search, or type your own" aria-label="Search exercises" autocomplete="off" enterkeyhint="search">
+    <div id="exPickList">${exPickListHtml(st)}</div>
+    <button type="button" class="btn ghost" data-act="exNew">Add your own exercise</button>
+  </div>`;
+}
+function exPickListHtml(st) {
+  const p = myProfile();
+  const abc = p.mode === 'abc';
+  const word = SLOT[st.slot].label.toLowerCase();
+  const found = searchExercises(p, st.slot, st.q);
+  if (!found.length) return `<p class="small pick-none">No ${word} exercise called “${esc(cleanName(st.q))}”.</p>`;
+  // The workouts each exercise of this group is in, in A, B, C order.
+  const where = new Map();
+  for (const t of abc ? TPLS : ['A']) { const k = planFor(p, t)[st.slot]; where.set(k, (where.get(k) || []).concat(t)); }
+  const row = e => {
+    const cur = e.k === st.key;
+    const sub = EQ_SHORT[eqOf(e)] + (abc && where.has(e.k) ? ` · Workout ${andList(where.get(e.k))}` : '');
+    return `<button type="button" class="pick-row" data-act="pickEx" data-ex="${esc(e.k)}" aria-pressed="${cur}"><span><span class="ex-n">${esc(e.n)}</span><span class="tiny">${esc(sub)}</span></span>${cur ? ICON.check : ''}</button>`;
+  };
+  const group = (id, title, list) => (list.length ? `<span class="eyebrow">${title}</span><section class="card pick-group" data-group="${id}" aria-label="${title}">${list.map(row).join('')}</section>` : '');
+  return group('plan', 'In your plan', [...where.keys()].map(k => found.find(e => e.k === k)).filter(Boolean))
+    + group('more', `More ${word} exercises`, found.filter(e => !where.has(e.k)));
+}
+/* An exercise of your own: its name and its weight type. The type follows the name until you pick one. */
+function exNewHtml(st) {
+  const word = SLOT[st.slot].label.toLowerCase();
+  const types = EQUIP_ORDER.map(k => `<button type="button" data-act="newEq" data-eq="${k}" aria-pressed="${k === st.newEq}">${EQUIP[k].label}</button>`).join('');
+  return `<form data-form="exNew" data-view="new" style="display:grid;gap:16px">
+    <div class="sheet-head"><button type="button" class="iconbtn" data-act="exBack" aria-label="Back">${ICON.back}</button><b class="h2 grow">New ${word} exercise</b></div>
+    <label class="f" for="newName">Name
+      <input type="text" id="newName" name="name" maxlength="40" value="${esc(st.newName || '')}" autocomplete="off" enterkeyhint="done"></label>
+    <div class="f">Weight type
+      <div class="choices" role="group" aria-label="Weight type">${types}</div></div>
+    <button class="btn primary xl" type="submit">Add exercise</button>
+  </form>`;
+}
+/* Typing in the search box redraws the list only, so the box keeps its focus and its caret. */
+function typedExSearch(inp) {
+  const st = UI.sheet, list = $('#exPickList');
+  if (!st || st.kind !== 'ex' || !list) return;
+  st.q = inp.value;
+  list.innerHTML = exPickListHtml(st);
+}
+function typedNewName(inp) {
+  const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+  st.newName = inp.value;
+  if (st.newEqTouched) return;
+  st.newEq = guessEquip(inp.value);
+  document.querySelectorAll('[data-act="newEq"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.eq === st.newEq)));
+}
+/* Put an exercise in the sheet's place in the plan (plan A when every workout is the same), store that,
+   and show the sheet for it. What was changed for the old exercise and not saved is gone. */
+async function exSwitchTo(st, p, key) {
+  if (st.busy) return;
+  st.busy = true;
+  const abc = p.mode === 'abc';
+  const t = abc ? st.tpl : 'A';
+  p.plans = p.plans || {};
+  p.plans[t] = Object.assign({}, planFor(p, t), { [st.slot]: key });
+  const ok = await saveProfile(p);
+  st.busy = false;
+  if (!ok) return;
+  toast(`${exName(key, p)} is in ${abc ? 'Workout ' + st.tpl : 'your plan'}.`);
+  if (UI.sheet !== st) return;
+  UI.sheet = exState(st.tpl, st.slot, st.back);
+  exView('edit');
+}
+async function submitExNew() {
+  const st = UI.sheet; if (!st || st.kind !== 'ex' || st.view !== 'new' || st.busy) return;
+  const cur = myProfile();
+  const problem = nameProblem(cur, st.newName, null);
+  if (problem) { toast(problem === 'empty' ? 'Type a name for the exercise.' : 'You already have an exercise with that name. Pick it from the list.'); return; }
+  const { p, key } = newCustom(cur, st.newName, st.slot, st.newEq);
+  await exSwitchTo(st, p, key);
+}
 /* Typing in the weight box: per dumbbell for a pair, extra kilos for bodyweight. What is not a weight is ignored. */
 function typedExKg(inp) {
   const st = UI.sheet; if (!st || st.kind !== 'ex') return;
@@ -2827,6 +2933,32 @@ const ACT = {
     st.kgTouched = true;
     refreshSheet();
   },
+  exPick() { const st = UI.sheet; if (!st || st.kind !== 'ex') return; st.q = ''; exView('pick'); },
+  // Back: from the list to the exercise, from a new exercise to the list.
+  exBack() {
+    const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+    if (st.view === 'new') exView('pick', '[data-act="exNew"]'); else exView('edit', '[data-act="exPick"]');
+  },
+  // Tap an exercise in the list: it takes this place in the plan. The current one only goes back.
+  pickEx(el) {
+    const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+    const key = el.dataset.ex;
+    if (key === st.key) { exView('edit', '[data-act="exPick"]'); return; }
+    const p = clone(myProfile());
+    if (allExercises(p).some(e => e.k === key && e.s === st.slot)) exSwitchTo(st, p, key);
+  },
+  exNew() {
+    const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+    st.newName = cleanName(st.q);
+    st.newEq = guessEquip(st.newName);
+    st.newEqTouched = false;
+    exView('new', st.newName ? '' : '#newName');
+  },
+  newEq(el) {
+    const st = UI.sheet; if (!st || st.kind !== 'ex' || !EQUIP[el.dataset.eq]) return;
+    st.newEq = el.dataset.eq; st.newEqTouched = true;
+    refreshSheet();
+  },
   async applyUp(el) { const p = clone(myProfile()); p.weights = p.weights || {}; p.weights[el.dataset.ex] = Number(el.dataset.kg); if (await saveProfile(p)) toast('New weight is set.'); },
   startSession(el) { audio(); UI.person = null; UI.logAll = false; openRunner(false, el.dataset.tpl); },
   resume() { audio(); UI.person = null; UI.logAll = false; openRunner(true); },
@@ -3037,6 +3169,7 @@ document.addEventListener('click', e => {
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') dismissSheet(); });
 $('#runner').addEventListener('click', e => { if (e.target.classList.contains('run-menu')) ACT.menuBack(); });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'exSearch') { e.target.blur(); return; }   // puts the phone's keyboard away
   if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('kg-in')) {
     e.preventDefault();
     const sel = e.target.id === 'runKgIn' ? '#runner [data-act="runKg"][data-dir="1"]' : '[data-act="exKg"][data-dir="1"]';
@@ -3055,6 +3188,8 @@ document.addEventListener('input', e => {
   if (el.id === 'exName' && UI.sheet && UI.sheet.kind === 'ex') UI.sheet.name = el.value;
   if (el.id === 'joinNick') UI.joinNick = el.value;
   if (el.id === 'exKgIn') typedExKg(el);
+  if (el.id === 'exSearch') typedExSearch(el);
+  if (el.id === 'newName') typedNewName(el);
   if (el.form && el.form.dataset.form === 'session' && /^(kg|ex|tot)\d$/.test(el.name || '')) el.dataset.touched = '1';
   if (el.id === 'sDate') syncDateChips();
 });
@@ -3083,6 +3218,7 @@ document.addEventListener('submit', async e => {
   }
   if (f.dataset.form === 'session') submitSessionForm(f);
   if (f.dataset.form === 'ex') submitExSheet();
+  if (f.dataset.form === 'exNew') submitExNew();
 });
 document.addEventListener('change', e => {
   const el = e.target;

@@ -447,6 +447,27 @@ form[data-form="ex"] .f .small, form[data-form="ex"] .f .tiny { font-weight: 400
 #exPickList .eyebrow { padding: 2px 4px 0; }
 input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var(--line); border-radius: var(--r-sm); background: var(--surface); padding: 11px 13px; min-height: 48px; font-size: 16px;
   -webkit-appearance: none; appearance: none; }
+/* Progress: this week, and a score per exercise */
+.pw { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 12px 18px; gap: 2px 12px; }
+.pw .eyebrow { grid-column: 1; }
+.pw-n { grid-column: 1; font-size: 15px; font-weight: 650; }
+.pw-kg { grid-column: 2; grid-row: 1 / span 2; display: grid; justify-items: end; gap: 3px; }
+.pw-kg .goal-n { font-size: 30px; line-height: .9; }
+.sc { padding: 12px 14px 10px; gap: 4px; }
+.sc > .row { padding: 0 4px 4px; }
+.sc-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center; gap: 10px; padding: 8px 4px; min-height: 64px; border-radius: var(--r); }
+.sc-row + .sc-row { border-top: 1px solid var(--surface-2); }
+.sc-row .spark { grid-column: 3; }
+.sc-row .sc-r, .sc-row .sc-none { grid-column: 4; }
+.sc-sub { font-size: 13.5px; color: var(--muted); }
+.sc-sub b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.sc-r { display: grid; justify-items: end; gap: 4px; min-width: 46px; }
+.sc-n { font-family: var(--display); font-stretch: 75%; font-weight: 900; font-size: 36px; line-height: .86; font-variant-numeric: tabular-nums; }
+.sc-d, .sc-u, .sc-none { font-size: 12.5px; font-weight: 800; color: var(--ink-2); white-space: nowrap; }
+.sc-d.pos { color: var(--good); }
+.sc-none { color: var(--muted); font-weight: 650; }
+@media (max-width: 359px) { .sc-row .spark { display: none; } }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -1170,6 +1191,22 @@ function sessionSummary(s, pid) {
     n.cut ? `${n.cut} stopped early` : '',
   ].filter(Boolean).join(' · ');
 }
+/* One exercise on Progress: its latest score next to the one before. It looks at the full scores (blocks
+   that ran the ten minutes), or at all scores when none is full. state: 'none' | 'one' | 'same' (the last
+   two at the same weight) | 'changed'. */
+function scoreRow(pid, key) {
+  const hist = history(pid, key);
+  const full = hist.filter(h => !h.cut);
+  const list = full.length ? full : hist;
+  if (!list.length) return { state: 'none', series: [] };
+  const last = list[list.length - 1], before = list[list.length - 2];
+  const kg = Number(last.kg) || 0;
+  const row = { state: 'one', kg, n: last.total, date: last.date,
+    best: Math.max(...list.filter(h => (Number(h.kg) || 0) === kg).map(h => h.total)), series: list.slice(-8).map(h => h.total) };
+  if (!before) return row;
+  const was = Number(before.kg) || 0;
+  return Object.assign(row, { state: was === kg ? 'same' : 'changed', delta: last.total - before.total, dk: Math.round((kg - was) * 10) / 10, prev: { n: before.total, kg: was } });
+}
 /* 'reps': more reps than ever at this weight or lighter; 'kg': same best reps, heavier. */
 function recordKind(b, hist) {
   if (!hist.length || !(b.total > 0)) return null;
@@ -1386,7 +1423,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. One page: today's workout on top, the log below.
  * ------------------------------------------------------------------ */
-const UI = { tab: 'today', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', chartEx: {} };
+const UI = { tab: 'today', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', scoreTpl: null };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1505,7 +1542,7 @@ function viewProgressPage() {
       : `<div class="skeleton">Loading ${nm}’s workouts…</div>`);
   }
   const logHead = `<div class="log-head"><h2 class="h2 grow">Log</h2>${mine ? '<button class="btn link" data-act="manual">Log a past workout</button>' : ''}</div>`;
-  return head + viewProgress(pid) + logHead + logTable(pid);
+  return head + weekCardHtml(pid) + scoresCardHtml(pid) + logHead + logTable(pid);
 }
 const LOAD_ERR = `<div class="card"><b>Your log couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
 
@@ -1689,50 +1726,63 @@ function beatPrev(b, pid, sid) {
   const prev = refBlock(history(pid, b.ex, sid));
   return !!prev && !b.cut && compare(b, prev)?.verdict === 'beter';
 }
-function viewProgress(pid) {
-  const isMe = pid === S.uid;
+/* This week on Progress: the counter of the week strip in words, and the kilos lifted so far.
+   Nothing before the start date. */
+function weekCardHtml(pid) {
+  const today = todayYmd();
+  if (today < startOf(pid)) return '';
+  const w = weekModel(pid, today);
+  const kg = Math.round(trainings(pid, today).filter(s => mondayOf(s.date) === w.mon)
+    .reduce((sum, s) => sum + doneBlocks(s).reduce((a, b) => a + blockVolume(b), 0), 0));
+  const count = !w.planned && !w.done ? 'Nothing planned this week.'
+    : w.planned ? `${w.done} of ${w.planned} workout${w.planned === 1 ? '' : 's'}` : `${w.done} workout${w.done === 1 ? '' : 's'}`;
+  return `<section class="card pw" aria-label="This week"><span class="eyebrow">This week</span><span class="pw-n">${count}</span>
+    ${kg > 0 ? `<span class="pw-kg"><span class="goal-n">${esc(fmtNum(kg))}</span><span class="goal-l">kg lifted</span></span>` : ''}</section>`;
+}
+/* A small line through the last scores, ending in a dot. */
+function sparkHtml(series, slot) {
+  const n = series.length;
+  if (n < 2) return '';
+  const lo = Math.min(...series), hi = Math.max(...series);
+  const r1 = v => String(Math.round(v * 10) / 10);
+  const pts = series.map((v, i) => `${r1(3 + (50 * i) / (n - 1))},${r1(hi === lo ? 14 : 23 - (18 * (v - lo)) / (hi - lo))}`);
+  const [cx, cy] = pts[n - 1].split(',');
+  const c = `var(--c-${slot})`;
+  return `<svg class="spark" width="56" height="28" viewBox="0 0 56 28" aria-hidden="true"><path d="M${pts.join('L')}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${cx}" cy="${cy}" r="3.2" fill="${c}"/></svg>`;
+}
+/* The scores of one workout's three exercises: the last score, and how it compares with the one before.
+   The workout is the one that is next for that person, until a letter is picked. */
+function scoresCardHtml(pid) {
   const prof = S.members.get(pid)?.profile;
-  const ts = shownSessions(pid).filter(s => !isTrial(s, pid));
-  // Per push / pull / legs: one line per exercise, so each line compares an exercise with itself.
-  const perSlot = SLOT_ORDER.map(slot => {
-    const byEx = new Map();
-    for (const s of ts) {
-      const b = s.blocks.find(x => x.slot === slot);
-      if (!b || !b.done || b.skipped || !(b.total > 0)) continue;
-      if (!byEx.has(b.ex)) byEx.set(b.ex, []);
-      byEx.get(b.ex).push({ date: s.date, reps: b.total, kg: scored(b) ? blockVolume(b) : null, ex: blockName(b, prof), cut: !!b.cut });
+  if (!prof) return '';
+  const mine = pid === S.uid;
+  const abc = prof.mode === 'abc';
+  const tpl = !abc ? 'A' : TPLS.includes(UI.scoreTpl) ? UI.scoreTpl : (mine && UI.tpl) || nextTpl(pid);
+  const plan = planFor(prof, tpl);
+  const rows = SLOT_ORDER.map(slot => {
+    const key = plan[slot];
+    const info = exInfo(key, prof);
+    const r = scoreRow(pid, key);
+    const kg = v => `<b>${esc(kgLabel(v, info))}</b>`;
+    let sub, right;
+    if (r.state === 'none') {
+      // No score, so no weight from a workout either: the weight this person set, else the start weight.
+      sub = kg(prof.weights && Object.hasOwn(prof.weights, key) ? prof.weights[key] : info.start ?? 0);
+      right = '<span class="sc-none">No score yet</span>';
+    } else if (r.state === 'one') {
+      sub = `${kg(r.kg)} · first score, ${esc(dayShort(r.date)).replace(/ /g, '\u00a0')}`;   // the date stays on one line
+      right = `<span class="sc-r"><span class="sc-n">${r.n}</span><span class="sc-u">reps</span></span>`;
+    } else {
+      const same = r.state === 'same';
+      sub = same ? `${kg(r.kg)} · best ${r.best}` : `${kg(r.kg)} · was ${r.prev.n} at ${esc(kgLabel(r.prev.kg, info))}`;
+      const d = !same ? `${r.dk > 0 ? '+' : '−'}${fmtNum(Math.abs(r.dk))} kg` : r.delta > 0 ? `▲ +${r.delta}` : r.delta < 0 ? `▼ −${-r.delta}` : 'same';
+      right = `${sparkHtml(r.series, slot)}<span class="sc-r"><span class="sc-n">${r.n}</span><span class="sr-only"> reps, </span><span class="sc-d${same && r.delta > 0 ? ' pos' : ''}">${d}</span></span>`;
     }
-    return { slot, byEx };
-  });
-  if (!perSlot.some(x => [...x.byEx.values()].some(l => l.length > 1))) {
-    return `<p class="small empty">${ts.length ? (isMe ? 'Your lines appear after you’ve done an exercise twice.' : esc(displayName(pid)) + '’s lines appear after an exercise is done twice.') : isMe ? 'Your progress per push, pull and legs shows here after your workouts.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`;
-  }
-  const cards = perSlot.map(({ slot, byEx }) => {
-    if (!byEx.size) return '';
-    // Newest first; the chosen one, else the one in the next workout, else the latest.
-    const exs = [...byEx.keys()].sort((a, c) => (byEx.get(c).slice(-1)[0].date > byEx.get(a).slice(-1)[0].date ? 1 : -1));
-    const pick = UI.chartEx[pid + ':' + slot];
-    const planned = isMe && prof ? planFor(prof, cardState(prof).tpl)[slot] : null;
-    const hasLine = k => (byEx.get(k) || []).length > 1;
-    const key = byEx.has(pick) ? pick : hasLine(planned) ? planned : exs.find(hasLine) || (byEx.has(planned) ? planned : exs[0]);
-    const pts = byEx.get(key);
-    const kgPts = pts.filter(x => x.kg != null).map(x => Object.assign({}, x, { y: x.kg }));
-    const repPts = pts.map(x => Object.assign({}, x, { y: x.reps }));
-    const last = pts[pts.length - 1], lastKg = kgPts[kgPts.length - 1];
-    const chips = exs.length > 1 ? `<div class="choices pg-ex" role="group" aria-label="${SLOT[slot].label} exercise">${exs.map(k => `<button type="button" data-act="chartEx" data-id="${esc(pid)}" data-slot="${slot}" data-ex="${esc(k)}" aria-pressed="${k === key}">${esc(byEx.get(k)[0].ex)}</button>`).join('')}</div>` : '';
-    const box = (list, metric) => list.length > 1
-      ? chartBox(`${pid}:${slot}:${metric}`, list, slot, metric)
-      : `<p class="tiny pg-wait">${list.length ? 'The line starts the 2nd time.' : 'Bodyweight: counted in reps.'}</p>`;
-    return `<div class="card pg-card">
-      <div class="row">${plateHtml(slot, true)}<b class="pg-t grow">${SLOT[slot].label}</b>${exs.length > 1 ? '' : `<span class="tiny">${esc(last.ex)}</span>`}</div>
-      ${chips}
-      <div class="pg-charts">
-        <div class="pg-chart"><div class="pg-lbl"><span>Reps</span><b class="num">${last.reps}</b></div>${box(repPts, 'reps')}</div>
-        <div class="pg-chart"><div class="pg-lbl"><span>Kilos lifted</span>${lastKg ? `<b class="num">${esc(kgTotal(lastKg.kg))}</b>` : ''}</div>${box(kgPts, 'kg')}</div>
-      </div>
-    </div>`;
+    return `<button type="button" class="sc-row" data-act="exHistory" data-ex="${esc(key)}" data-slot="${slot}">${plateHtml(slot)}
+      <span class="ex-main"><span class="sr-only">${SLOT[slot].label}: </span><span class="ex-n">${esc(info.n)}</span><span class="sc-sub">${sub}</span></span>${right}</button>`;
   }).join('');
-  return cards;
+  const seg = abc ? `<div class="seg" role="group" aria-label="Workout">${TPLS.map(t => `<button type="button" data-act="scoreTpl" data-tpl="${t}" aria-pressed="${t === tpl}">${t}</button>`).join('')}</div>` : '';
+  return `<section class="card sc" aria-label="Scores"><div class="row"><span class="eyebrow grow">${mine ? 'Your' : esc(displayName(pid)) + '’s'} scores</span>${seg}</div>${rows}</section>`;
 }
 
 /* Small line charts, drawn at the real pixel width of their box so text never scales. */
@@ -2964,8 +3014,8 @@ const ACT = {
     });
     f.querySelectorAll('[data-act="formTpl"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tpl === t)));
   },
-  person(el) { UI.person = el.dataset.id; UI.logAll = false; render(); },
-  chartEx(el) { UI.chartEx[el.dataset.id + ':' + el.dataset.slot] = el.dataset.ex; render(); },
+  person(el) { UI.person = el.dataset.id; UI.logAll = false; UI.scoreTpl = null; render(); },
+  scoreTpl(el) { UI.scoreTpl = el.dataset.tpl; render(); },
   logAll() { UI.logAll = true; render(); },
   skipUp(el) { prefs.noUp = Object.assign({}, prefs.noUp, { [el.dataset.ex]: Number(el.dataset.kg) }); savePrefs(); render(); },
   day(el) {

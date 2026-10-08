@@ -14,7 +14,7 @@ test('a training day shows the workout and what to beat', async () => {
   assert.deepEqual(await texts(page, '.wo .goal-l'), ['reps to beat', 'reps to beat', 'reps to beat']);
   assert.equal(await txt(page, '.wo [data-act="startSession"]'), 'Start · 30 min');
   assert.deepEqual(await texts(page, '.wo-links .btn'), ['Your plan', 'Swap workout']);
-  assert.equal(await page.evaluate(() => todaySituation(myProfile())), 'train');
+  assert.equal(await page.evaluate(() => cardState(myProfile()).situation), 'train');
 });
 test('a heavier weight asks to match, and no score says First time', async () => {
   const heavy = await openApp({ sessions: abc(), profile: profile({ weights: { schouderdrukken: 37.5, kabelroeien: 65, 'c-seated-leg-press': 75 } }) });

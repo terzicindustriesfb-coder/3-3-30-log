@@ -45,8 +45,8 @@ De app draait op **GitHub Pages**. De gedeelde opslag en het inloggen lopen via 
 - Open de site, log in, typ één keer de groepscode en tik **Let’s go**.
 - Je training uit de Claude-versie meenemen: in de Claude-versie **⚙ → Save backup**, op de
   website **⚙ → Restore**.
-- Je maatje: stuur de link en de groepscode. Na het inloggen zien jullie elkaar onder
-  **Progress** (Me | naam).
+- Je maatje: stuur de link en de groepscode. Na het inloggen zie je de week van je maatje op
+  **Today** en zijn scores onder **Progress**.
 - Op de telefoon: **Deel → Zet op beginscherm** maakt er een app-icoon van.
 - Zonder bereik in de sportschool slaat de app op de telefoon op en synchroniseert later.
 
@@ -55,6 +55,8 @@ De app draait op **GitHub Pages**. De gedeelde opslag en het inloggen lopen via 
 De website wordt gebouwd uit `3-3-30/index.html` (de Claude-versie):
 
     python3 3-3-30/build_web.py
+
+Draai eerst de tests: `npm install` en `npm test`.
 
 Iedereen die inlogt en de juiste groepscode typt, kan alle trainingen van de groep zien, en
 alleen zijn eigen trainingen wijzigen. Iemand verwijderen kan in Firebase bij

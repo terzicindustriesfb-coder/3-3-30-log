@@ -10,5 +10,8 @@ De website staat in `docs/` (GitHub Pages, branch `main`). Hij wordt gebouwd uit
 
     python3 3-3-30/build_web.py
 
+Testen: `npm install` en daarna `npm test`.
+Ontwerp en bouwplan staan in `superpowers/`.
+
 In deze repo staat alleen de code van de app. Trainingen staan in Firebase
 (project `log-3-3-30`); de groepscode staat alleen in de Firestore-regels daar.

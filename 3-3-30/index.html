@@ -1319,6 +1319,50 @@ function moveFor(profile, id, date, today = todayYmd()) {
 const isLib = key => LIB.some(e => e.k === key);
 const eqOf = info => info.eq || (info.bw ? 'bw' : info.dbl ? 'dbpair' : 'barbell');
 const normName = s => String(s || '').trim().toLowerCase().replace(/[.,;:!?]+$/, '').replace(/[-‐–_]/g, ' ').replace(/\s+/g, ' ').trim();
+/* A typed name, tidied: trimmed, single spaces, 40 characters at most. */
+const cleanName = s => String(s || '').trim().replace(/\s+/g, ' ').slice(0, 40).trim();
+/* Why `name` cannot be the name of exercise `key` (null for a new one): '', 'empty' or 'taken'.
+   Names are unique: taken by another exercise of your own, by another exercise from the list under
+   your name for it, or by another list exercise's original name. Case, dashes and spaces are ignored. */
+function nameProblem(profile, name, key) {
+  const n = normName(cleanName(name));
+  if (!n) return 'empty';
+  const taken = (profile?.custom || []).some(c => c.k !== key && normName(c.n) === n)
+    || LIB.some(e => e.k !== key && (normName(e.n) === n || normName(exInfo(e.k, profile).n) === n));
+  return taken ? 'taken' : '';
+}
+/* The weight types an exercise may switch to. Barbell, one dumbbell and machine store the weight the
+   same way, so they always swap. A pair of dumbbells and bodyweight do not, so those only while
+   the exercise has no scores. */
+function allowedEqs(id, key) {
+  if (!history(id, key).length) return EQUIP_ORDER.slice();
+  const cur = eqOf(exInfo(key, S.members.get(id)?.profile));
+  const plain = ['barbell', 'db', 'machine'];
+  return plain.includes(cur) ? plain : [cur];
+}
+/* The exercises of one group that match what was typed: by name, by the list's original name, or by
+   another known name. Sorted by name; an empty search gives the whole group. Finding is all it does. */
+function searchExercises(profile, slot, q) {
+  const n = normName(q);
+  const hit = e => {
+    if (!n) return true;
+    const lib = LIB.find(x => x.k === e.k);
+    return [e.n].concat(lib ? [lib.n].concat(ALIAS[lib.k] || []) : []).some(x => normName(x).includes(n));
+  };
+  return allExercises(profile).filter(e => e.s === slot && hit(e)).sort((a, c) => a.n.localeCompare(c.n));
+}
+/* A profile copy with a new exercise of your own in it, and that exercise's key. */
+function newCustom(profile, name, slot, eq) {
+  const p = clone(profile);
+  p.custom = p.custom || [];
+  const kind = EQUIP[eq] ? eq : 'barbell';
+  const q = EQUIP[kind];
+  const n = cleanName(name);
+  let key = 'c-' + slug(n);
+  while (allExercises(p).some(e => e.k === key)) key += '-2';
+  p.custom.push({ k: key, n, s: slot, eq: kind, step: q.step, start: q.start, bw: !!q.bw, dbl: !!q.dbl });
+  return { p, key };
+}
 /* A typed name matches an exercise by its name, or by a known other name ("OHP", "RDL").
    The person's own exercises win, so an old custom "Overhead press" keeps its history. */
 function exByName(name, profile) {

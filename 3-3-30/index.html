@@ -429,6 +429,12 @@ button.lt-row:active { background: var(--surface-2); }
 .switch[aria-checked="true"] i { background: var(--primary); justify-content: flex-end; }
 .wk-foot { padding: 0 4px; font-size: 14px; color: var(--ink-2); }
 .wk-foot .btn.link { min-height: 44px; font-size: 14px; }
+.sheet .choices button { min-height: 44px; padding: 8px 14px; }
+form[data-form="ex"] .f .small, form[data-form="ex"] .f .tiny { font-weight: 400; }
+.to-beat { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.to-beat .grow { display: grid; gap: 2px; }
+.to-beat .goal-n { font-size: 36px; }
+.ex-switch { display: grid; gap: 4px; text-align: center; }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -1952,104 +1958,6 @@ function refreshSettings() {
 }
 
 /* ------------------------------------------------------------------ *
- * Exercise editor (sheet): name with suggestions, kind of weight, next weight
- * ------------------------------------------------------------------ */
-function exerciseSheet(tpl, slot) {
-  const p = myProfile();
-  const key = planFor(p, tpl)[slot];
-  const info = exInfo(key, p);
-  const eq = eqOf(info);
-  const kg = Number(plannedKg(p, key).kg) || 0;
-  UI.sheet = { kind: 'ex', tpl, slot, kg, eq, origKey: key };
-  return `<form data-form="ex" style="display:grid;gap:16px">
-    <div class="sheet-head">${plateHtml(slot)}<div class="grow"><div class="eyebrow">${SLOT[slot].label}${p.mode === 'abc' ? ' · Workout ' + esc(tpl) : ''}</div><b class="h2">Exercise</b></div>
-      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
-    <label class="f" for="exName">Name
-      <input type="text" id="exName" name="name" list="exNames" maxlength="40" value="${esc(info.n)}" autocomplete="off" enterkeyhint="done" required></label>
-    <p class="tiny" id="exHint" style="margin-top:-8px">Pick a suggestion or type your own exercise.</p>
-    <label class="f" for="exEq" id="exEqRow"${isLib(key) ? ' hidden' : ''}>Weight type<select id="exEq">${equipOptions(eq)}</select></label>
-    <div class="f">Next weight
-      <div class="row wrap"><div class="stepper" role="group" aria-label="Next weight">
-        <button type="button" data-act="exKg" data-dir="-1" aria-label="Lighter">−</button>
-        <input class="kg-in" id="exKgIn" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(kgInText(EQUIP[eq].dbl ? kg / 2 : kg))}" aria-label="${esc(kgFieldLabel(EQUIP[eq]))}">
-        <button type="button" data-act="exKg" data-dir="1" aria-label="Heavier">+</button>
-      </div><span class="small" id="exKgNote">${kgUnitText(EQUIP[eq])}</span></div></div>
-    <button class="btn primary xl" type="submit">Save</button>
-  </form>`;
-}
-const equipOptions = eq => EQUIP_ORDER.map(k => `<option value="${k}"${k === eq ? ' selected' : ''}>${EQUIP[k].label}</option>`).join('');
-/* Live update of the editor while typing a name. */
-function sheetHit(name) {
-  const p = myProfile();
-  const orig = UI.sheet && UI.sheet.origKey ? exInfo(UI.sheet.origKey, p) : null;
-  return orig && normName(name) === normName(orig.n) ? orig : exByName(name, p);
-}
-function syncExSheet() {
-  const f = $('form[data-form="ex"]');
-  if (!f || !UI.sheet || UI.sheet.kind !== 'ex') return;
-  const name = $('#exName', f).value;
-  const hit = sheetHit(name);
-  const lib = hit && isLib(hit.k);
-  if (hit) UI.sheet.eq = eqOf(hit);
-  else if (!UI.sheet.eqTouched) UI.sheet.eq = guessEquip(name);
-  if (!UI.sheet.kgTouched) {
-    if (hit) UI.sheet.kg = Number(plannedKg(myProfile(), hit.k).kg) || 0;
-    else if (EQUIP[UI.sheet.eq].bw) UI.sheet.kg = 0;
-  }
-  $('#exEq', f).value = UI.sheet.eq;
-  $('#exEqRow', f).hidden = !!lib;
-  $('#exHint', f).textContent = !name.trim() ? 'Type a name.' : hit && normName(name) !== normName(hit.n) ? `Matches “${hit.n}”.` : lib ? 'From the exercise list.' : hit ? 'One of your own exercises.' : 'New exercise — it will be added to your list.';
-  updateExKg();
-}
-/* Another kind of weight: dumbbell pairs are typed per dumbbell, bodyweight as extra kg. */
-function pickEq(eq) {
-  const st = UI.sheet; if (!st || st.kind !== 'ex' || !EQUIP[eq]) return;
-  const prevDbl = !!EQUIP[st.eq].dbl;
-  st.eq = eq; st.eqTouched = true;
-  const q = EQUIP[eq];
-  if (q.bw) st.kg = 0; else if (st.kg <= 0) st.kg = q.start;
-  if (prevDbl !== !!q.dbl) st.kg = q.start;
-  st.kgTouched = true;
-  updateExKg(true);
-}
-function updateExKg(force) {
-  const q = EQUIP[UI.sheet.eq];
-  const inp = $('#exKgIn');
-  if (inp && (force || document.activeElement !== inp)) inp.value = kgInText(q.dbl ? UI.sheet.kg / 2 : UI.sheet.kg);
-  if (inp) inp.setAttribute('aria-label', kgFieldLabel(q));
-  $('#exKgNote').textContent = kgUnitText(q);
-}
-/* Typing in the weight box of the exercise editor. */
-function typedExKg(inp) {
-  const st = UI.sheet; if (!st || st.kind !== 'ex') return;
-  const v = parseKg(inp.value);
-  if (!Number.isFinite(v) || inp.value.trim() === '') return;
-  const q = EQUIP[st.eq];
-  if (!q.bw && v < 0) return;
-  const kg = Math.round(clampN(q.dbl ? v * 2 : v, -300, 1000) * 10) / 10;
-  st.kg = kg; st.kgTouched = true;
-}
-async function submitExSheet(f) {
-  const st = UI.sheet;
-  const typed = parseKg($('#exKgIn', f)?.value);
-  if (!EQUIP[st.eq].bw && typed < 0) { toast('Minus kilos only work for bodyweight exercises (assistance).'); updateExKg(true); return; }
-  const name = $('#exName', f).value.trim();
-  if (!name) { toast('Type a name for the exercise.'); return; }
-  const cur = myProfile();
-  let { p, key } = resolveExercise(cur, name, st.slot, st.eq);
-  // An unchanged name keeps its exercise (and its history), whatever the lookup says.
-  if (key !== st.origKey && normName(name) === normName(exInfo(st.origKey, cur).n)) { p = clone(cur); key = st.origKey; }
-  if (p.mode !== 'abc') p.plans.A = Object.assign({}, planFor(p, 'A'), { [st.slot]: key });
-  else p.plans[st.tpl] = Object.assign({}, planFor(p, st.tpl), { [st.slot]: key });
-  p.weights = p.weights || {};
-  const info = exInfo(key, p);
-  if (st.kgTouched || key !== st.origKey) p.weights[key] = info.bw ? st.kg : Math.max(0, st.kg);
-  if (!(await saveProfile(p))) return;
-  dismissSheet();
-  toast(key === st.origKey ? 'Saved.' : `${info.n} is in ${p.mode === 'abc' ? 'Workout ' + st.tpl : 'your plan'}.`);
-}
-
-/* ------------------------------------------------------------------ *
  * Workout mode: live 10-minute AMRAP blocks
  * ------------------------------------------------------------------ */
 const R = { session: null, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, timer: null, lastRem: null, wake: null, confirm: null, confirm2: null, lastSet: null, menuPaused: false, menuLead: 0, dirty: false };
@@ -2596,6 +2504,91 @@ function swapSheet() {
 }
 SHEETS.swap = { label: 'Swap workout', html: swapSheet };
 
+/* Exercise: the name, the weight type and the next weight of one exercise in your plan.
+   The sheet keeps what you change in its own state; nothing is stored until Save. */
+function exState(tpl, slot, back) {
+  const p = myProfile();
+  const key = planFor(p, tpl)[slot];
+  const info = exInfo(key, p);
+  return { kind: 'ex', view: 'edit', tpl, slot, back: back || null, key, name: info.n, eq: eqOf(info), kg: Number(plannedKg(p, key).kg) || 0, kgTouched: false };
+}
+/* The step of plus and minus: the exercise's own while its weight type is unchanged, else the type's. */
+function exStep(st) {
+  const info = exInfo(st.key, myProfile());
+  return (st.eq === eqOf(info) && info.step) || EQUIP[st.eq].step;
+}
+function exSheet(st) {
+  const p = myProfile();
+  const info = exInfo(st.key, p);
+  const q = EQUIP[st.eq];
+  const allowed = allowedEqs(S.uid, st.key);
+  const step = exStep(st);
+  const stepNote = q.dbl ? `steps of ${fmtKg2(step / 2)}\u00a0kg per dumbbell` : `steps of ${fmtNum(step)}\u00a0kg${q.bw ? ' · minus = assist' : ''}`;
+  const types = EQUIP_ORDER.map(k => `<button type="button" data-act="eq" data-eq="${k}" aria-pressed="${k === st.eq}"${allowed.includes(k) ? '' : ' disabled'}>${EQUIP[k].label}</button>`).join('');
+  const ref = refBlock(history(S.uid, st.key));
+  return `<form data-form="ex" data-view="edit" style="display:grid;gap:16px">
+    <div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}${p.mode === 'abc' ? ' · Workout ' + esc(st.tpl) : ''}</div><b class="h2">Exercise</b></div>
+      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
+    <label class="f" for="exName">Name
+      <input type="text" id="exName" name="name" maxlength="40" value="${esc(st.name)}" autocomplete="off" enterkeyhint="done"></label>
+    <p class="tiny" style="margin-top:-10px">Rename it and your scores stay with it.</p>
+    <div class="f">Weight type
+      <div class="choices" role="group" aria-label="Weight type">${types}</div>
+      ${allowed.length < EQUIP_ORDER.length ? '<span class="tiny eq-note">Different kind of weight? Switch to another exercise.</span>' : ''}</div>
+    <div class="f">Next weight
+      <div class="row wrap"><div class="stepper" role="group" aria-label="Next weight">
+        <button type="button" data-act="exKg" data-dir="-1" aria-label="Lighter">−</button>
+        <input class="kg-in" id="exKgIn" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(kgInText(q.dbl ? st.kg / 2 : st.kg))}" aria-label="${esc(kgFieldLabel(q))}">
+        <button type="button" data-act="exKg" data-dir="1" aria-label="Heavier">+</button>
+      </div><span class="small" id="exKgNote">${stepNote}</span></div></div>
+    ${ref ? `<div class="to-beat"><div class="grow"><span class="eyebrow">Score to beat</span><span class="small">At ${esc(blockKgLabel(ref, info))} · ${esc(dayShort(ref.date))}</span></div><span class="goal-n">${ref.total}</span><span class="goal-l">reps</span></div>` : ''}
+    <button class="btn primary xl" type="submit">Save</button>
+    <div class="ex-switch"><button type="button" class="btn ghost" data-act="exPick">Switch to another exercise</button>
+      <span class="tiny">Another exercise keeps its own scores.</span></div>
+  </form>`;
+}
+SHEETS.ex = { label: 'Exercise', html: exSheet };
+/* Typing in the weight box: per dumbbell for a pair, extra kilos for bodyweight. What is not a weight is ignored. */
+function typedExKg(inp) {
+  const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+  const v = parseKg(inp.value);
+  if (!Number.isFinite(v) || inp.value.trim() === '') return;
+  const q = EQUIP[st.eq];
+  if (!q.bw && v < 0) return;
+  st.kg = Math.round(clampN(q.dbl ? v * 2 : v, -300, 1000) * 10) / 10;
+  st.kgTouched = true;
+}
+/* Put the weight the sheet holds back in its box, after something was typed that is not a weight. */
+function showExKg() {
+  const st = UI.sheet, inp = $('#exKgIn');
+  if (inp && st && st.kind === 'ex') inp.value = kgInText(EQUIP[st.eq].dbl ? st.kg / 2 : st.kg);
+}
+/* Save the name, the weight type and (when it was changed) the weight. It stays the same exercise. */
+async function submitExSheet() {
+  const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+  const cur = myProfile();
+  const problem = nameProblem(cur, st.name, st.key);
+  if (problem) { toast(problem === 'empty' ? 'Type a name for the exercise.' : 'You already have an exercise with that name. Switch to it instead.'); return; }
+  const p = clone(cur);
+  const name = cleanName(st.name);
+  const q = EQUIP[st.eq];
+  const lib = LIB.find(e => e.k === st.key);
+  const own = (p.custom || []).find(e => e.k === st.key);
+  if (lib) {
+    p.names = Object.assign({}, p.names, { [st.key]: name });
+    p.eqs = Object.assign({}, p.eqs, { [st.key]: st.eq });
+    if (name === lib.n) delete p.names[st.key];
+    if (st.eq === eqOf(lib)) delete p.eqs[st.key];
+  } else if (own) {
+    own.n = name;
+    if (eqOf(own) !== st.eq) Object.assign(own, { eq: st.eq, step: q.step, bw: !!q.bw, dbl: !!q.dbl });
+  }
+  if (st.kgTouched) p.weights = Object.assign({}, p.weights, { [st.key]: q.bw ? st.kg : Math.max(0, st.kg) });
+  if (!(await saveProfile(p))) return;
+  toast('Saved.');
+  if (UI.sheet === st) dismissSheet();
+}
+
 const kgFieldLabel = info => (info.bw ? 'Extra kg (− = assist)' : info.dbl ? 'Each dumbbell (kg)' : 'Weight (kg)');
 const parseKg = v => { const t = String(v ?? '').trim().replace(/\s*kg$/i, '').replace(',', '.'); return t === '' ? 0 : Number(t); };
 
@@ -2810,18 +2803,29 @@ const ACT = {
   },
   swap() { showSheet({ kind: 'swap' }); },
   pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; dismissSheet(); },
-  editEx(el) {
-    openSheet(exerciseSheet(el.dataset.tpl, el.dataset.slot), 'Edit exercise');
-    if (el.dataset.from === 'plan') UI.sheet.back = 'plan';   // closing or saving returns to Your plan
+  // Opened from Your plan, closing or saving returns there.
+  editEx(el) { showSheet(exState(el.dataset.tpl, el.dataset.slot, el.dataset.from === 'plan' ? 'plan' : null)); },
+  // Another weight type for the exercise in the sheet: only one it may switch to.
+  eq(el) {
+    const st = UI.sheet, eq = el.dataset.eq;
+    if (!st || st.kind !== 'ex' || eq === st.eq || !allowedEqs(S.uid, st.key).includes(eq)) return;
+    const was = EQUIP[st.eq], q = EQUIP[eq];
+    st.eq = eq;
+    // A pair counts per dumbbell and bodyweight counts extra kilos, so the weight starts over:
+    // on the type's start weight, or back on the stored weight when this is the type it already had.
+    if (!!was.bw !== !!q.bw || !!was.dbl !== !!q.dbl) {
+      const p = myProfile();
+      const stored = eqOf(exInfo(st.key, p)) === eq;
+      st.kg = stored ? Number(plannedKg(p, st.key).kg) || 0 : q.start;
+      st.kgTouched = !stored;
+    }
+    refreshSheet();
   },
   exKg(el) {
-    const st = UI.sheet; if (!st) return;
-    const q = EQUIP[st.eq];
-    const hit = sheetHit($('#exName')?.value);
-    const step = hit && !st.eqTouched ? (hit.step || q.step) : q.step;
-    st.kg = stepKg(st.kg, { step, bw: q.bw }, Number(el.dataset.dir));
+    const st = UI.sheet; if (!st || st.kind !== 'ex') return;
+    st.kg = stepKg(st.kg, { step: exStep(st), bw: EQUIP[st.eq].bw }, Number(el.dataset.dir));
     st.kgTouched = true;
-    updateExKg();
+    refreshSheet();
   },
   async applyUp(el) { const p = clone(myProfile()); p.weights = p.weights || {}; p.weights[el.dataset.ex] = Number(el.dataset.kg); if (await saveProfile(p)) toast('New weight is set.'); },
   startSession(el) { audio(); UI.person = null; UI.logAll = false; openRunner(false, el.dataset.tpl); },
@@ -3048,7 +3052,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('input', e => {
   const el = e.target;
-  if (el.id === 'exName') syncExSheet();
+  if (el.id === 'exName' && UI.sheet && UI.sheet.kind === 'ex') UI.sheet.name = el.value;
   if (el.id === 'joinNick') UI.joinNick = el.value;
   if (el.id === 'exKgIn') typedExKg(el);
   if (el.form && el.form.dataset.form === 'session' && /^(kg|ex|tot)\d$/.test(el.name || '')) el.dataset.touched = '1';
@@ -3078,7 +3082,7 @@ document.addEventListener('submit', async e => {
     if (ok) toast(nick ? `Welcome, ${nick}!` : 'Welcome!');
   }
   if (f.dataset.form === 'session') submitSessionForm(f);
-  if (f.dataset.form === 'ex') submitExSheet(f);
+  if (f.dataset.form === 'ex') submitExSheet();
 });
 document.addEventListener('change', e => {
   const el = e.target;
@@ -3088,9 +3092,8 @@ document.addEventListener('change', e => {
     const v = parseKg(el.value);
     if (!Number.isFinite(v)) toast('Type the weight as a number, e.g. 14 or 12.5.');
     else if (v < 0 && !EQUIP[UI.sheet?.eq]?.bw) toast('Minus kilos only work for bodyweight exercises (assistance).');
-    updateExKg(true); return;
+    showExKg(); return;
   }
-  if (el.id === 'exEq') { pickEq(el.value); return; }
   if (el.form && el.form.dataset.form === 'session' && /^ex\d$/.test(el.name || '')) { syncFormExercise(el); return; }
   const field = el.dataset.field;
   if (!field) return;

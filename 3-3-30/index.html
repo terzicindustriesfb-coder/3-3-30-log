@@ -400,6 +400,19 @@ button.lt-row:active { background: var(--surface-2); }
 .swap-t { font-family: var(--display); font-stretch: 72%; font-weight: 800; font-size: 22px; line-height: 1.05; }
 .swap-opt .small { grid-column: 1 / -1; }
 .swap-next { border-radius: 999px; padding: 3px 10px; background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 650; white-space: nowrap; }
+.plan-card { padding: 12px 14px 8px; gap: 2px; }
+.plan-card .h2 { font-size: 22px; }
+.plan-when { border-radius: 999px; padding: 3px 10px; background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 650; white-space: nowrap; }
+.plan-when.now { background: var(--primary); color: var(--on-primary); }
+.plan-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center; gap: 10px; padding: 6px 4px; min-height: 48px; }
+.plan-row + .plan-row { border-top: 1px solid var(--surface-2); }
+.plan-row .ex-n { font-size: 17px; }
+.legend { display: grid; gap: 8px; padding: 4px 4px 0; }
+.legend p { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; color: var(--ink-2); }
+.legend i { margin-top: 4px; width: 14px; height: 14px; border-radius: 50%; }
+.legend i.push { background: var(--push); } .legend i.pull { background: var(--pull); } .legend i.legs { background: var(--legs); }
+.legend b { color: var(--ink); }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -1564,15 +1577,15 @@ function viewToday(p) {
       <section class="card wo" aria-label="Today’s result">${resultRowsHtml(done, S.uid)}${totalRowHtml(done)}</section>
       <div class="after">
         <span class="next-line">Next: <b>${esc(coming)}</b></span>
-        <div class="wo-links">${link('edit', 'Edit', ` data-id="${esc(done.id)}"`)}${link('startSession', 'Train again today', ` data-tpl="${nextTpl(S.uid)}"`)}</div>
+        <div class="wo-links">${link('edit', 'Edit', ` data-id="${esc(done.id)}"`)}${link('startSession', 'Train again today', ` data-tpl="${nextTpl(S.uid)}"`)}${link('plan', 'Your plan')}</div>
       </div>`;
   }
   // Otherwise the next workout: today's, a practice one before the start, or the one a rest day could take.
   const plan = planFor(p, tpl);
   const rows = SLOT_ORDER.map(slot => exRow(p, tpl, slot, plan[slot])).join('');
   const ups = SLOT_ORDER.map(slot => upHint(p, plan[slot])).filter(Boolean).join('');
-  const swap = abc ? link('swap', 'Swap workout') : '';
-  let title, top = '', main, note = '', links = swap;
+  const planLink = link('plan', 'Your plan');
+  let title, top = '', main, note = '', links = planLink + (abc ? link('swap', 'Swap workout') : '');
   if (situation === 'pre') {
     title = 'Get ready';
     main = `<button class="btn ghost xl" data-act="startSession" data-tpl="${tpl}">Try a practice workout</button>`;
@@ -1585,7 +1598,7 @@ function viewToday(p) {
     const from = movedDay(S.uid, today);
     main = `<button class="btn ${from ? 'primary' : 'ghost'} xl" data-act="startSession" data-tpl="${tpl}">${from ? 'Train today instead' : 'Train anyway'}</button>`;
     note = `<p class="wo-note">${from ? `Moves ${esc(fmtWeekday(from))}’s workout to today.` : 'Counts as an extra workout this week.'}</p>`;
-    links = '';
+    links = planLink;
   }
   return `${head(title)}${weekStripHtml()}
     <section class="card wo" aria-label="${situation === 'train' ? esc(title) : 'Next workout'}">
@@ -1827,7 +1840,7 @@ function viewOnboarding() {
       <label class="f" for="joinNick">Your name${shared && hasCrew() ? ' (your training buddy sees it)' : ''}
         <input type="text" id="joinNick" maxlength="30" value="${esc(UI.joinNick)}" placeholder="${esc(hint || 'First name')}" autocomplete="nickname" enterkeyhint="go"></label>
       <button class="btn primary xl" type="submit">Let’s go</button>
-      <p class="tiny">You train on Mon, Wed and Fri — change it any time with the ⚙ button.${shared ? '' : ' Your workouts are saved on this device.'}</p>
+      <p class="tiny">You train on Mon, Wed and Fri — change it any time in Your plan.${shared ? '' : ' Your workouts are saved on this device.'}</p>
     </form>
     <button class="btn link" data-act="importPick" style="justify-self:center">Restore a backup</button><input type="file" id="importFile" accept=".json,application/json" hidden>`;
 }
@@ -1835,12 +1848,10 @@ function viewOnboarding() {
 /* ---------- Settings (⚙) ---------- */
 function settingsHtml() {
   const p = myProfile();
-  const daysSel = [1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-act="day" data-d="${d}" aria-pressed="${p.days.includes(d)}">${WD[d]}</button>`).join('');
   const shared = S.mode === 'shared' && !S.ownLocal;
   return `<div class="sheet-head"><b class="h2 grow">Settings</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <label class="f" for="nickIn">Your name
       <input type="text" id="nickIn" data-field="nick" maxlength="30" value="${esc(p.nick || '')}" placeholder="${esc(S.meInfo?.name || 'First name')}"></label>
-    <div class="f">Training days <span class="tiny">pick 3</span><div class="daypick" role="group" aria-label="Training days">${daysSel}</div></div>
     <div class="f">Exercises
       <div class="seg full" role="group" aria-label="Exercises"><button type="button" data-act="mode" data-mode="abc" aria-pressed="${p.mode === 'abc'}">Workout A, B, C</button><button type="button" data-act="mode" data-mode="same" aria-pressed="${p.mode !== 'abc'}">Same every time</button></div>
       <span class="tiny">${p.mode === 'abc' ? 'Three different workouts that take turns.' : 'The same three exercises every workout.'} Tap an exercise on the main screen to change it.</span></div>
@@ -1854,8 +1865,8 @@ function settingsHtml() {
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div></div>
     ${shared ? (WEB
-      ? '<p class="tiny">Train with a buddy: send them the link to this page and your crew code. They sign in, type the code once and tap Let’s go. Then tap their name next to Progress to see their charts and log.</p>'
-      : '<p class="tiny">Train with a buddy: share this page with Claude’s share button and invite them as a <b>Contributor</b> or <b>Editor</b>. Then tap their name next to Progress to see their charts and log.</p>') : ''}
+      ? '<p class="tiny">Train with a buddy: send them the link to this page and your crew code. They sign in, type the code once and tap Let’s go. Then you see their week on Today and their scores under Progress.</p>'
+      : '<p class="tiny">Train with a buddy: share this page with Claude’s share button and invite them as a <b>Contributor</b> or <b>Editor</b>. Then you see their week on Today and their scores under Progress.</p>') : ''}
     ${WEB ? `<div class="row"><span class="tiny grow">Signed in as ${esc(WEB.who())}</span><button type="button" class="btn sm ghost" data-act="signOut">Sign out</button></div>` : ''}
     <details class="how" data-how>
       <summary><span class="grow">How 3-3-30 works</span>${CHEV}</summary>
@@ -1866,6 +1877,7 @@ function settingsHtml() {
         <li>Next time, beat it: more reps, or the same reps with a bit more weight.</li>
         <li>After four weeks, keep what works or swap exercises.</li>
       </ol>
+      ${legendHtml()}
       <p class="tiny">Source: <a href="https://www.menshealth.nl/nieuws/de-3-3-30-methode-trainen-voor-spiermassa-in-slechts-1-5-uur-per-week" target="_blank" rel="noopener">Men’s Health</a>.</p>
     </details>`;
 }
@@ -1973,7 +1985,7 @@ async function submitExSheet(f) {
   const info = exInfo(key, p);
   if (st.kgTouched || key !== st.origKey) p.weights[key] = info.bw ? st.kg : Math.max(0, st.kg);
   if (!(await saveProfile(p))) return;
-  closeSheet();
+  dismissSheet();
   toast(key === st.origKey ? 'Saved.' : `${info.n} is in ${p.mode === 'abc' ? 'Workout ' + st.tpl : 'your plan'}.`);
 }
 
@@ -2436,6 +2448,40 @@ function dismissSheet() {
   else closeSheet();
 }
 
+/* What the three groups mean, in a sentence each. */
+const SLOT_HELP = {
+  push: 'You press the weight away from you. Trains chest, shoulders and triceps.',
+  pull: 'You pull the weight toward you. Trains back and biceps.',
+  legs: 'You push with your legs or bend at the hips. Trains thighs, hamstrings and glutes.',
+};
+const slotHelpHtml = slot => `<p><i class="${slot}" aria-hidden="true"></i><span><b>${SLOT[slot].label}:</b> ${SLOT_HELP[slot][0].toLowerCase()}${SLOT_HELP[slot].slice(1)}</span></p>`;
+const legendHtml = () => `<div class="legend" role="group" aria-label="What push, pull and legs mean">${SLOT_ORDER.map(slotHelpHtml).join('')}</div>`;
+
+/* Your plan: the usual training days, the workouts with their exercises, and when each comes up. */
+function planSheet() {
+  const p = myProfile();
+  const abc = p.mode === 'abc';
+  const today = todayYmd();
+  const coming = upcoming(S.uid, 3);
+  const days = [1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-act="day" data-d="${d}" aria-pressed="${p.days.includes(d)}">${WD[d]}</button>`).join('');
+  const card = t => {
+    const plan = planFor(p, t);
+    const name = abc ? 'Workout ' + t : 'Every workout';
+    const hit = abc ? coming.find(u => u.tpl === t) : coming[0];
+    const when = !hit ? '' : hit.date === today ? '<span class="plan-when now">Today</span>' : `<span class="plan-when">${esc(dayShort(hit.date))}</span>`;
+    const rows = SLOT_ORDER.map(slot => {
+      const info = exInfo(plan[slot], p);
+      return `<button type="button" class="plan-row" data-act="editEx" data-tpl="${t}" data-slot="${slot}" data-from="plan">${plateHtml(slot, true)}<span class="sr-only">${SLOT[slot].label}: </span><span class="ex-n">${esc(info.n)}</span><span class="ex-kg">${esc(kgLabel(plannedKg(p, plan[slot]).kg, info))}</span>${CHEV}</button>`;
+    }).join('');
+    return `<section class="card plan-card" data-tpl="${t}" aria-label="${name}"><div class="row"><b class="h2 grow">${name}</b>${when}</div>${rows}</section>`;
+  };
+  return `<div class="sheet-head"><b class="h2 grow">Your plan</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
+    <div class="f">Training days<div class="daypick" role="group" aria-label="Training days">${days}</div></div>
+    ${(abc ? TPLS : ['A']).map(card).join('')}
+    ${legendHtml()}`;
+}
+SHEETS.plan = { label: 'Your plan', html: planSheet };
+
 /* Swap workout: another letter for the workout you are about to start. */
 function swapSheet() {
   const p = myProfile();
@@ -2651,9 +2697,13 @@ const ACT = {
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
   tab(el) { UI.tab = el.dataset.tab === 'progress' ? 'progress' : 'today'; UI.logAll = false; render(); window.scrollTo(0, 0); },
+  plan() { showSheet({ kind: 'plan' }); },
   swap() { showSheet({ kind: 'swap' }); },
   pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; dismissSheet(); },
-  editEx(el) { openSheet(exerciseSheet(el.dataset.tpl, el.dataset.slot), 'Edit exercise'); },
+  editEx(el) {
+    openSheet(exerciseSheet(el.dataset.tpl, el.dataset.slot), 'Edit exercise');
+    if (el.dataset.from === 'plan') UI.sheet.back = 'plan';   // closing or saving returns to Your plan
+  },
   exKg(el) {
     const st = UI.sheet; if (!st) return;
     const q = EQUIP[st.eq];
@@ -2719,12 +2769,18 @@ const ACT = {
   logAll() { UI.logAll = true; render(); },
   skipUp(el) { prefs.noUp = Object.assign({}, prefs.noUp, { [el.dataset.ex]: Number(el.dataset.kg) }); savePrefs(); render(); },
   day(el) {
-    const p = clone(myProfile()); const d = Number(el.dataset.d);
+    const before = myProfile();
+    const p = clone(before); const d = Number(el.dataset.d);
     if (p.days.includes(d) && p.days.length === 1) { toast('Keep at least one training day.'); return; }
     if (p.days.includes(d)) p.days = p.days.filter(x => x !== d);
     else if (p.days.length < 3) p.days.push(d);
     else { toast('You already picked 3 days. Turn one off first.'); return; }
-    saveProfile(p); refreshSettings();
+    // New usual days start today: the days of this week that already passed stay as they were.
+    const today = todayYmd(), mon = mondayOf(today);
+    const dateOf = dow => addDays(mon, (dow + 6) % 7);
+    const passed = plannedDows(before, mon, today).filter(dow => dateOf(dow) < today);
+    saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today));
+    refreshSheet();
   },
   mode(el) { const p = clone(myProfile()); p.mode = el.dataset.mode; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); saveProfile(p); UI.tpl = null; refreshSettings(); },
   export(el) { exportData(el.dataset.fmt); },

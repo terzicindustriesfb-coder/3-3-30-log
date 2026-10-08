@@ -13,7 +13,7 @@ test('a training day shows the workout and what to beat', async () => {
   assert.deepEqual(await texts(page, '.wo .goal-n'), ['62', '77', '85']);
   assert.deepEqual(await texts(page, '.wo .goal-l'), ['reps to beat', 'reps to beat', 'reps to beat']);
   assert.equal(await txt(page, '.wo [data-act="startSession"]'), 'Start · 30 min');
-  assert.deepEqual(await texts(page, '.wo-links .btn'), ['Swap workout']);
+  assert.deepEqual(await texts(page, '.wo-links .btn'), ['Your plan', 'Swap workout']);
   assert.equal(await page.evaluate(() => todaySituation(myProfile())), 'train');
 });
 test('a heavier weight asks to match, and no score says First time', async () => {
@@ -62,7 +62,7 @@ test('after training the card shows today’s result', async () => {
   assert.deepEqual(await texts(page, '.wo .goal-l'), ['first score', 'first score', 'first score']);
   assert.match(await txt(page, '.wo .sum-total'), /Lifted in total 13,550 kg/);
   assert.equal(await txt(page, '.after .next-line'), 'Next: Wed 7 Oct · Workout B');
-  assert.deepEqual(await texts(page, '.after .btn'), ['Edit', 'Train again today']);
+  assert.deepEqual(await texts(page, '.after .btn'), ['Edit', 'Train again today', 'Your plan']);
   assert.equal(await page.locator('.after [data-act="startSession"]').getAttribute('data-tpl'), 'B');
   await page.click('.after [data-act="edit"]');
   assert.equal(await txt(page, '#sheet .h2'), 'Edit workout');

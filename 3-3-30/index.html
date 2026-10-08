@@ -39,6 +39,7 @@
   --led-on: #FF3D2E;
   --led-off: #24100E;
   --led-lead: #FFB020;
+  --c-push: #CC2D27; --c-pull: #1E58C8; --c-legs: #8F6600;   /* chart lines, validated vs the card surface */
   --display: "Archivo", "Archivo Narrow", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r-lg: 18px;
@@ -52,6 +53,7 @@
     --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
     --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
     --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
+    --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
     --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
   }
 }
@@ -60,6 +62,7 @@
   --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
   --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
   --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
+    --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
   --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
 }
 
@@ -295,6 +298,24 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
   .score .total { font-size: 38px; } .setlist { min-height: 22px; }
 }
 @media (max-width: 340px) { .run-kg { flex-wrap: nowrap; } .run-kg .small { font-size: 12.5px; line-height: 1.2; } .run-ctrl .btn { font-size: 15px; } }
+/* Progress: two small line charts per push / pull / legs */
+.pg-card { gap: 10px; padding: 14px 14px 10px; }
+.pg-t { font-family: var(--display); font-stretch: 80%; font-size: 18px; font-weight: 800; }
+.pg-card .row .tiny { text-align: right; max-width: 55%; line-height: 1.2; }
+.pg-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px 14px; }
+.pg-chart { min-width: 0; display: grid; gap: 2px; }
+.pg-lbl { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--muted); font-weight: 650; }
+.pg-lbl b { margin-left: auto; color: var(--ink); font-family: var(--display); font-stretch: 80%; font-size: 17px; font-weight: 800; }
+.pg-svg { position: relative; min-height: 96px; }
+.pg-svg svg { display: block; overflow: visible; touch-action: pan-y; }
+.pg-svg svg:focus:not(:focus-visible) { outline: none; }
+.pg-svg text { font-family: var(--body); fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.pg-svg .grid { stroke: var(--line); stroke-width: 1; }
+.pg-svg .xh { stroke: var(--ink-2); stroke-width: 1; }
+.pg-svg .tip { position: absolute; top: -8px; transform: translate(-50%, -100%); pointer-events: none; background: var(--ink); color: var(--bg);
+  border-radius: 10px; padding: 5px 9px; font-size: 11.5px; line-height: 1.3; white-space: nowrap; box-shadow: 0 6px 18px rgb(0 0 0 / .2); z-index: 3; }
+.pg-svg .tip strong { display: block; font-size: 14px; }
+.pg-wait { min-height: 60px; display: grid; align-items: center; }
 /* The log: one row per workout, one column per exercise */
 .log-head { display: flex; align-items: center; gap: 10px; padding-top: 12px; }
 .lt { display: grid; gap: 6px; }
@@ -472,7 +493,6 @@ const fmtDM = s => parseYmd(s).toLocaleDateString(LOC, { day: 'numeric', month: 
 const fmtNum = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 1 });
 const fmtKg2 = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 2 });   // per-dumbbell halves, e.g. 8.75
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const uidGen = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const slug = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'exercise';
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -1099,6 +1119,8 @@ function focusSel(a) {
   if (a.tagName === 'SUMMARY') { const h = a.closest('details[data-how]'); if (h) return 'details[data-how] > summary'; }
   if (a.tagName === 'A' && a.getAttribute('href')) return `a[href="${CSS.escape(a.getAttribute('href'))}"]`;
   if (a.dataset && a.dataset.act) return `[data-act="${CSS.escape(a.dataset.act)}"]` + FOCUS_KEYS.filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('');
+  const ch = a.closest('[data-chart]');
+  if (ch) return `[data-chart="${CSS.escape(ch.dataset.chart)}"] svg`;
   return null;
 }
 function restoreFocus(root, sel) {
@@ -1122,6 +1144,7 @@ function render() {
     html = `<div class="card"><b>This page couldn’t be shown.</b><p class="small">Reload the page to try again.</p></div>`;
   }
   v.innerHTML = html;
+  drawCharts(v);
   if (myProfile()) fillNameList();
   restoreFocus(v, fsel);
   const pc = v.querySelector('.seg.scroll [aria-pressed="true"]');
@@ -1167,7 +1190,8 @@ function viewHome() {
     if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and reload the page. Nothing is lost.</p></div>`;
     return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
   }
-  return viewToday(p) + viewLog();
+  const { pid, seg } = personPick();
+  return viewToday(p) + viewProgress(pid, seg) + viewLog(pid);
 }
 
 function viewToday(p) {
@@ -1237,13 +1261,132 @@ function upHint(p, key, exclude) {
   return `<div class="up"><span class="grow">${esc(info.n)} went well. Go up to ${esc(kgLabel(adv.up, info))}?</span><button class="btn sm good" data-act="applyUp" data-ex="${esc(key)}" data-kg="${adv.up}">Yes</button></div>`;
 }
 
-/* ---------- The log: kilos per workout per exercise ---------- */
-function viewLog() {
+/* ---------- Progress: reps and kilos per push / pull / legs ---------- */
+function personPick() {
   const ids = [...S.members.keys()].filter(id => id === S.uid || S.members.get(id)?.profile);
   const pid = UI.person && S.members.has(UI.person) ? UI.person : S.uid;
-  const who = ids.length > 1 ? `<div class="seg scroll" role="group" aria-label="Whose log">${ids.map(id => `<button data-act="person" data-id="${esc(id)}" aria-pressed="${id === pid}">${esc(id === S.uid ? 'Me' : displayName(id))}</button>`).join('')}</div>` : '';
+  const seg = ids.length > 1 ? `<div class="seg scroll" role="group" aria-label="Whose progress">${ids.map(id => `<button data-act="person" data-id="${esc(id)}" aria-pressed="${id === pid}">${esc(id === S.uid ? 'Me' : displayName(id))}</button>`).join('')}</div>` : '';
+  return { pid, seg };
+}
+function viewProgress(pid, seg) {
+  const isMe = pid === S.uid;
+  const prof = S.members.get(pid)?.profile;
+  const ts = trainings(pid);
+  const cards = SLOT_ORDER.map(slot => {
+    const pts = [];
+    for (const s of ts) {
+      const b = s.blocks.find(x => x.slot === slot);
+      if (!b || !b.done || b.skipped || !(b.total > 0)) continue;
+      pts.push({ date: s.date, reps: b.total, kg: scored(b) ? blockVolume(b) : null, ex: blockName(b, prof), cut: !!b.cut });
+    }
+    const kgPts = pts.filter(x => x.kg != null).map(x => Object.assign({}, x, { y: x.kg }));
+    const repPts = pts.map(x => Object.assign({}, x, { y: x.reps }));
+    const last = pts[pts.length - 1], lastKg = kgPts[kgPts.length - 1];
+    const box = (id, list, metric) => list.length > 1
+      ? chartBox(`${pid}:${slot}:${metric}`, list, slot, metric)
+      : `<p class="tiny pg-wait">${list.length ? 'The line starts after your 2nd workout.' : metric === 'kg' && pts.length ? 'Bodyweight only: counted in reps.' : 'No workouts yet.'}</p>`;
+    return `<div class="card pg-card">
+      <div class="row">${plateHtml(slot, true)}<b class="pg-t grow">${SLOT[slot].label}</b>${last ? `<span class="tiny">${esc(last.ex)}</span>` : ''}</div>
+      <div class="pg-charts">
+        <div class="pg-chart"><div class="pg-lbl"><span>Reps</span>${last ? `<b class="num">${last.reps}</b>` : ''}</div>${box('r', repPts, 'reps')}</div>
+        <div class="pg-chart"><div class="pg-lbl"><span>Kilos lifted</span>${lastKg ? `<b class="num">${esc(kgTotal(lastKg.kg))}</b>` : ''}</div>${box('k', kgPts, 'kg')}</div>
+      </div>
+    </div>`;
+  }).join('');
   return `
-    <div class="log-head"><h2 class="h2 grow">${pid === S.uid ? 'Your log' : esc(displayName(pid)) + '’s log'}</h2>${who}</div>
+    <div class="log-head"><h2 class="h2 grow">${isMe ? 'Progress' : esc(displayName(pid)) + '’s progress'}</h2>${seg}</div>
+    ${ts.length ? cards : `<p class="small empty">${isMe ? 'Your progress per push, pull and legs shows here after your first workout.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`}`;
+}
+
+/* Small line charts, drawn at the real pixel width of their box so text never scales. */
+const CH = {};
+function chartBox(id, pts, slot, metric) {
+  CH[id] = { pts, slot, metric };
+  const first = pts[0], last = pts[pts.length - 1];
+  const f = v => (metric === 'kg' ? kgTotal(v) : `${v} reps`);
+  return `<div class="pg-svg" data-chart="${esc(id)}" role="img" aria-label="${esc(`${SLOT[slot].label} ${metric === 'kg' ? 'kilos lifted' : 'reps'}: ${f(first.y)} on ${dayShort(first.date)}, ${f(last.y)} on ${dayShort(last.date)}`)}"></div>`;
+}
+function niceTicks(lo, hi) {
+  if (lo === hi) { lo = Math.max(0, lo - 5); hi += 5; }
+  const raw = (hi - lo) / 2;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+  const a = Math.max(0, Math.floor(lo / step) * step), b = Math.ceil(hi / step) * step;
+  const ticks = []; for (let v = a; v <= b + step / 2; v += step) ticks.push(v);
+  return ticks;
+}
+function drawCharts(root) { root.querySelectorAll('.pg-svg[data-chart]').forEach(drawChart); }
+function drawChart(el) {
+  const c = CH[el.dataset.chart];
+  if (!c) return;
+  const W = Math.max(120, Math.floor(el.clientWidth)), Hh = 96;
+  if (el.dataset.w === String(W)) return;
+  el.dataset.w = String(W);
+  const pts = c.pts, n = pts.length;
+  const fmtY = v => (c.metric === 'kg' && v >= 1000 ? fmtNum(Math.round(v / 100) / 10) + 'k' : fmtNum(v));
+  const ticks = niceTicks(Math.min(...pts.map(p => p.y)), Math.max(...pts.map(p => p.y)));
+  const lo = ticks[0], hi = ticks[ticks.length - 1];
+  const L = 6 + Math.max(...ticks.map(t => fmtY(t).length)) * 6.2, R = 10, T = 10, B = 18;
+  const x = i => L + i * (W - L - R) / (n - 1);
+  const y = v => T + (Hh - T - B) * (1 - (v - lo) / ((hi - lo) || 1));
+  const color = `var(--c-${c.slot})`;
+  let g = '';
+  for (const t of ticks) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text x="${L - 6}" y="${(y(t) + 3.5).toFixed(1)}" text-anchor="end">${esc(fmtY(t))}</text>`;
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.y).toFixed(1)}`).join('');
+  const dots = n <= 16 ? pts.map((p, i) => i === n - 1 ? '' : `<circle cx="${x(i).toFixed(1)}" cy="${y(p.y).toFixed(1)}" r="4" fill="${color}" stroke="var(--surface)" stroke-width="2"/>`).join('') : '';
+  const xl = `<text x="${L}" y="${Hh - 4}">${esc(fmtDM(pts[0].date))}</text><text x="${W - R}" y="${Hh - 4}" text-anchor="end">${esc(fmtDM(pts[n - 1].date))}</text>`;
+  el.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}" tabindex="0" aria-hidden="true" focusable="true">
+      ${g}${xl}
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      <circle cx="${x(n - 1).toFixed(1)}" cy="${y(pts[n - 1].y).toFixed(1)}" r="5" fill="${color}" stroke="var(--surface)" stroke-width="2"/>
+      <line class="xh" x1="0" x2="0" y1="${T}" y2="${Hh - B}" visibility="hidden"/>
+      <circle class="xh-dot" r="5" fill="${color}" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    </svg><div class="tip" hidden><strong></strong><span></span></div>`;
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), xh = svg.querySelector('.xh'), dot = svg.querySelector('.xh-dot');
+  let cur = -1;
+  const show = i => {
+    if (i < 0 || i >= n) return;
+    cur = i;
+    const p = pts[i];
+    xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.setAttribute('visibility', 'visible');
+    dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(p.y)); dot.setAttribute('visibility', 'visible');
+    tip.querySelector('strong').textContent = c.metric === 'kg' ? kgTotal(p.y) : `${p.y} reps`;
+    tip.querySelector('span').textContent = `${p.ex} · ${dayShort(p.date)}${p.cut ? ' · stopped early' : ''}`;
+    tip.hidden = false;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(x(i), tw / 2 + 2), W - tw / 2 - 2) + 'px';
+  };
+  const hide = () => { cur = -1; tip.hidden = true; xh.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); };
+  el._hide = hide;
+  const nearest = ev => {
+    const r = svg.getBoundingClientRect();
+    const vx = ev.clientX - r.left;
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < n; i++) { const d = Math.abs(x(i) - vx); if (d < bd) { bd = d; best = i; } }
+    return best;
+  };
+  svg.addEventListener('pointermove', ev => { if (ev.pointerType === 'mouse' || ev.buttons) show(nearest(ev)); });
+  svg.addEventListener('pointerdown', ev => show(nearest(ev)));
+  svg.addEventListener('pointerleave', ev => { if (ev.pointerType === 'mouse') hide(); });
+  svg.addEventListener('blur', hide);
+  svg.addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowLeft') { show(Math.max(0, (cur < 0 ? n : cur) - 1)); ev.preventDefault(); }
+    if (ev.key === 'ArrowRight') { show(Math.min(n - 1, cur + 1)); ev.preventDefault(); }
+    if (ev.key === 'Escape') hide();
+  });
+  svg.addEventListener('focus', () => { if (svg.matches(':focus-visible') && cur < 0) show(n - 1); });
+}
+// A tap anywhere else closes a chart's tooltip.
+document.addEventListener('pointerdown', ev => { document.querySelectorAll('.pg-svg').forEach(c => { if (c._hide && !c.contains(ev.target)) c._hide(); }); }, true);
+let chartResize = null;
+window.addEventListener('resize', () => { clearTimeout(chartResize); chartResize = setTimeout(() => drawCharts(document), 150); });
+
+/* ---------- The log: kilos per workout per exercise ---------- */
+function viewLog(pid) {
+  return `
+    <div class="log-head"><h2 class="h2 grow">${pid === S.uid ? 'Your log' : esc(displayName(pid)) + '’s log'}</h2></div>
     ${logTable(pid)}`;
 }
 function logTable(pid) {

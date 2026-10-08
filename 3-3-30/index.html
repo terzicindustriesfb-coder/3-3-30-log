@@ -378,6 +378,20 @@ button.lt-row:active { background: var(--surface-2); }
 .goal-l { font-family: var(--display); font-stretch: 125%; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .goal-l.pos { color: var(--good); }
 .ex-sub .ex-kg { font-size: 15px; color: var(--ink-2); }
+/* The workout card on Today */
+.wo { padding: 12px 14px 8px; gap: 4px; }
+.wo .ex-list { gap: 0; }
+.wo .ex-list li + li { border-top: 1px solid var(--surface-2); }
+.wo .ex-row { padding: 8px 4px; min-height: 64px; }
+.wo > .btn.xl { margin-top: 8px; }
+.wo > .sum-total { margin: 4px 4px 0; padding-bottom: 6px; }
+.wo-next { display: grid; gap: 4px; padding: 2px 4px; }
+.wo-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.wo-links { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0 12px; }
+.wo-links .btn.link, .after .btn.link { min-height: 44px; font-size: 15px; }
+.after { display: grid; gap: 2px; padding: 0 4px; }
+.next-line { font-size: 15px; color: var(--ink-2); }
+.next-line b { color: var(--ink); }
 /* Sheets */
 .sheet-sub { font-size: 14px; color: var(--muted); }
 .swap-opt { width: 100%; border: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); padding: 14px 16px; min-height: 64px;
@@ -544,6 +558,7 @@ const weekNo = (s, start) => Math.floor(daysBetween(mondayOf(start), mondayOf(s)
 const LOC = 'en-GB';
 const fmtLong = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
 const fmtShort = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtWeekday = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long' });
 const fmtDM = s => parseYmd(s).toLocaleDateString(LOC, { day: 'numeric', month: 'short' });
 const fmtNum = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 1 });
 const fmtKg2 = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 2 });   // per-dumbbell halves, e.g. 8.75
@@ -1174,10 +1189,6 @@ function plannedKg(profile, key) {
   return { kg: info.start ?? 0, suggested: true };
 }
 
-function weekSessions(id, anyDay) {
-  const mon = mondayOf(anyDay);
-  return trainings(id).filter(s => mondayOf(s.date) === mon);
-}
 /* A/B/C runs on: the letter after the newest training that counts, also across a weekend.
    With `upTo` only trainings on or before that date are looked at. */
 const TPLS = ['A', 'B', 'C'];
@@ -1513,68 +1524,90 @@ function weekStripHtml() {
   </section>`;
 }
 
-/* The workout the main card is about: the one in progress, the one picked, or the next one. */
+/* What Today is about. The situation is the first of these that applies: a workout left open on this
+   device ('progress'), today before the start date ('pre'), trained today ('done'), today planned
+   ('train'), otherwise a rest day ('rest'). */
 function cardState(p) {
   const today = todayYmd();
   const start = p.start || START;
-  const pre = today < start;
   const draft = loadDraft();
-  const wk = weekSessions(S.uid, pre ? start : today);
-  const doneToday = !pre && wk.some(s => s.date === today && s.status === 'done');
-  const next = (upcoming(S.uid, 1)[0] || { date: today }).date;
-  const tpl = draft ? (draft.session.tpl || 'A') : UI.tpl || nextTpl(S.uid);
-  return { today, start, pre, draft, wk, doneToday, next, tpl };
+  const mine = trainings(S.uid, today).filter(s => s.date === today);
+  const done = mine.length ? mine[mine.length - 1] : null;
+  const next = upcoming(S.uid, 1)[0] || { date: today, tpl: nextTpl(S.uid) };
+  const plannedToday = weekModel(S.uid, today).days.some(d => d.date === today && d.planned);
+  const situation = draft ? 'progress' : today < start ? 'pre' : done ? 'done' : plannedToday ? 'train' : 'rest';
+  const tpl = draft ? (draft.session.tpl || 'A') : next.tpl;
+  return { today, start, situation, draft, done, next, tpl };
 }
+function todaySituation(p) { return cardState(p).situation; }
+
 function viewToday(p) {
-  const { today, start, pre, draft, wk, doneToday, next, tpl } = cardState(p);
-  const draftId = draft ? draft.session.id : null;
-  const isToday = next === today && !pre;
+  const { today, start, situation, draft, done, next, tpl } = cardState(p);
   const abc = p.mode === 'abc';
+  const dateLine = situation === 'pre' ? `You start ${fmtLong(start)}` : `${dayShort(today)} · today`;
+  const head = title => `<div class="head"><div class="eyebrow">${esc(dateLine)}</div><h1 class="title">${esc(title)}</h1></div>`;
+  const link = (act, text, attrs = '') => `<button class="btn link" data-act="${act}"${attrs}>${text}</button>`;
+
+  // A workout left open shows its own exercises, with what is done so far.
+  if (situation === 'progress') {
+    return `${head('Workout in progress')}${weekStripHtml()}
+      <section class="card wo" aria-label="Workout in progress">
+        <ul class="ex-list">${draft.session.blocks.map(b => draftRow(b, p)).join('')}</ul>
+        <button class="btn primary xl" data-act="resume">Resume workout</button>
+        <div class="wo-links" style="justify-content:center">${link('discardDraft', UI.confirm === 'discardDraft' ? 'Tap again to discard it' : 'Discard it')}</div>
+      </section>`;
+  }
+  // Trained today: the result, and what comes next.
+  if (situation === 'done') {
+    const coming = `${dayShort(next.date)}${abc ? ' · Workout ' + next.tpl : ''}`;
+    return `${head(abc ? `Workout ${done.tpl} done` : 'Workout done')}${weekStripHtml()}
+      <section class="card wo" aria-label="Today’s result">${resultRowsHtml(done, S.uid)}${totalRowHtml(done)}</section>
+      <div class="after">
+        <span class="next-line">Next: <b>${esc(coming)}</b></span>
+        <div class="wo-links">${link('edit', 'Edit', ` data-id="${esc(done.id)}"`)}${link('startSession', 'Train again today', ` data-tpl="${nextTpl(S.uid)}"`)}</div>
+      </div>`;
+  }
+  // Otherwise the next workout: today's, a practice one before the start, or the one a rest day could take.
   const plan = planFor(p, tpl);
-  const nWeek = Math.min(3, wk.filter(s => s.id !== draftId).length);
-
-  const eyebrow = pre ? `You start ${fmtLong(start)}` : `${dayShort(today)} · ${nWeek} of 3 this week`;
-  const title = draft ? 'Workout in progress'
-    : pre ? 'Get ready'
-    : doneToday ? 'Done for today ✓'
-    : isToday ? (abc ? `Workout ${tpl}` : 'Today’s workout')
-    : 'Rest day';
-
-  // A workout in progress shows its own exercises, with what is done so far.
-  const rows = draft
-    ? draft.session.blocks.map(b => draftRow(b, p)).join('')
-    : SLOT_ORDER.map(slot => exRow(p, tpl, slot, plan[slot], draftId)).join('');
-  const ups = draft ? '' : SLOT_ORDER.map(slot => upHint(p, plan[slot], draftId)).filter(Boolean).join('');
-
-  const main = draft
-    ? `<button class="btn primary xl" data-act="resume">Resume workout</button>
-       <button class="btn link" data-act="discardDraft" style="justify-self:center">${UI.confirm === 'discardDraft' ? 'Tap again to discard it' : 'Discard it'}</button>`
-    : isToday && !doneToday
-      ? `<button class="btn primary xl" data-act="startSession" data-tpl="${tpl}">Start · 30 min</button>`
-      : `<button class="btn ghost xl" data-act="startSession" data-tpl="${tpl}">${pre ? 'Try a practice workout' : 'Train anyway'}</button>`;
-
-  return `
-    <div class="head"><div class="eyebrow">${esc(eyebrow)}</div><h1 class="title">${esc(title)}</h1></div>
-    ${weekStripHtml()}
-    <div class="card">
-      <ul class="ex-list">${rows}</ul>
+  const rows = SLOT_ORDER.map(slot => exRow(p, tpl, slot, plan[slot])).join('');
+  const ups = SLOT_ORDER.map(slot => upHint(p, plan[slot])).filter(Boolean).join('');
+  const swap = abc ? link('swap', 'Swap workout') : '';
+  let title, top = '', main, note = '', links = swap;
+  if (situation === 'pre') {
+    title = 'Get ready';
+    main = `<button class="btn ghost xl" data-act="startSession" data-tpl="${tpl}">Try a practice workout</button>`;
+  } else if (situation === 'train') {
+    title = abc ? `Workout ${tpl}` : 'Today’s workout';
+    main = `<button class="btn primary xl" data-act="startSession" data-tpl="${tpl}">Start · 30 min</button>`;
+  } else {
+    title = 'Rest day';
+    top = `<div class="wo-next"><span class="eyebrow">Next up · ${esc(dayShort(next.date))}</span>${abc ? `<b class="h2">Workout ${tpl}</b>` : ''}</div>`;
+    const from = movedDay(S.uid, today);
+    main = `<button class="btn ${from ? 'primary' : 'ghost'} xl" data-act="startSession" data-tpl="${tpl}">${from ? 'Train today instead' : 'Train anyway'}</button>`;
+    note = `<p class="wo-note">${from ? `Moves ${esc(fmtWeekday(from))}’s workout to today.` : 'Counts as an extra workout this week.'}</p>`;
+    links = '';
+  }
+  return `${head(title)}${weekStripHtml()}
+    <section class="card wo" aria-label="${situation === 'train' ? esc(title) : 'Next workout'}">
+      ${top}<ul class="ex-list">${rows}</ul>
       ${ups}
-      ${main}
-      ${abc && !draft ? '<button class="btn link" data-act="swap" style="justify-self:center">Swap workout</button>' : ''}
-    </div>`;
+      ${main}${note}
+      ${links ? `<div class="wo-links">${links}</div>` : ''}
+    </section>`;
 }
 
-/* One exercise of the workout: tap to change exercise or weight. */
-function exRow(p, tpl, slot, key, exclude) {
+/* One exercise of the coming workout: its weight, and the reps to beat. Tap to change it. */
+function exRow(p, tpl, slot, key) {
   const info = exInfo(key, p);
   const pk = plannedKg(p, key);
-  const adv = advice(history(S.uid, key).filter(h => h.sid !== exclude), info);
-  const kg = `<span class="ex-kg">${esc(kgLabel(pk.kg, info))}</span>`;
-  const heavier = !adv.first && Number(pk.kg) > Number(adv.last.kg);
-  const sub = adv.first ? `${kg} · first time` : `${kg} · ${heavier ? 'match' : 'beat'} ${adv.last.total} reps`;
+  const ref = refBlock(history(S.uid, key));
+  const goal = ref
+    ? `<span class="goal-n">${ref.total}</span><span class="goal-l">${Number(pk.kg) > Number(ref.kg) ? 'reps to match' : 'reps to beat'}</span>`
+    : '<span class="goal-l">First time</span>';
   return `<li><button class="ex-row" data-act="editEx" data-tpl="${tpl}" data-slot="${slot}">
     ${plateHtml(slot)}
-    <span class="ex-main"><span class="ex-n"><span class="sr-only">${esc(SLOT[slot].label)}: </span>${esc(info.n)}</span><span class="ex-sub">${sub}<span class="sr-only">. Change</span></span></span>${CHEV}
+    <span class="ex-main"><span class="sr-only">${esc(SLOT[slot].label)}: </span><span class="ex-n">${esc(info.n)}</span><span class="ex-sub"><span class="ex-kg">${esc(kgLabel(pk.kg, info))}</span></span></span>
+    <span class="goal">${goal}</span><span class="sr-only">. Change</span>
   </button></li>`;
 }
 function draftRow(b, p) {
@@ -2331,7 +2364,7 @@ function runnerFinish() {
   const sub = sessionSummary(s, S.uid);
   return `<div class="run">
     <div class="head"><div class="eyebrow">${esc(dayShort(s.date))}${trial ? ' · practice' : ''}</div><h2 class="title">${trial ? 'Practice done' : 'Workout done'}</h2>${sub ? `<span class="small">${esc(sub)}</span>` : ''}</div>
-    <div class="card">${resultRowsHtml(s, S.uid, !trial)}${totalRowHtml(s)}</div>
+    <div class="card wo">${resultRowsHtml(s, S.uid, !trial)}${totalRowHtml(s)}</div>
     <button class="btn primary xl" data-act="saveSession">Save workout</button>
     <button class="btn link" data-act="finishBack" style="justify-self:center">Back to the last exercise</button>
   </div>`;

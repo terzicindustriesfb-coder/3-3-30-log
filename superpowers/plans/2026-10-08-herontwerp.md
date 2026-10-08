@@ -207,6 +207,7 @@ async function openApp(opts = {}) {
   const o = Object.assign({ today: '2026-10-14', time: '10:00', profile: profile(), sessions: [], crew: null, draft: null, dark: false, width: 390, height: 844 }, opts);
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, timezoneId: 'Europe/Amsterdam', locale: 'en-GB', colorScheme: o.dark ? 'dark' : 'light' });
   const page = await ctx.newPage();
+  page.setDefaultTimeout(4000);                 // everything in this app is there at once; a missing element should fail fast
   page.__errors = [];
   page.on('pageerror', e => page.__errors.push(String(e)));
   await page.route('**/*', r => (r.request().url().startsWith(base) ? r.continue() : r.abort()));

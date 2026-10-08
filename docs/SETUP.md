@@ -4,14 +4,18 @@ De app draait op **GitHub Pages**. De gedeelde opslag en het inloggen lopen via 
 (gratis, met je Google-account). Je trainingsmaatje heeft alleen de link, een Google-account
 (of e-mail + wachtwoord) en jullie **groepscode** nodig.
 
+> Stap 1 t/m 3 zijn op 8 oktober 2026 uitgevoerd: repo `terzicindustriesfb-coder/3-3-30-log`,
+> Firebase-project **3-3-30 Log** (`log-3-3-30`), Firestore in `eur3`. De stappen hieronder
+> staan er nog voor als je het ooit opnieuw moet opzetten.
+
 ## 1. GitHub Pages aanzetten
 
-1. Op een gratis GitHub-account werkt Pages alleen voor een **openbare** repo. In de repo staat
-   alleen de code van de app, geen trainingen. Ga naar **Settings → General → Danger Zone →
-   Change visibility → Public**.
+1. Op een gratis GitHub-account werkt Pages alleen voor een **openbare** repo. De app staat
+   daarom in een eigen openbare repo, **`terzicindustriesfb-coder/3-3-30-log`**. Daarin staat
+   alleen de code van de app, geen trainingen.
 2. Ga naar **Settings → Pages**. Kies bij *Build and deployment*: **Deploy from a branch**,
-   branch **`ccr-32294d77-3xyile`**, map **`/docs`** → **Save**.
-3. Na een minuut staat de site op **https://terzicindustriesfb-coder.github.io/TestSite/**.
+   branch **`main`**, map **`/docs`** → **Save**.
+3. Na een minuut staat de site op **https://terzicindustriesfb-coder.github.io/3-3-30-log/**.
    Tot stap 2 en 3 hieronder klaar zijn, zegt de site "Not connected yet".
 
 ## 2. Firebase-project maken

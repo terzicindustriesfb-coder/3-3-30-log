@@ -353,6 +353,25 @@ button.lt-row:active { background: var(--surface-2); }
 .lf-block:first-child { border-top: 0; }
 .lf-nums { align-items: end; }
 @media (max-width: 374px) { .lt-head, .lt-row { grid-template-columns: 50px repeat(3, minmax(0, 1fr)); gap: 6px; } .lt-row { padding: 8px; } .lt-cell b { font-size: 14px; white-space: normal; } .lt-sub span { white-space: normal; } .lt-ex { -webkit-line-clamp: 3; } .lt-date .lt-sum { font-size: 10.5px; } }
+/* The week strip on Today */
+.wk { padding: 14px 14px 12px; gap: 8px; }
+.wk-row { display: grid; grid-template-columns: 66px repeat(7, minmax(0, 1fr)) 32px; align-items: center; column-gap: 2px; min-height: 28px; }
+.wk-head > :first-child { font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.wk-d { justify-self: center; font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.wk-d[aria-current="date"] { padding: 0 4px 2px; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); }
+.wk-who { font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-n { justify-self: end; font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+.wk-row:not(.me) .wk-who, .wk-row:not(.me) .wk-n { color: var(--ink-2); }
+.wk-more { justify-self: start; min-height: 44px; font-size: 14px; }
+.wd { justify-self: center; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 13px; }
+.wd svg { width: 14px; height: 14px; stroke-width: 3.2; }
+.wd[data-state="rest"] { width: 5px; height: 5px; background: var(--line); }
+.wd[data-state="done"] { background: var(--ink); color: var(--bg); }
+.wk-row:not(.me) .wd[data-state="done"] { background: var(--ink-2); }
+.wd[data-state="today"] { box-shadow: inset 0 0 0 2.5px var(--ink); }
+.wd[data-state="planned"] { box-shadow: inset 0 0 0 1.5px var(--ring); color: var(--muted); }
+.wd[data-state="todayRest"] { border: 2px dashed var(--ink-2); }
+.wd[data-state="missed"] { border: 1.5px dashed var(--ring); }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -1385,6 +1404,50 @@ function viewProgressPage() {
 }
 const LOAD_ERR = `<div class="card"><b>Your log couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
 
+/* One day in the week strip: a filled disc (trained), a ring (planned), a dashed ring (missed, or
+   today when it is a rest day) or a small dot (rest). `text` is a letter, the tick, or nothing. */
+const dayDotHtml = (state, text) => `<span class="wd" data-state="${state}" aria-hidden="true">${text || ''}</span>`;
+/* Buddies with a profile, in the order they joined. */
+function buddyIds() {
+  return [...S.members.keys()].filter(id => id !== S.uid && S.members.get(id)?.profile)
+    .sort((a, c) => (S.members.get(a).profile.joined || 0) - (S.members.get(c).profile.joined || 0) || (a < c ? -1 : 1));
+}
+/* The week on Today: a row for you and for up to three buddies. Nothing before your start date. */
+function weekStripHtml() {
+  const p = myProfile();
+  const today = todayYmd();
+  if (!p || today < (p.start || START)) return '';
+  const abc = p.mode === 'abc';
+  const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
+  const row = (id, mine) => {
+    const w = weekModel(id, today);
+    const who = mine ? 'You' : displayName(id);
+    const dots = w.days.map(d => {
+      if (!mine) {
+        // A buddy's row has no letters and does not mark today.
+        const state = d.state === 'today' ? 'planned' : d.state === 'todayRest' ? 'rest' : d.state;
+        return dayDotHtml(state, state === 'done' ? ICON.check : '');
+      }
+      if (d.state === 'done') return dayDotHtml('done', abc ? esc(d.tpl) : ICON.check);
+      const coming = d.state === 'today' || d.state === 'planned';
+      return dayDotHtml(d.state, coming && abc ? esc(letters.get(d.date) || '') : '');
+    }).join('');
+    const count = w.done || w.planned ? `${w.done}/${w.planned}` : '';
+    return `<div class="wk-row${mine ? ' me' : ''}" data-id="${esc(id)}" role="img" aria-label="${esc(who)}: ${w.done} of ${w.planned} workouts this week"><span class="wk-who">${esc(who)}</span>${dots}<span class="wk-n">${count}</span></div>`;
+  };
+  const mon = mondayOf(today);
+  const dayLetters = [0, 1, 2, 3, 4, 5, 6].map(i => {
+    const d = addDays(mon, i);
+    return `<span class="wk-d"${d === today ? ' aria-current="date"' : ''}>${WD[parseYmd(d).getDay()][0]}</span>`;
+  }).join('');
+  const buddies = buddyIds();
+  const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="tab" data-tab="progress">+${buddies.length - 3} more</button>` : '';
+  return `<section class="card wk" aria-label="This week">
+    <div class="wk-row wk-head" aria-hidden="true"><span>Week</span>${dayLetters}<span></span></div>
+    ${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}
+  </section>`;
+}
+
 /* The workout the main card is about: the one in progress, the one picked, or the next one. */
 function cardState(p) {
   const today = todayYmd();
@@ -1431,6 +1494,7 @@ function viewToday(p) {
 
   return `
     <div class="head"><div class="eyebrow">${esc(eyebrow)}</div><h1 class="title">${esc(title)}</h1></div>
+    ${weekStripHtml()}
     <div class="card">
       <div class="row"><span class="eyebrow grow">${esc(when)}</span>${tplSel}</div>
       <ul class="ex-list">${rows}</ul>

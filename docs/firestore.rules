@@ -1,0 +1,26 @@
+rules_version = '2';
+// Rules for the 3-3-30 Log (see SETUP.md, step 3).
+// Change CHANGE-ME below to your own crew code. Everyone who signs in and types that code once
+// can see the whole crew's workouts, and can only change their own.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function inCrew() { return signedIn() && exists(/databases/$(database)/documents/crew/$(request.auth.uid)); }
+
+    // crew/{uid}: created once with the right code; that is the membership.
+    match /crew/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.code == 'CHANGE-ME';
+    }
+
+    // members/{uid}: a person's profile; members/{uid}/sessions/{id}: their workouts.
+    match /members/{uid} {
+      allow read: if inCrew();
+      allow write: if inCrew() && request.auth.uid == uid;
+      match /sessions/{sid} {
+        allow read: if inCrew();
+        allow write: if inCrew() && request.auth.uid == uid;
+      }
+    }
+  }
+}

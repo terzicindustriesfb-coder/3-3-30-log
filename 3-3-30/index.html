@@ -1103,11 +1103,14 @@ function weekSessions(id, anyDay) {
   const mon = mondayOf(anyDay);
   return trainings(id).filter(s => mondayOf(s.date) === mon);
 }
-/* A/B/C by how many trainings of that week came before `day`. */
-function templateFor(profile, day) {
-  if (!profile || profile.mode !== 'abc') return 'A';
-  const done = weekSessions(S.uid, day).filter(s => s.date < day || (s.date === day && s.status === 'done')).length;
-  return ['A', 'B', 'C'][done % 3];
+/* A/B/C runs on: the letter after the newest training that counts, also across a weekend.
+   With `upTo` only trainings on or before that date are looked at. */
+const TPLS = ['A', 'B', 'C'];
+function nextTpl(id, upTo) {
+  if (S.members.get(id)?.profile?.mode !== 'abc') return 'A';
+  const done = trainings(id).filter(s => !upTo || s.date <= upTo);
+  const last = done[done.length - 1];
+  return last ? TPLS[(TPLS.indexOf(last.tpl) + 1) % 3] : 'A';
 }
 function planFor(profile, tpl) {
   return Object.assign({}, DEFAULT_PLANS.A, profile?.plans?.[tpl] || profile?.plans?.A || {});
@@ -1289,7 +1292,7 @@ function cardState(p) {
   const wk = weekSessions(S.uid, pre ? start : today);
   const doneToday = !pre && wk.some(s => s.date === today && s.status === 'done');
   const next = nextTrainingDay(p, doneToday ? addDays(today, 1) : today);
-  const tpl = draft ? (draft.session.tpl || 'A') : UI.tpl || templateFor(p, next);
+  const tpl = draft ? (draft.session.tpl || 'A') : UI.tpl || nextTpl(S.uid);
   return { today, start, pre, draft, wk, doneToday, next, tpl };
 }
 function viewToday(p) {
@@ -1745,7 +1748,7 @@ function clearDraftFor(id) { const d = loadDraft(); if (d && d.session.id === id
 function newSession(tpl) {
   const p = myProfile();
   const today = todayYmd();
-  const t = tpl || templateFor(p, today);
+  const t = tpl || nextTpl(S.uid);
   const plan = planFor(p, t);
   return {
     v: 1, id: uidGen('s'), date: today, tpl: t, status: 'active', startedAt: Date.now(), updatedAt: Date.now(),
@@ -2377,7 +2380,7 @@ const ACT = {
   discardDraft() { if (UI.confirm !== 'discardDraft') { armConfirm('discardDraft'); render(); return; } UI.confirm = null; discardActive(); },
   manual() {
     UI.person = null; UI.logAll = false;
-    const s = newSession(UI.tpl || templateFor(myProfile(), todayYmd())); s.status = 'done';
+    const s = newSession(UI.tpl || nextTpl(S.uid)); s.status = 'done';
     UI.sheet = { kind: 'session', session: s };
     openSheet(sessionForm(s, true), 'Log a past workout');
   },
@@ -2538,7 +2541,7 @@ function syncDateChips() {
   document.querySelectorAll('#dateChips [data-act="pickDate"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.d === v)));
   const st = UI.sheet;
   if (st && st.kind === 'session' && st.session && !st.tplPicked && validYmd(v) && !document.querySelector('#sheet form [data-touched="1"]')) {
-    const t = templateFor(myProfile(), v);
+    const t = nextTpl(S.uid, v);
     const btn = document.querySelector(`#sheet [data-act="formTpl"][data-tpl="${t}"]`);
     if (btn && btn.getAttribute('aria-pressed') !== 'true') ACT.formTpl(btn);
   }

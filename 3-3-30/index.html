@@ -468,6 +468,9 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 .sc-d.pos { color: var(--good); }
 .sc-none { color: var(--muted); font-weight: 650; }
 @media (max-width: 359px) { .sc-row .spark { display: none; } }
+.eh-list { padding: 4px 14px; gap: 0; }
+.eh-row { padding: 12px 4px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.eh-row + .eh-row { border-top: 1px solid var(--surface-2); }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -2400,6 +2403,7 @@ function openSheet(html, label) {
   sh.innerHTML = `<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="${esc(label || 'Dialog')}" data-sheet="${esc(UI.sheet?.kind || '')}">${html}</div>`;
   sh.hidden = false;
   setBackgroundInert(true);
+  drawCharts(sh);
   const f = sh.querySelector('input:not([type=hidden]),select,textarea,button');
   if (f) { try { f.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
@@ -2429,6 +2433,7 @@ function refreshSheet() {
   panel.innerHTML = SHEETS[st.kind].html(st);
   panel.dataset.sheet = st.kind;
   panel.scrollTop = top;
+  drawCharts(panel);
   restoreFocus(panel, f);
 }
 /* The close button, the backdrop and Escape: back to the sheet this one was opened from, else close. */
@@ -2572,6 +2577,30 @@ function exEditHtml(st) {
   </form>`;
 }
 SHEETS.ex = { label: 'Exercise', html: exSheet };
+/* The history of one exercise of one person: reps and kilos lifted as lines, then every score, newest first. */
+function exHistorySheet(st) {
+  const prof = S.members.get(st.pid)?.profile;
+  const info = exInfo(st.key, prof);
+  const hist = history(st.pid, st.key);
+  const head = `<div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}</div><b class="h2">${esc(info.n)}</b></div>
+      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>`;
+  if (!hist.length) return `${head}<p class="small empty">No score yet.</p>`;
+  const pts = hist.map(h => ({ date: h.date, reps: h.total, kg: scored(h) ? blockVolume(h) : null, ex: info.n, cut: !!h.cut }));
+  const repPts = pts.map(x => Object.assign({}, x, { y: x.reps }));
+  const kgPts = pts.filter(x => x.kg != null).map(x => Object.assign({}, x, { y: x.kg }));
+  const lastKg = kgPts[kgPts.length - 1];
+  const box = (list, metric) => (list.length > 1
+    ? chartBox(`${st.pid}:${st.key}:${metric}`, list, st.slot, metric)
+    : `<p class="tiny pg-wait">${list.length ? 'The line starts the 2nd time.' : 'Bodyweight: counted in reps.'}</p>`);
+  const rows = hist.slice().reverse().map(h => `<div class="eh-row">${esc(dayShort(h.date))} · ${esc(blockKgLabel(h, Object.assign({}, info, { bw: !!h.bw })))} · ${plural(h.total, 'rep', 'reps')}${h.cut ? ' · stopped early' : ''}</div>`).join('');
+  return `${head}
+    <div class="card pg-card"><div class="pg-charts">
+      <div class="pg-chart"><div class="pg-lbl"><span>Reps</span><b class="num">${pts[pts.length - 1].reps}</b></div>${box(repPts, 'reps')}</div>
+      <div class="pg-chart"><div class="pg-lbl"><span>Kilos lifted</span>${lastKg ? `<b class="num">${esc(kgTotal(lastKg.kg))}</b>` : ''}</div>${box(kgPts, 'kg')}</div>
+    </div></div>
+    <section class="card eh-list" aria-label="All scores">${rows}</section>`;
+}
+SHEETS.exHistory = { label: 'Exercise history', html: exHistorySheet };
 /* Another view of the sheet: drawn from the top, with focus on `focus` or else on its first control. */
 function exView(view, focus) {
   const st = UI.sheet, panel = $('#sheet .sheet-panel');
@@ -3016,6 +3045,7 @@ const ACT = {
   },
   person(el) { UI.person = el.dataset.id; UI.logAll = false; UI.scoreTpl = null; render(); },
   scoreTpl(el) { UI.scoreTpl = el.dataset.tpl; render(); },
+  exHistory(el) { if (SLOT[el.dataset.slot]) showSheet({ kind: 'exHistory', pid: personPick().pid, key: el.dataset.ex, slot: el.dataset.slot }); },
   logAll() { UI.logAll = true; render(); },
   skipUp(el) { prefs.noUp = Object.assign({}, prefs.noUp, { [el.dataset.ex]: Number(el.dataset.kg) }); savePrefs(); render(); },
   day(el) {

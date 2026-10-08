@@ -49,7 +49,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
-    --muted: #918E87; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
+    --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
     --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
     --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
     --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -57,7 +57,7 @@
 }
 :root[data-theme="dark"] {
   --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
-  --muted: #918E87; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
+  --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
   --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
   --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
   --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -709,7 +709,11 @@ async function initStore() {
     }
     subscribeMembers();
     subscribeSessions(uid);
-    setTimeout(() => { if (!S.loaded || !S.ownSeen) { S.loaded = true; S.ownSeen = true; scheduleRender(); } }, 7000);
+    setTimeout(() => {
+      S.loaded = true;
+      if (!S.ownSeen) { if (S.ownLocal) S.ownSeen = true; else S.sessSlow = true; }
+      scheduleRender();
+    }, 7000);
   } else {
     S.mode = 'local'; S.uid = 'local'; S.ownLocal = true;
     loadOwnLocal();
@@ -806,6 +810,7 @@ function subscribeSessions(id) {
   const unsub = S.db.collection('members/' + id + '/sessions').onSnapshot(snap => {
     const m = member(id);
     if (id === S.uid && S.ownLocal) {
+      S.ownSeen = true;
       // Read-only viewer: shared history is the base, local entries win.
       let changed = false;
       for (const d of snap.docs) {
@@ -821,7 +826,14 @@ function subscribeSessions(id) {
     m.sessions = next;
     if (id === S.uid && !S.ownSeen) { S.ownSeen = true; maybeReopen(); }
     scheduleRender();
-  }, () => { S.subs.delete(key); if (id === S.uid && !S.ownSeen) { S.ownSeen = true; scheduleRender(); } });
+  }, () => {
+    S.subs.delete(key);
+    if (id !== S.uid || S.ownSeen) return;
+    // Never show an empty log as if it were real.
+    if (S.ownLocal) S.ownSeen = true;
+    else { S.sessErr = true; S.notice = 'Your workouts couldn’t be loaded. Reload the page to try again.'; }
+    scheduleRender();
+  });
   S.subs.set(key, unsub);
 }
 
@@ -1167,20 +1179,16 @@ function planDay(p) {
  * ------------------------------------------------------------------ */
 const isLib = key => LIB.some(e => e.k === key);
 const eqOf = info => info.eq || (info.bw ? 'bw' : info.dbl ? 'dbpair' : 'barbell');
-const normName = s => String(s || '').trim().toLowerCase().replace(/[-‐–_]/g, ' ').replace(/\s+/g, ' ');
+const normName = s => String(s || '').trim().toLowerCase().replace(/[.,;:!?]+$/, '').replace(/[-‐–_]/g, ' ').replace(/\s+/g, ' ').trim();
 /* A typed name matches an exercise by its name, or by a known other name ("OHP", "RDL").
    The person's own exercises win, so an old custom "Overhead press" keeps its history. */
 function exByName(name, profile) {
   const n = normName(name);
   if (!n) return null;
-  const forms = [...new Set([n, n.replace(/s$/, ''), n + 's'])];
+  const forms = [...new Set([n, n.replace(/es$/, ''), n.replace(/s$/, ''), n + 's'])];
   const custom = profile?.custom || [];
-  for (const f of forms) {
-    const hit = custom.find(e => normName(e.n) === f) || LIB.find(e => normName(e.n) === f)
-      || LIB.find(e => (ALIAS[e.k] || []).some(a => normName(a) === f));
-    if (hit) return hit;
-  }
-  return null;
+  const by = (list, names) => { for (const f of forms) { const hit = list.find(e => names(e).includes(f)); if (hit) return hit; } return null; };
+  return by(custom, e => [normName(e.n)]) || by(LIB, e => [normName(e.n)]) || by(LIB, e => (ALIAS[e.k] || []).map(normName));
 }
 /* Turn a typed name into an exercise key, adding a custom exercise when it is new.
    Returns the (possibly changed) profile copy and the key. */
@@ -1339,7 +1347,10 @@ function viewTrain() {
   // Never offer 'Join' before we know this person has no profile yet.
   if (!p && S.mode === 'shared' && !S.membersSeen) return SKELETON;
   if (!p) return viewOnboarding();
-  if (S.mode === 'shared' && !S.ownLocal && !S.ownSeen) return SKELETON;
+  if (S.mode === 'shared' && !S.ownSeen) {
+    if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and reload the page. Nothing is lost.</p></div>`;
+    return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
+  }
   const today = todayYmd();
   const start = p.start || START;
   const pre = today < start;
@@ -1388,13 +1399,13 @@ function viewTrain() {
     const lbl = `<b>${WD[dd.getDay()]} ${dd.getDate()}</b>`;
     if (it.s) {
       if (it.s.status === 'done') return `<div class="wday done">${lbl}<span>✓ done</span></div>`;
-      return isLive(it.s) ? `<div class="wday live">${lbl}<span>in progress</span></div>` : `<div class="wday done">${lbl}<span>unfinished</span></div>`;
+      return isLive(it.s) ? `<div class="wday live">${lbl}<span>in progress</span></div>` : `<div class="wday done">${lbl}<span>✓ partly done</span></div>`;
     }
     if (it.d < today && (pre || it.d < joinedDay || it.d < start)) return `<div class="wday na">${lbl}<span>–</span></div>`;
     const missed = it.d < today;
     return `<div class="wday${it.d === next ? ' next' : ''}${missed ? ' missed' : ''}">${lbl}<span>${missed ? 'missed' : it.d === today ? 'today' : it.d === next ? 'next' : 'planned'}</span></div>`;
   }).join('');
-  const nDone = Math.min(3, wk.filter(s => s.status === 'done').length);
+  const nDone = Math.min(3, wk.filter(s => !isLive(s)).length);
   const live = wk.some(isLive) || !!(draft && mondayOf(draft.session.date) === mon);
   const barLine = nDone >= 3 ? 'Bar loaded — week done!' : nDone ? `${plural(3 - nDone, 'more workout', 'more workouts')} to load the bar.` : 'Every workout adds a plate.';
   const weekCard = `
@@ -1904,11 +1915,16 @@ function equipChoices(eq, locked) {
   return EQUIP_ORDER.map(k => `<button type="button" data-act="pickEq" data-eq="${k}" aria-pressed="${k === eq}"${locked ? ' disabled' : ''}>${EQUIP[k].label}</button>`).join('');
 }
 /* Live update of the editor while typing a name. */
+function sheetHit(name) {
+  const p = myProfile();
+  const orig = UI.sheet && UI.sheet.origKey ? exInfo(UI.sheet.origKey, p) : null;
+  return orig && normName(name) === normName(orig.n) ? orig : exByName(name, p);
+}
 function syncExSheet() {
   const f = $('form[data-form="ex"]');
   if (!f || !UI.sheet || UI.sheet.kind !== 'ex') return;
   const name = $('#exName', f).value;
-  const hit = exByName(name, myProfile());
+  const hit = sheetHit(name);
   const lib = hit && isLib(hit.k);
   if (hit) UI.sheet.eq = eqOf(hit);
   else if (!UI.sheet.eqTouched) UI.sheet.eq = guessEquip(name);
@@ -1976,7 +1992,7 @@ function loadDraft() {
 }
 function saveDraft() {
   if (!R.session) { LS.del(DRAFT_KEY()); return; }
-  LS.set(DRAFT_KEY(), { session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, leadEnd: R.leadEnd, pausedAt: R.pausedAt, pausedMs: R.pausedMs });
+  LS.set(DRAFT_KEY(), { session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, leadEnd: R.leadEnd, pausedAt: R.pausedAt, pausedMs: R.pausedMs, corr: R.corr });
 }
 function clearDraftFor(id) { const d = loadDraft(); if (d && d.session.id === id) LS.del(DRAFT_KEY()); }
 
@@ -2002,11 +2018,11 @@ function setBackgroundInert(on) {
 function openRunner(fromDraft, tpl) {
   const d = fromDraft ? loadDraft() : null;
   if (d) {
-    Object.assign(R, { session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: d.leadEnd, pausedAt: d.pausedAt, pausedMs: d.pausedMs });
+    Object.assign(R, { session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: d.leadEnd, pausedAt: d.pausedAt, pausedMs: d.pausedMs, corr: Array.isArray(d.corr) ? d.corr.filter(Number.isInteger) : null });
     if (R.phase === 'lead') R.phase = 'ready';
     if (!['ready', 'run', 'paused', 'over', 'finish'].includes(R.phase)) R.phase = 'ready';
   } else {
-    Object.assign(R, { session: newSession(tpl), idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0 });
+    Object.assign(R, { session: newSession(tpl), idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, corr: null });
   }
   R.lastRem = null; R.confirm = null; R.confirm2 = null; R.lastSet = null; R.menuPaused = false; R.menuLead = 0; R.dirty = false;
   const a = document.activeElement;
@@ -2083,6 +2099,8 @@ function markLive() {
   if (!st || st.paused) { R.session.updatedAt = Date.now(); saveSession(Object.assign(clone(R.session), { paused: false }), { quiet: true }); }
 }
 function endBlock(auto) {
+  // A weight still being typed belongs to the running block, not to the after-buzzer correction.
+  const k = document.activeElement; if (k && k.id === 'runKgIn') k.blur();
   const b = blk();
   b.dur = Math.min(BLOCK_SEC, Math.round(R.phase === 'paused' || R.phase === 'run' ? elapsed() : BLOCK_SEC));
   b.cut = !auto && b.dur < BLOCK_SEC - 1;
@@ -2091,6 +2109,7 @@ function endBlock(auto) {
   if (auto) { beep(988, 0.7); buzz([300, 100, 300]); }
   b.total = b.sets.reduce((a, s) => a + s.r, 0);
   if (b.sets.length) b.kg = workKg(b);
+  R.corr = b.sets.map((x, i) => i).filter(i => Number(b.sets[i].kg ?? b.kg) === Number(b.kg));
   saveDraft(); renderRunner(); keepPadInView();
 }
 
@@ -2256,7 +2275,7 @@ function renderRunner() {
   if (R.phase === 'over') {
     const c = compare(liveB, prev);
     const rk = tot > 0 ? recordKind(liveB, history(S.uid, b.ex, R.session.id)) : null;
-    const title = rk === 'reps' ? 'New PR! 🎉' : rk === 'kg' ? 'New PR — heavier, same reps!' : !tot ? 'No reps logged.' : c ? (c.verdict === 'minder' && c.dr < -Math.max(3, Math.round((prev.total || 0) * 0.1)) ? 'Fewer reps than last time — it still counts.' : VERDICT_TEXT[c.verdict]) : trial ? 'Practice block done.' : 'Baseline set.';
+    const title = rk === 'reps' ? 'New PR! 🎉' : rk === 'kg' ? 'New PR — heavier, same reps!' : !tot ? 'No reps logged.' : c ? (bigDrop(c, prev) ? (c.verdict === 'zwaarder' ? 'Heavier weight, fewer reps — it still counts.' : c.verdict === 'minder' ? 'Fewer reps than last time — it still counts.' : VERDICT_TEXT[c.verdict]) : VERDICT_TEXT[c.verdict]) : trial ? 'Practice block done.' : 'Baseline set.';
     middle = `<div class="result${rk ? ' pr' : ''}">
       <div class="row"><b class="v grow">${title}</b><b class="num" style="font-size:26px">${tot}<span class="tiny"> reps</span></b></div>
       <span class="small">${prev ? `Last time ${prev.total} reps · ${esc(blockKgLabel(prev, info))}${c && tot ? ` · <b class="delta ${c.tone}">${c.text}</b>` : ''}` : trial ? `Doesn’t count yet — your baseline starts ${esc(fmtLong(startOf(S.uid)))}.` : 'Next time, beat this.'}</span>
@@ -2266,7 +2285,7 @@ function renderRunner() {
     middle = `<div class="score">
       <span class="total">${tot}</span>
       <span class="unit"><span>reps</span><span class="tiny">${scored(liveB) && tot > 0 ? fmtNum(Math.round(blockVolume(liveB))) + ' kg volume' : plural(b.sets.length, 'set', 'sets')}</span></span>
-      <span class="cmp">${prev ? `<span>To beat <b>${prev.total}</b></span><span data-ghost></span>` : `<span>${trial ? 'Practice' : 'Baseline'}</span>`}</span>
+      <span class="cmp">${prev ? `${tot > prev.total && (Number(liveB.kg) || 0) >= (Number(prev.kg) || 0) ? `<span class="delta pos">✓ Past last time (${prev.total})</span>` : `<span>To beat <b>${prev.total}</b></span>`}<span data-ghost></span>` : `<span>${trial ? 'Practice' : 'Baseline'}</span>`}</span>
     </div>`;
   }
   const mixed = setKgs(b).length > 1 && !b.bw;
@@ -2294,6 +2313,7 @@ function setRunHtml(el, html) {
   runRendering = true;
   try { el.innerHTML = html; } finally { runRendering = false; }
 }
+const bigDrop = (c, prev) => c.dr < -Math.max(3, Math.round((prev.total || 0) * 0.1));
 function keepKgEdit(k) {
   const inp = k && $('#runKgIn');
   if (!inp) return;
@@ -2329,7 +2349,9 @@ function commitRunKg(inp) {
 function setBlockKg(b, kg) {
   const old = Number(b.kg) || 0;
   b.kg = kg;
-  if (R.phase === 'over') b.sets = b.sets.map(x => (Number(x.kg ?? old) === old ? Object.assign({}, x, { kg }) : x));
+  if (R.phase !== 'over') return;
+  const fix = Array.isArray(R.corr) ? new Set(R.corr) : null;
+  b.sets = b.sets.map((x, i) => ((fix ? fix.has(i) : Number(x.kg ?? old) === old) ? Object.assign({}, x, { kg }) : x));
 }
 function flushRunner() { if (R.dirty && R.session) renderRunner(); }
 let pointerIsDown = false;
@@ -2471,13 +2493,14 @@ function dateChips(cur) {
 }
 /* After changing an exercise name in the form, show the weight in that exercise's unit.
    A new log takes a known exercise's planned weight; an edit keeps what was typed. */
-function syncFormExercise(inp) {
+function syncFormExercise(inp, key) {
   const i = inp.name.slice(2);
   const kgEl = inp.form.querySelector('#kg' + i);
   if (!kgEl) return;
   const p = myProfile();
-  const hit = exByName(inp.value, p);
-  if (hit && hit.k === inp.dataset.ex) return;
+  if (!key && inp.dataset.ex && normName(inp.value) === normName(exName(inp.dataset.ex, p))) return;
+  const hit = key ? exInfo(key, p) : exByName(inp.value, p);
+  if (!key && hit && hit.k === inp.dataset.ex) return;
   const eq = hit ? eqOf(hit) : guessEquip(inp.value);
   const q = EQUIP[eq];
   const wasDbl = kgEl.dataset.dbl === '1', wasBw = kgEl.dataset.bw === '1';
@@ -2502,6 +2525,8 @@ async function submitSessionForm(form) {
   if (setInputs.some(el => el.value !== el.dataset.orig && /[^\d\s,;·+\/.\-]/.test(el.value))) { toast('Type your sets as plain numbers, e.g. 8 8 7.'); return; }
   const kgBad = [...form.querySelectorAll('[name^="kg"]')].find(el => !Number.isFinite(parseKg(el.value)));
   if (kgBad) { toast('Enter the weight as a number, e.g. 14 or 12.5.'); try { kgBad.focus(); } catch { /* ignore */ } return; }
+  const kgEmpty = [...form.querySelectorAll('[name^="kg"]')].find(el => el.dataset.bw !== '1' && el.value.trim() === '' && !form.querySelector(`[name="skip${el.name.slice(2)}"]`)?.checked);
+  if (kgEmpty) { toast('Enter the weight as a number, e.g. 14 or 12.5.'); try { kgEmpty.focus(); } catch { /* ignore */ } return; }
   const kgNeg = [...form.querySelectorAll('[name^="kg"]')].find(el => el.dataset.bw !== '1' && parseKg(el.value) < 0);
   if (kgNeg) { toast('Minus kilos only work for bodyweight exercises (assistance).'); try { kgNeg.focus(); } catch { /* ignore */ } return; }
   const names = base.blocks.map((b, i) => String(form.querySelector(`[name="ex${i}"]`)?.value || '').trim());
@@ -2515,7 +2540,9 @@ async function submitSessionForm(form) {
   let profChanged = false;
   base.blocks.forEach((b, i) => {
     let ex = b.ex;
-    if (names[i] && normName(names[i]) !== normName(blockName(b, p))) {
+    const curKey = form.querySelector(`[name="ex${i}"]`)?.dataset.ex || '';
+    if (names[i] && curKey && normName(names[i]) === normName(exName(curKey, p, curKey === b.ex ? b.name : undefined))) ex = curKey;
+    else if (names[i]) {
       const kgEl0 = form.querySelector('#kg' + i);
       const eq = kgEl0?.dataset.bw === '1' ? 'bw' : kgEl0?.dataset.dbl === '1' ? 'dbpair' : undefined;
       const r = resolveExercise(p, names[i], b.slot, exByName(names[i], p) ? undefined : (eq || guessEquip(names[i])));
@@ -2606,6 +2633,8 @@ function armConfirm(key, holder = UI) {
 }
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  const c = !$('#runner').hidden && $('#runner .clock');
+  t.style.top = c ? Math.max(8, c.getBoundingClientRect().bottom - 54) + 'px' : '';
   clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 4000);
 }
 function stepKg(kg, info, dir) {
@@ -2615,15 +2644,14 @@ function stepKg(kg, info, dir) {
 }
 
 const ACT = {
-  tab(el) { if (!el.classList.contains('tab')) UI.person = null; UI.tab = el.dataset.tab; prefs.tab = UI.tab; savePrefs(); UI.confirm = null; render(); window.scrollTo(0, 0); },
+  tab(el) { if (!el.classList.contains('tab') || (el.dataset.tab === 'progress' && UI.tab !== 'progress')) UI.person = null; UI.tab = el.dataset.tab; prefs.tab = UI.tab; savePrefs(); UI.confirm = null; render(); window.scrollTo(0, 0); },
   dismissNotice() { S.notice = ''; render(); },
   pickTpl(el) { UI.tpl = el.dataset.tpl; render(); },
   editEx(el) { openSheet(exerciseSheet(el.dataset.tpl, el.dataset.slot), 'Edit exercise'); },
   exKg(el) {
     const st = UI.sheet; if (!st) return;
     const q = EQUIP[st.eq];
-    const name = $('#exName')?.value;
-    const hit = exByName(name, myProfile());
+    const hit = sheetHit($('#exName')?.value);
     const step = hit && !st.eqTouched ? (hit.step || q.step) : q.step;
     st.kg = stepKg(st.kg, { step, bw: q.bw }, Number(el.dataset.dir));
     st.kgTouched = true;
@@ -2686,7 +2714,7 @@ const ACT = {
     const p = myProfile(); const plan = planFor(p, t);
     st.session.blocks.forEach((b, i) => {
       const inp = f.querySelector(`[name="ex${i}"]`);
-      if (inp) { inp.value = exInfo(plan[b.slot], p).n; syncFormExercise(inp); }
+      if (inp) { inp.value = exInfo(plan[b.slot], p).n; syncFormExercise(inp, plan[b.slot]); }
     });
     f.querySelectorAll('[data-act="formTpl"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tpl === t)));
   },
@@ -2732,17 +2760,16 @@ const ACT = {
     const b = blk();
     const before = b.sets.reduce((a, s) => a + s.r, 0);
     b.sets.push({ r: n, t: Math.round(Math.min(BLOCK_SEC, elapsed())), kg: Number(b.kg) || 0 });
+    if (R.phase === 'over' && Array.isArray(R.corr)) R.corr.push(b.sets.length - 1);
     b.total = b.sets.reduce((a, s) => a + s.r, 0);
     R.lastSet = n;
     buzz(25);
     const prev = R.phase !== 'over' ? prevBlock() : null;
-    if (prev && before <= prev.total && b.total > prev.total && (Number(b.kg) || 0) >= (Number(prev.kg) || 0)) {
-      toast(`${b.total} reps — past last time’s ${prev.total}! Keep going.`); buzz([40, 60, 40]);
-    }
+    if (prev && before <= prev.total && b.total > prev.total && (Number(b.kg) || 0) >= (Number(prev.kg) || 0)) buzz([40, 60, 40]);
     saveDraft(); renderRunner(); keepPadInView();
     const t = $('#runner .total') || $('#runner .result .num'); if (t) { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
   },
-  undo() { const b = blk(); if (!b.sets.length) return; b.sets.pop(); b.total = b.sets.reduce((a, s) => a + s.r, 0); R.lastSet = b.sets.length ? b.sets[b.sets.length - 1].r : null; saveDraft(); renderRunner(); },
+  undo() { const b = blk(); if (!b.sets.length) return; b.sets.pop(); if (Array.isArray(R.corr)) R.corr = R.corr.filter(i => i < b.sets.length); b.total = b.sets.reduce((a, s) => a + s.r, 0); R.lastSet = b.sets.length ? b.sets[b.sets.length - 1].r : null; saveDraft(); renderRunner(); },
   runKg(el) {
     const b = blk();
     setBlockKg(b, stepKg(b.kg, exInfo(b.ex, myProfile()), Number(el.dataset.dir)));
@@ -2781,10 +2808,10 @@ const ACT = {
     toast('Workout paused. Tap “Resume workout” to continue.');
   },
   stopSave() {
-    R.menuLead = 0;
     const b = blk();
     if (b.sets.length && !b.done) { b.total = b.sets.reduce((a, s) => a + s.r, 0); b.done = true; b.kg = workKg(b); b.dur = Math.round(Math.min(BLOCK_SEC, elapsed())); b.cut = b.dur < BLOCK_SEC - 1; }
     if (!doneBlocks(R.session).length) { toast('Nothing to save yet.'); return; }
+    R.menuLead = 0;
     R.session.blocks.forEach(x => { if (!x.done) x.skipped = true; });
     R.phase = 'finish'; R.confirm = null; R.menuPaused = false; stopTick(); wakeOff(); saveDraft(); renderRunner();
     const h = $('#runner h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
@@ -2803,7 +2830,7 @@ function syncDateChips() {
 }
 function advance() {
   if (R.idx < R.session.blocks.length - 1) {
-    R.idx++; R.phase = 'ready'; R.t0 = 0; R.pausedMs = 0; R.pausedAt = 0; R.lastSet = null; R.confirm = null;
+    R.idx++; R.phase = 'ready'; R.t0 = 0; R.pausedMs = 0; R.pausedAt = 0; R.lastSet = null; R.confirm = null; R.corr = null;
   } else {
     R.phase = 'finish'; wakeOff();
   }
@@ -2833,7 +2860,13 @@ document.addEventListener('click', e => {
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
 $('#runner').addEventListener('click', e => { if (e.target.classList.contains('run-menu')) ACT.menuBack(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('kg-in')) { e.preventDefault(); e.target.blur(); return; }
+  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('kg-in')) {
+    e.preventDefault();
+    const sel = e.target.id === 'runKgIn' ? '#runner [data-act="runKg"][data-dir="1"]' : '[data-act="exKg"][data-dir="1"]';
+    e.target.blur();
+    setTimeout(() => { const pl = $(sel); if (pl) { try { pl.focus({ preventScroll: true }); } catch { /* ignore */ } } }, 0);
+    return;
+  }
   if (e.key !== 'Escape') return;
   if (!$('#sheet').hidden) closeSheet();
   else if (R.session && R.confirm === 'menu') ACT.menuBack();

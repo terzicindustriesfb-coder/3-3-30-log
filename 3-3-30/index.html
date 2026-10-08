@@ -413,6 +413,22 @@ button.lt-row:active { background: var(--surface-2); }
 .legend i { margin-top: 4px; width: 14px; height: 14px; border-radius: 50%; }
 .legend i.push { background: var(--push); } .legend i.pull { background: var(--pull); } .legend i.legs { background: var(--legs); }
 .legend b { color: var(--ink); }
+.wk { cursor: pointer; }
+.wk-edit { justify-self: end; width: 44px; height: 44px; margin: -8px -10px -8px 0; background: transparent; color: var(--ink-2); }
+.wk-edit svg { width: 16px; height: 16px; }
+.wkd-list { padding: 4px 14px; gap: 0; }
+.wkd { display: grid; grid-template-columns: 64px 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 4px; min-height: 54px; }
+.wkd + .wkd { border-top: 1px solid var(--surface-2); }
+.wkd-d { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 16px; }
+.wkd-st { font-size: 14px; color: var(--ink-2); }
+.wkd-ok { width: 54px; height: 44px; display: grid; place-items: center; color: var(--good); }
+.wkd-ok svg { width: 20px; height: 20px; stroke-width: 2.8; }
+.switch { width: 54px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
+.switch i { width: 46px; height: 28px; border-radius: 999px; background: var(--ring); padding: 3px; display: flex; justify-content: flex-start; }
+.switch i::after { content: ""; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); }
+.switch[aria-checked="true"] i { background: var(--primary); justify-content: flex-end; }
+.wk-foot { padding: 0 4px; font-size: 14px; color: var(--ink-2); }
+.wk-foot .btn.link { min-height: 44px; font-size: 14px; }
 /* Bottom switch: Today | Progress */
 .tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
@@ -1527,12 +1543,12 @@ function weekStripHtml() {
   const mon = mondayOf(today);
   const dayLetters = [0, 1, 2, 3, 4, 5, 6].map(i => {
     const d = addDays(mon, i);
-    return `<span class="wk-d"${d === today ? ' aria-current="date"' : ''}>${WD[parseYmd(d).getDay()][0]}</span>`;
+    return `<span class="wk-d" aria-hidden="true"${d === today ? ' aria-current="date"' : ''}>${WD[parseYmd(d).getDay()][0]}</span>`;
   }).join('');
   const buddies = buddyIds();
   const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="tab" data-tab="progress">+${buddies.length - 3} more</button>` : '';
-  return `<section class="card wk" aria-label="This week">
-    <div class="wk-row wk-head" aria-hidden="true"><span>Week</span>${dayLetters}<span></span></div>
+  return `<section class="card wk" aria-label="This week" data-act="week">
+    <div class="wk-row wk-head"><span aria-hidden="true">Week</span>${dayLetters}<button type="button" class="iconbtn wk-edit" data-act="week" aria-label="Move a workout this week">${ICON.pencil}</button></div>
     ${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}
   </section>`;
 }
@@ -1598,7 +1614,7 @@ function viewToday(p) {
     const from = movedDay(S.uid, today);
     main = `<button class="btn ${from ? 'primary' : 'ghost'} xl" data-act="startSession" data-tpl="${tpl}">${from ? 'Train today instead' : 'Train anyway'}</button>`;
     note = `<p class="wo-note">${from ? `Moves ${esc(fmtWeekday(from))}’s workout to today.` : 'Counts as an extra workout this week.'}</p>`;
-    links = planLink;
+    links = planLink + link('week', 'Change this week');
   }
   return `${head(title)}${weekStripHtml()}
     <section class="card wo" aria-label="${situation === 'train' ? esc(title) : 'Next workout'}">
@@ -2482,6 +2498,44 @@ function planSheet() {
 }
 SHEETS.plan = { label: 'Your plan', html: planSheet };
 
+/* This week: the seven days, with a switch for today and the days to come. Only this week changes. */
+function weekSheet() {
+  const p = myProfile();
+  const today = todayYmd();
+  const w = weekModel(S.uid, today);
+  const abc = p.mode === 'abc';
+  const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
+  const monFirst = (a, c) => ((a + 6) % 7) - ((c + 6) % 7);
+  const usual = (p.days || [1, 3, 5]).slice().sort(monFirst);
+  const planned = plannedDows(p, w.mon, today);
+  // A day that was added pairs with a usual day that was switched off: "moved from Wed".
+  const added = planned.filter(d => !usual.includes(d)).sort(monFirst);
+  const dropped = usual.filter(d => !planned.includes(d));
+  const rows = w.days.map(d => {
+    const dayNo = parseYmd(d.date).getDate();
+    const coming = d.state === 'today' || d.state === 'planned';
+    const dot = d.state === 'done' ? dayDotHtml('done', abc ? esc(d.tpl) : ICON.check)
+      : dayDotHtml(d.state, coming && abc ? esc(letters.get(d.date) || '') : '');
+    let status = { done: 'Done', missed: 'Missed', today: 'Today', planned: 'Planned' }[d.state] || 'Rest';
+    const from = coming ? dropped[added.indexOf(d.dow)] : undefined;
+    if (from != null) status += ` · moved from ${WD[from]}`;
+    const control = d.state === 'done' ? `<span class="wkd-ok" aria-hidden="true">${ICON.check}</span>`
+      : d.date >= today ? `<button type="button" class="switch" role="switch" data-act="weekDay" data-date="${d.date}" aria-checked="${d.planned}" aria-label="Train on ${esc(fmtWeekday(d.date))} ${dayNo}"><i></i></button>`
+      : '<span></span>';
+    return `<div class="wkd" data-date="${d.date}"><span class="wkd-d">${WD[d.dow]} ${dayNo}</span>${dot}<span class="wkd-st">${esc(status)}</span>${control}</div>`;
+  }).join('');
+  const sun = addDays(w.mon, 6);
+  const range = `Mon ${w.mon.slice(0, 7) === sun.slice(0, 7) ? parseYmd(w.mon).getDate() : fmtDM(w.mon)} – Sun ${fmtDM(sun)}`;
+  const names = usual.map(d => WD[d]);
+  const usualText = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return `<div class="sheet-head"><div class="grow" style="display:grid;gap:2px"><b class="h2">This week</b><span class="sheet-sub">${esc(range)} · tap a day to train or rest</span></div>
+      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
+    <section class="card wkd-list" aria-label="Days of this week">${rows}</section>
+    <p class="wk-foot">Only this week changes. Your usual days stay ${esc(usualText)}. <button type="button" class="btn link" data-act="plan">Change usual days</button></p>
+    <button type="button" class="btn primary xl" data-act="closeSheet">Done</button>`;
+}
+SHEETS.week = { label: 'This week', html: weekSheet };
+
 /* Swap workout: another letter for the workout you are about to start. */
 function swapSheet() {
   const p = myProfile();
@@ -2698,6 +2752,18 @@ const ACT = {
   signOut() { if (WEB) WEB.signOut(); },
   tab(el) { UI.tab = el.dataset.tab === 'progress' ? 'progress' : 'today'; UI.logAll = false; render(); window.scrollTo(0, 0); },
   plan() { showSheet({ kind: 'plan' }); },
+  week() { showSheet({ kind: 'week' }); },
+  // Switch a day of this week on or off: today and later, and only a day without a training.
+  weekDay(el) {
+    const today = todayYmd();
+    const w = weekModel(S.uid, today);
+    const day = w.days.find(d => d.date === el.dataset.date);
+    if (!day || day.date < today || day.n > 0) return;
+    const p = myProfile();
+    const dows = plannedDows(p, w.mon, today);
+    saveProfile(withWeekDays(p, dows.includes(day.dow) ? dows.filter(d => d !== day.dow) : dows.concat(day.dow), today));
+    refreshSheet();
+  },
   swap() { showSheet({ kind: 'swap' }); },
   pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; dismissSheet(); },
   editEx(el) {

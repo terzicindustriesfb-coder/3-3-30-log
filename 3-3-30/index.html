@@ -352,6 +352,7 @@ button.lt-row:active { background: var(--surface-2); }
 .lf-block { display: grid; gap: 8px; padding-block: 12px; border-top: 1px solid var(--line); }
 .lf-block:first-child { border-top: 0; }
 .lf-nums { align-items: end; }
+.lf-block select { flex: 1; min-width: 0; }
 @media (max-width: 374px) { .lt-head, .lt-row { grid-template-columns: 50px repeat(3, minmax(0, 1fr)); gap: 6px; } .lt-row { padding: 8px; } .lt-cell b { font-size: 14px; white-space: normal; } .lt-sub span { white-space: normal; } .lt-ex { -webkit-line-clamp: 3; } .lt-date .lt-sum { font-size: 10.5px; } }
 /* The week strip on Today */
 .wk { padding: 14px 14px 12px; gap: 8px; }
@@ -476,7 +477,6 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 <div class="runner" id="runner" role="dialog" aria-modal="true" aria-label="Workout" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
-<datalist id="exNames"></datalist>
 
 <script>
 'use strict';
@@ -1332,9 +1332,8 @@ function moveFor(profile, id, date, today = todayYmd()) {
 
 
 /* ------------------------------------------------------------------ *
- * Exercises typed by name
+ * Exercises: names, weight types and search
  * ------------------------------------------------------------------ */
-const isLib = key => LIB.some(e => e.k === key);
 const eqOf = info => info.eq || (info.bw ? 'bw' : info.dbl ? 'dbpair' : 'barbell');
 const normName = s => String(s || '').trim().toLowerCase().replace(/[.,;:!?]+$/, '').replace(/[-‐–_]/g, ' ').replace(/\s+/g, ' ').trim();
 /* A typed name, tidied: trimmed, single spaces, 40 characters at most. */
@@ -1380,44 +1379,6 @@ function newCustom(profile, name, slot, eq) {
   while (allExercises(p).some(e => e.k === key)) key += '-2';
   p.custom.push({ k: key, n, s: slot, eq: kind, step: q.step, start: q.start, bw: !!q.bw, dbl: !!q.dbl });
   return { p, key };
-}
-/* A typed name matches an exercise by its name, or by a known other name ("OHP", "RDL").
-   The person's own exercises win, so an old custom "Overhead press" keeps its history. */
-function exByName(name, profile) {
-  const n = normName(name);
-  if (!n) return null;
-  const forms = [...new Set([n, n.replace(/es$/, ''), n.replace(/s$/, ''), n + 's'])];
-  const custom = profile?.custom || [];
-  const by = (list, names) => { for (const f of forms) { const hit = list.find(e => names(e).includes(f)); if (hit) return hit; } return null; };
-  return by(custom, e => [normName(e.n)]) || by(LIB, e => [normName(e.n)]) || by(LIB, e => (ALIAS[e.k] || []).map(normName));
-}
-/* Turn a typed name into an exercise key, adding a custom exercise when it is new.
-   Returns the (possibly changed) profile copy and the key. */
-function resolveExercise(profile, name, slot, eq) {
-  const p = clone(profile);
-  p.custom = p.custom || [];
-  const clean = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 40);
-  const hit = exByName(clean, p);
-  const e = EQUIP[eq] ? eq : guessEquip(clean);
-  if (hit && isLib(hit.k)) return { p, key: hit.k };
-  if (hit) {
-    const c = p.custom.find(x => x.k === hit.k);
-    if (c && EQUIP[eq] && c.eq !== eq) Object.assign(c, { eq, step: EQUIP[eq].step, bw: !!EQUIP[eq].bw, dbl: !!EQUIP[eq].dbl });
-    return { p, key: hit.k };
-  }
-  let k = 'c-' + slug(clean);
-  while (allExercises(p).some(x => x.k === k)) k += '-2';
-  const q = EQUIP[e];
-  p.custom.push({ k, n: clean, s: slot, eq: e, step: q.step, start: q.start, bw: !!q.bw, dbl: !!q.dbl });
-  return { p, key: k };
-}
-function fillNameList() {
-  const p = myProfile();
-  const seen = new Set();
-  const list = allExercises(p).filter(e => !seen.has(e.n) && seen.add(e.n)).sort((a, b) => a.n.localeCompare(b.n));
-  const dl = $('#exNames');
-  const html = list.map(e => `<option value="${esc(e.n)}" label="${esc(SLOT[e.s]?.label || '')} · ${esc(EQUIP[eqOf(e)].label)}"></option>`).join('');
-  if (dl.dataset.h !== html) { dl.innerHTML = html; dl.dataset.h = html; }
 }
 /* The name to show for a logged block: the library/custom name, else what was stored. */
 const blockName = (b, prof) => exName(b.ex, prof, b.name);
@@ -1469,7 +1430,6 @@ function render() {
   }
   v.innerHTML = html;
   drawCharts(v);
-  if (myProfile()) fillNameList();
   restoreFocus(v, fsel);
   const pc = v.querySelector('.seg.scroll [aria-pressed="true"]');
   if (pc) { const t = pc.parentElement; t.scrollLeft += pc.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - pc.offsetWidth) / 2; }
@@ -2698,6 +2658,17 @@ async function submitExSheet() {
 const kgFieldLabel = info => (info.bw ? 'Extra kg (− = assist)' : info.dbl ? 'Each dumbbell (kg)' : 'Weight (kg)');
 const parseKg = v => { const t = String(v ?? '').trim().replace(/\s*kg$/i, '').replace(',', '.'); return t === '' ? 0 : Number(t); };
 
+/* The exercises a block of the log form can hold: your plan first (workouts A, B and C, each once), then the
+   rest of the group by name. An exercise that is in neither, like one that no longer exists in an old
+   workout, comes first under the name stored with the workout. */
+function exOptionsHtml(p, slot, cur, storedName) {
+  const all = searchExercises(p, slot, '');
+  const planned = [...new Set((p.mode === 'abc' ? TPLS : ['A']).map(t => planFor(p, t)[slot]))].map(k => all.find(e => e.k === k)).filter(Boolean);
+  const opt = e => `<option value="${esc(e.k)}"${e.k === cur ? ' selected' : ''}>${esc(e.n)}</option>`;
+  const group = (label, list) => (list.length ? `<optgroup label="${label}">${list.map(opt).join('')}</optgroup>` : '');
+  return (all.some(e => e.k === cur) ? '' : `<option value="${esc(cur)}" selected>${esc(exName(cur, p, storedName))}</option>`)
+    + group('In your plan', planned) + group(`More ${SLOT[slot].label.toLowerCase()} exercises`, all.filter(e => !planned.includes(e)));
+}
 function sessionForm(s, isNew) {
   const p = myProfile();
   const blocks = s.blocks.map((b, i) => {
@@ -2705,7 +2676,7 @@ function sessionForm(s, isNew) {
     const kgVal = info.dbl ? (Number(b.kg) || 0) / 2 : b.kg;
     const reps = b.done && !b.skipped && b.total > 0 ? b.total : '';
     return `<div class="lf-block" role="group" aria-label="${SLOT[b.slot].label}">
-      <div class="row">${plateHtml(b.slot, true)}<input type="text" name="ex${i}" list="exNames" maxlength="40" value="${esc(blockName(b, p))}" aria-label="${SLOT[b.slot].label} exercise" autocomplete="off" data-slot="${b.slot}" data-ex="${esc(b.ex)}"></div>
+      <div class="row">${plateHtml(b.slot, true)}<select name="ex${i}" aria-label="${SLOT[b.slot].label} exercise" data-slot="${b.slot}">${exOptionsHtml(p, b.slot, b.ex, b.name)}</select></div>
       <div class="row lf-nums">
         <label class="f grow" for="kg${i}"><span class="kglbl">${kgFieldLabel(info)}</span><input type="text" id="kg${i}" name="kg${i}" inputmode="decimal" value="${esc(kgInText(kgVal))}" data-dbl="${info.dbl ? 1 : 0}" data-bw="${info.bw ? 1 : 0}"></label>
         <label class="f grow" for="tot${i}">Reps<input type="number" id="tot${i}" name="tot${i}" min="0" step="1" inputmode="numeric" value="${reps}" placeholder="–"></label>
@@ -2736,35 +2707,30 @@ function dateChips(cur) {
   }
   return out.map(d => `<button type="button" data-act="pickDate" data-d="${d}" aria-pressed="${d === cur}">${d === today ? 'Today' : d === yday ? 'Yesterday' : esc(WD[parseYmd(d).getDay()] + ' ' + fmtDM(d))}</button>`).join('');
 }
-/* After changing an exercise name in the form, show the weight in that exercise's unit.
-   A new log takes a known exercise's planned weight; an edit keeps what was typed. */
-function syncFormExercise(inp, key) {
-  const i = inp.name.slice(2);
-  const kgEl = inp.form.querySelector('#kg' + i);
+/* After another exercise is chosen in the form, show the weight the way that exercise counts it.
+   A new log takes the exercise's planned weight unless a weight was typed; an edit keeps the kilos. */
+function syncFormExercise(sel) {
+  const kgEl = sel.form.querySelector('#kg' + sel.name.slice(2));
   if (!kgEl) return;
   const p = myProfile();
-  if (!key && inp.dataset.ex && normName(inp.value) === normName(exName(inp.dataset.ex, p))) return;
-  const hit = key ? exInfo(key, p) : exByName(inp.value, p);
-  if (!key && hit && hit.k === inp.dataset.ex) return;
-  const eq = hit ? eqOf(hit) : guessEquip(inp.value);
-  const q = EQUIP[eq];
+  const info = exInfo(sel.value, p);
   const wasDbl = kgEl.dataset.dbl === '1', wasBw = kgEl.dataset.bw === '1';
+  const typed = kgEl.dataset.touched === '1';
   const n = parseKg(kgEl.value);
   const total = (Number.isFinite(n) ? n : 0) * (wasDbl ? 2 : 1);
-  const planned = hit && inp.form.dataset.new === '1' && kgEl.dataset.touched !== '1';
-  const kg = planned || (hit && !!q.bw !== wasBw) ? Number(plannedKg(p, hit.k).kg) || 0 : !!q.bw !== wasBw ? q.start : total;
-  inp.dataset.ex = hit ? hit.k : '';
+  const planned = (sel.form.dataset.new === '1' && !typed) || !!info.bw !== wasBw;
+  const kg = planned ? Number(plannedKg(p, sel.value).kg) || 0 : total;
   // A weight the user typed stays as typed (only its unit label changes).
-  if (!(kgEl.dataset.touched === '1' && !!q.bw === wasBw)) kgEl.value = kgInText(q.dbl ? kg / 2 : kg);
-  kgEl.dataset.dbl = q.dbl ? '1' : '0';
-  kgEl.dataset.bw = q.bw ? '1' : '0';
-  kgEl.closest('label').querySelector('.kglbl').textContent = kgFieldLabel({ bw: q.bw, dbl: q.dbl });
+  if (!(typed && !!info.bw === wasBw)) kgEl.value = kgInText(info.dbl ? kg / 2 : kg);
+  kgEl.dataset.dbl = info.dbl ? '1' : '0';
+  kgEl.dataset.bw = info.bw ? '1' : '0';
+  kgEl.closest('label').querySelector('.kglbl').textContent = kgFieldLabel(info);
 }
 
 async function submitSessionForm(form) {
   const id = form.dataset.id;
   const isNew = form.dataset.new === '1';
-  let p = myProfile();
+  const p = myProfile();
   const base = isNew ? clone(UI.sheet?.session) : clone(me().sessions.get(id));
   if (!base) { closeSheet(); return; }
   const hasReps = i => parseInt(form.querySelector(`[name="tot${i}"]`)?.value, 10) > 0;
@@ -2774,33 +2740,22 @@ async function submitSessionForm(form) {
   if (kgEmpty) { toast('Enter the weight as a number, e.g. 14 or 12.5.'); try { kgEmpty.focus(); } catch { /* ignore */ } return; }
   const kgNeg = [...form.querySelectorAll('[name^="kg"]')].find(el => el.dataset.bw !== '1' && parseKg(el.value) < 0);
   if (kgNeg) { toast('Minus kilos only work for bodyweight exercises (assistance).'); try { kgNeg.focus(); } catch { /* ignore */ } return; }
-  const names = base.blocks.map((b, i) => String(form.querySelector(`[name="ex${i}"]`)?.value || '').trim());
-  if (names.some((n, i) => !n && hasReps(i))) { toast('Type the name of each exercise you did.'); return; }
   const orig = isNew ? null : me().sessions.get(id);
   const fd = new FormData(form);
   const date = String(fd.get('date') || '');
   if (!validYmd(date)) { toast('Pick a valid date.'); return; }
   if (date > todayYmd()) { toast('Pick a date up to today.'); return; }
   base.date = date;
-  let profChanged = false;
   base.blocks.forEach((b, i) => {
-    let ex = b.ex;
-    const curKey = form.querySelector(`[name="ex${i}"]`)?.dataset.ex || '';
-    if (names[i] && curKey && normName(names[i]) === normName(exName(curKey, p, curKey === b.ex ? b.name : undefined))) ex = curKey;
-    else if (names[i]) {
-      const kgEl0 = form.querySelector('#kg' + i);
-      const eq = kgEl0?.dataset.bw === '1' ? 'bw' : kgEl0?.dataset.dbl === '1' ? 'dbpair' : undefined;
-      const r = resolveExercise(p, names[i], b.slot, exByName(names[i], p) ? undefined : (eq || guessEquip(names[i])));
-      if (r.p.custom.length !== (p.custom || []).length) { p = r.p; profChanged = true; }
-      ex = r.key;
-    }
+    const ex = form.querySelector(`[name="ex${i}"]`)?.value || b.ex;
     const info = exInfo(ex, p);
     const oldKg = Number(b.kg) || 0;
     const kgEl = form.querySelector('#kg' + i);
     const kgIn = parseKg(kgEl ? kgEl.value : fd.get('kg' + i));
     const fieldDbl = kgEl ? kgEl.dataset.dbl === '1' : !!info.dbl;
     if (ex !== b.ex) b.bw = !!info.bw;
-    b.ex = ex; b.name = info.n;
+    b.name = exName(ex, p, ex === b.ex ? b.name : undefined);   // an exercise that no longer exists keeps its stored name
+    b.ex = ex;
     b.kg = Number.isFinite(kgIn) ? Math.round(clampN(fieldDbl ? kgIn * 2 : kgIn, -300, 1000) * 10) / 10 : oldKg;
     if (!info.bw) b.kg = Math.max(0, b.kg);
     if (b.kg !== oldKg) b.sets = (b.sets || []).map(x => (x.kg == null || Number(x.kg) === oldKg ? Object.assign({}, x, { kg: b.kg }) : x));
@@ -2821,7 +2776,6 @@ async function submitSessionForm(form) {
   base.status = 'done'; base.paused = false; base.updatedAt = Date.now();
   if (isNew) { base.startedAt = parseYmd(base.date).getTime() + 12 * 3600e3; base.manual = true; }
   clearDraftFor(base.id);
-  if (profChanged) await saveProfile(p);
   const ok = await saveSession(base);
   if (!ok) return;
   // Only the newest workout of an exercise sets its planned weight.
@@ -3005,8 +2959,8 @@ const ACT = {
     const t = el.dataset.tpl; st.session.tpl = t;
     const p = myProfile(); const plan = planFor(p, t);
     st.session.blocks.forEach((b, i) => {
-      const inp = f.querySelector(`[name="ex${i}"]`);
-      if (inp) { inp.value = exInfo(plan[b.slot], p).n; syncFormExercise(inp, plan[b.slot]); }
+      const sel = f.querySelector(`[name="ex${i}"]`);
+      if (sel) { sel.innerHTML = exOptionsHtml(p, b.slot, plan[b.slot]); syncFormExercise(sel); }
     });
     f.querySelectorAll('[data-act="formTpl"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tpl === t)));
   },

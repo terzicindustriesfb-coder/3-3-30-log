@@ -910,7 +910,7 @@ function subscribeMembers() {
     if (!snap.metadata.fromCache) { S.loaded = true; S.membersSeen = true; }
     resolvePeople();
     scheduleRender();
-    maybeReopen();
+    resumeDraft();
   }, () => {
     S.membersErr = true; S.loaded = true; scheduleRender();
   });
@@ -938,7 +938,7 @@ function subscribeSessions(id) {
     for (const d of snap.docs) { const n = normSession(d.data(), d.id); if (n) next.set(d.id, n); }
     m.sessions = next;
     m.seen = true; m.err = false;
-    if (id === S.uid && !S.ownSeen) { S.ownSeen = true; maybeReopen(); }
+    if (id === S.uid && !S.ownSeen) { S.ownSeen = true; resumeDraft(); }
     scheduleRender();
   }, () => {
     S.subs.delete(key);
@@ -1504,7 +1504,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
  * ------------------------------------------------------------------ */
-const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false } };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false }, day: null };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1536,6 +1536,7 @@ function render() {
   const a = document.activeElement;
   if (a && a.closest && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') { renderDeferred = true; return; }
   const fsel = a && a.closest && (a.closest('#main') || a.closest('#notice')) ? focusSel(a) : null;
+  UI.day = todayYmd();          // the day this screen is of; dayCheck draws it again when the day changes
   renderHeader();
   const v = $('#view');
   let html;
@@ -1549,23 +1550,7 @@ function render() {
   restoreFocus(v, fsel);
   const pc = v.querySelector('.seg.scroll [aria-pressed="true"]');
   if (pc) { const t = pc.parentElement; t.scrollLeft += pc.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - pc.offsetWidth) / 2; }
-  maybeReopen();
-}
-
-/* After a reload with a card open, the same card opens again in the same state: the clock running, on pause,
-   or after the bell. A reload in the countdown puts the card back to "to do". */
-let reopenChecked = false;
-function maybeReopen() {
-  if (reopenChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
-  reopenChecked = true;
-  const d = loadDraft();
-  if (!d) return;
-  if (!['run', 'paused', 'over'].includes(d.phase)) { LS.del(DRAFT_KEY()); return; }
-  // A save that was still on its way when the page went is tried again by Done.
-  Object.assign(R, { session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: 0, pausedAt: d.pausedAt, pausedMs: d.pausedMs,
-    lastRem: null, confirm: null, lastSet: null, saved: d.saved === 'saved' ? 'saved' : d.saved ? 'failed' : null, since: 0, storing: null });
-  render();
-  if (R.phase === 'run') { wakeOn(); startTick(); }
+  resumeDraft();
 }
 
 function renderHeader() {
@@ -2154,6 +2139,85 @@ function storeNow() {
   });
   return R.storing;
 }
+/* Close an attempt that will not go on: a card left open on an earlier day, a workout left open by the old
+   version, a countdown. Reps that were tapped count as a score of the day it began; its time is what the
+   clock had run, and under ten minutes it stopped early. What is done in the draft is added to the stored
+   workout with that id; a group that is done there keeps what is stored. False only when a save failed. */
+async function settleDraft(d) {
+  const s = clone(d.session);
+  const b = s.blocks[d.idx];
+  if (b && b.sets.length && !isDone(b)) {
+    const ran = d.phase === 'run' ? (Date.now() - d.t0 - (d.pausedMs || 0)) / 1000 : d.phase === 'paused' ? (d.pausedAt - d.t0 - (d.pausedMs || 0)) / 1000 : b.dur;
+    b.total = b.sets.reduce((a, x) => a + x.r, 0);
+    b.dur = Math.max(0, Math.min(BLOCK_SEC, Math.round(Number(ran) || 0)));
+    Object.assign(b, { done: true, skipped: false, cut: b.dur < BLOCK_SEC - 1, kg: workKg(b) });
+  }
+  const stored = me().sessions.get(s.id);
+  let out;
+  if (stored) {
+    out = clone(stored);
+    let added = false;
+    for (const x of s.blocks.filter(isDone)) {
+      if (out.blocks.some(y => y.slot === x.slot && isDone(y))) continue;      // what is stored stays
+      const i = out.blocks.findIndex(y => y.slot === x.slot);
+      if (i >= 0) out.blocks[i] = x; else out.blocks.push(x);
+      added = true;
+    }
+    if (!added) return true;
+  } else {
+    if (!s.blocks.some(isDone)) return true;
+    out = s;
+    out.blocks = out.blocks.map(x => (isDone(x) ? x : Object.assign(x, { done: false, skipped: true, sets: [], total: 0, dur: 0, cut: false })));
+  }
+  const now = Date.now();
+  return saveSession(Object.assign(out, { status: 'done', paused: false, updatedAt: now, endedAt: out.endedAt || now }), { quiet: true });
+}
+/* What this device kept of an open card, looked at once the profile and your own workouts are there:
+   - the clock still runs (also when it began yesterday), or it is today's and on pause or after the bell:
+     the same card opens again in the same state. A clock whose time ran out meanwhile rings at once;
+   - anything else (a countdown, an earlier day, a workout left open by the old version): it is closed with
+     settleDraft and the home screen shows today. When that save fails the draft stays for the next visit. */
+let draftChecked = false;
+function resumeDraft() {
+  if (draftChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
+  draftChecked = true;
+  const d = loadDraft();
+  if (!d) return;
+  const running = d.phase === 'run' && (Date.now() - d.t0 - (d.pausedMs || 0)) / 1000 < BLOCK_SEC;
+  if (!running && !(d.session.date === todayYmd() && ['run', 'paused', 'over'].includes(d.phase))) {
+    settleDraft(d).then(ok => {
+      const cur = LS.get(DRAFT_KEY(), null);
+      if (ok && !R.session && cur && cur.session && cur.session.id === d.session.id) LS.del(DRAFT_KEY());
+      scheduleRender();
+    });
+    return;
+  }
+  // The other groups are read again from the stored workout: an old copy never overwrites what was stored since.
+  const s = d.session, stored = me().sessions.get(s.id);
+  if (stored) s.blocks = s.blocks.map((x, i) => { const did = i === d.idx ? null : (stored.blocks || []).find(y => y.slot === x.slot && isDone(y)); return did ? clone(did) : x; });
+  Object.assign(R, { session: s, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: 0, pausedAt: d.pausedAt, pausedMs: d.pausedMs,
+    lastRem: null, confirm: null, lastSet: null, saved: d.phase === 'over' && d.saved === 'saved' ? 'saved' : null, since: 0, storing: null });
+  if (R.phase === 'over' && R.saved !== 'saved' && blk().sets.length) storeNow(); else render();
+  if (R.phase === 'run') { wakeOn(); startTick(); }
+  keepPadInView();
+}
+/* A new day: the home screen starts clean, without a reload. When the app comes back into view (`visible`)
+   with a card that began on an earlier day and is on pause or after the bell, that card is closed: its reps
+   count for the day it began. A clock that still runs is left alone. */
+let settling = false;
+async function dayCheck(visible) {
+  const today = todayYmd();
+  if (!R.session) { if (UI.day && UI.day !== today) render(); return; }
+  if (!visible || settling || R.session.date >= today || !(R.phase === 'paused' || R.phase === 'over')) return;
+  settling = true;
+  try {
+    const sid = R.session.id, slot = blk().slot;
+    if (R.storing) await R.storing;                       // a score on its way goes first
+    if (!R.session || R.session.id !== sid) return;
+    const ok = await settleDraft({ session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, pausedAt: R.pausedAt, pausedMs: R.pausedMs });
+    if (ok && R.session && R.session.id === sid) closeCard(slot);
+  } finally { settling = false; }
+}
 /* Close the open card: the clock and the working copy go, and the home screen is whole again. Focus goes to
    Start of that card when it is to do again, else to the first Start, else to the title. */
 function closeCard(slot) {
@@ -2255,8 +2319,11 @@ async function wakeOn() {
 }
 function wakeOff() { try { R.wake && R.wake.release(); } catch { /* ignore */ } R.wake = null; }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && R.session && (R.phase === 'run' || R.phase === 'lead')) { wakeOn(); tick(); }
+  if (document.visibilityState !== 'visible') return;
+  if (R.session && (R.phase === 'run' || R.phase === 'lead')) { wakeOn(); tick(); }     // the clock catches up
+  dayCheck(true);
 });
+setInterval(() => dayCheck(false), 60000);
 
 /* 7-segment LED clock, like the interval clock on a gym wall. */
 const SEGS = (() => {
@@ -3219,6 +3286,6 @@ async function importData(file) {
  * ------------------------------------------------------------------ */
 /* A reload starts on the home screen: a step of "My results" or "Settings" becomes a step of the home screen. */
 try { if (history.state && history.state.screen) history.replaceState(null, ''); } catch { /* ignore */ }
-initStore().then(maybeReopen);
+initStore().then(resumeDraft);
 render();
 </script>

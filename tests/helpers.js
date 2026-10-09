@@ -110,7 +110,9 @@ function fakeClaude(seed) {
 /* Open the app with a fixed date and seeded data.
    today 'YYYY-MM-DD' ('2026-10-14'), time ('10:00'), profile (object, or null for a first visit), sessions ([]),
    crew (null = this-device mode; an array of { id, profile, sessions } = shared mode, own id 'me'),
-   draft (a session left open on this device), dark (false), width (390), height (844),
+   draft (what this device kept of an open card: a session, as the old version left it, or a whole draft
+   { session, idx, phase, t0, leadEnd, pausedAt, pausedMs, saved }; it comes back on every reload while the key is
+   empty, so a test that seeds a draft does not reload), dark (false), width (390), height (844),
    prefs (this device's settings, e.g. { sound: false, lead: false }; stored before the page loads),
    web ({ who }: the page runs as the website, signed in as `who`; Sign out sets window.__signedOut). */
 async function openApp(opts = {}) {
@@ -135,7 +137,7 @@ async function openApp(opts = {}) {
   } else if (o.profile) {
     await page.addInitScript(seedLS, ['d330.own.local', { profile: o.profile, sessions: Object.fromEntries(o.sessions.map(s => [s.id, s])), hidden: [], dirty: [], profileDirty: false }]);
   }
-  if (o.draft) await page.addInitScript(seedLS, ['d330.draft.' + uid, { session: o.draft, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0 }]);
+  if (o.draft) await page.addInitScript(seedLS, ['d330.draft.' + uid, o.draft.session ? o.draft : { session: o.draft, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0 }]);
   if (o.prefs) await page.addInitScript(seedLS, ['d330.prefs', o.prefs]);
   if (o.web) await page.addInitScript(w => { window.__333web = { who: () => w.who, signOut: () => { window.__signedOut = true; } }; }, o.web);
   await page.goto(base + '/app.html');
@@ -152,6 +154,12 @@ async function forward(page, seconds) {
   await page.clock.setFixedTime(new Date(page.__now));
   await page.evaluate(() => tick());
 }
+/* Jump to another moment, as if the app was out of view until then and now comes back. */
+async function jumpTo(page, ymd, hm = '10:00') {
+  page.__now = at(ymd, hm);
+  await page.clock.setFixedTime(new Date(page.__now));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+}
 /* Makes every write to the shared log fail the way a server error does (shared mode only), and counts the tries. */
 const breakSaving = page => page.evaluate(() => {
   S.__doc = S.db.doc; window.__writes = 0;
@@ -160,4 +168,4 @@ const breakSaving = page => page.evaluate(() => {
 });
 const mendSaving = page => page.evaluate(() => { S.db.doc = S.__doc; });
 
-module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward, breakSaving, mendSaving, PLANS, BASE_STYLE };
+module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward, jumpTo, breakSaving, mendSaving, PLANS, BASE_STYLE };

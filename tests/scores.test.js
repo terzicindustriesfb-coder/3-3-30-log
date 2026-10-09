@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const toProgress = page => page.click('#tabs [data-tab="progress"]');
@@ -62,7 +66,7 @@ test('nothing planned, nothing lifted and before the start', async () => {
   assert.equal(await pre.locator('.sc').count(), 1);
 });
 test('same every time has no letters to choose', async () => {
-  const page = await openApp({ sessions: [first()], profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: [first()], profile: profile({ rotate: false }) });
   await toProgress(page);
   assert.equal(await page.locator('.sc [data-act="scoreTpl"]').count(), 0);
   assert.deepEqual(await texts(page, '.sc .ex-n'), ['Overhead press', 'Seated cable row', 'Seated leg press']);
@@ -84,7 +88,7 @@ test('long names and big numbers stay inside a 320 px screen', async () => {
 });
 test('the spark line is drawn through at most eight scores', async () => {
   const days = ['2026-10-05', '2026-10-08', '2026-10-12', '2026-10-15', '2026-10-19', '2026-10-22', '2026-10-26', '2026-10-29', '2026-11-02', '2026-11-05'];
-  const page = await openApp({ today: '2026-11-06', profile: profile({ mode: 'same' }), sessions: days.map((d, i) => session(d, 'A', [50 + i, 60, 70])) });
+  const page = await openApp({ today: '2026-11-06', profile: profile({ rotate: false }), sessions: days.map((d, i) => session(d, 'A', [50 + i, 60, 70])) });
   assert.deepEqual(await page.evaluate(() => scoreRow(S.uid, 'schouderdrukken').series), [52, 53, 54, 55, 56, 57, 58, 59]);
   assert.match(await page.evaluate(() => sparkHtml([10, 20, 15, 30], 'pull')),
     /^<svg class="spark" width="56" height="28" viewBox="0 0 56 28" aria-hidden="true"><path d="M3,23L19\.7,14L36\.3,18\.5L53,5" [^>]*stroke="var\(--c-pull\)"[^>]*\/><circle cx="53" cy="5" r="3\.2" fill="var\(--c-pull\)"\/><\/svg>$/);

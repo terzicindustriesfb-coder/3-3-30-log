@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const openEx = (page, slot = 'push') => page.click(`.wo .ex-row[data-slot="${slot}"]`);
@@ -138,7 +142,7 @@ test('your own exercise takes another weight type', async () => {
     ['Seated leg press', 'barbell', 2.5, false, false, 75]);
 });
 test('with the same workout every time the sheet only names the group', async () => {
-  const page = await openApp({ sessions: [first()], profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: [first()], profile: profile({ rotate: false }) });
   await openEx(page);
   assert.equal(await txt(page, '[data-sheet="ex"] .sheet-head .eyebrow'), 'Push');
 });

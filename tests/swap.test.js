@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 test('Swap workout offers the three workouts and marks the next one', async () => {
@@ -46,7 +50,7 @@ test('the choice is used up by the workout it was made for', async () => {
   assert.deepEqual(await page.evaluate(() => [UI.tpl, nextTpl(S.uid)]), [null, 'A']);
 });
 test('same every time has nothing to swap', async () => {
-  const page = await openApp({ sessions: abc(), profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
   assert.equal(await page.locator('#view [data-act="swap"]').count(), 0);
 });
 test('Escape closes the sheet and focus returns to the link', async () => {

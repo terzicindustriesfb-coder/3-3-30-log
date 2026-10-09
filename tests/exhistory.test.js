@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const open = async (page, key) => { await page.click('#tabs [data-tab="progress"]'); await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]'); await page.click(`.sc-row[data-ex="${key}"]`); };

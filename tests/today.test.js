@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const head = async page => [await txt(page, '.head .eyebrow'), await txt(page, '#view .title')];
@@ -85,7 +89,7 @@ test('deleting today’s workout brings the workout back', async () => {
   assert.equal(await txt(page, '.wo [data-act="startSession"]'), 'Start · 30 min');
 });
 test('same every time uses plain titles', async () => {
-  const same = profile({ mode: 'same' });
+  const same = profile({ rotate: false });
   assert.equal(await txt(await openApp({ sessions: abc(), profile: same }), '#view .title'), 'Today’s workout');
   const rest = await openApp({ today: '2026-10-13', sessions: abc(), profile: same });
   assert.equal(await rest.locator('.wo-next .h2').count(), 0);

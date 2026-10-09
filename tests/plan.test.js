@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 test('Your plan lists the days, the workouts and when each comes up', async () => {
@@ -53,7 +57,7 @@ test('one day at least, three at most', async () => {
   assert.equal(await txt(full, '#toast'), 'You already picked 3 days. Turn one off first.');
 });
 test('same every time shows one card', async () => {
-  const page = await openApp({ sessions: abc(), profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
   await page.evaluate(() => ACT.plan());
   assert.deepEqual(await texts(page, '.plan-card .h2'), ['Every workout']);
   assert.deepEqual(await texts(page, '.plan-card .plan-when'), ['Today']);

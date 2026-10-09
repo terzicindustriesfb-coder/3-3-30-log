@@ -582,7 +582,8 @@ const ALIAS = {
   'rdl': ['rdl', 'romanian deadlift', 'roemeense deadlift', 'roemeense deadlift (barbell)', 'stiff leg deadlift'],
   'bulgaarse': ['bss', 'bulgarian', 'split squat', 'bulgarian split squats', 'bulgaarse split squat'],
 };
-const DEFAULT_MODE = 'abc';
+/* True when Workout A, B and C take turns. Without the field a person does the same three every time. */
+const rotates = p => !!p && p.rotate === true;
 /* The article's example week (Mon/Wed/Fri). */
 const DEFAULT_PLANS = {
   A: { push: 'db-bankdrukken', pull: 'borst-roeien', legs: 'goblet-squat' },
@@ -696,7 +697,9 @@ function normProfile(p) {
     for (const [k, v] of Object.entries(p.weights).slice(0, 300)) if (ID_RE.test(k) && Number.isFinite(Number(v))) weights[k] = clampN(v, -300, 1000);
   }
   const out = { v: 1, nick: str(p.nick, 30), joined: num(p.joined), start: validYmd(p.start) ? p.start : START,
-    days: days.length ? days : [1, 3, 5], mode: p.mode === 'same' ? 'same' : 'abc', plans, custom, weights };
+    days: days.length ? days : [1, 3, 5], mode: p.rotate === true ? 'abc' : 'same', plans, custom, weights };
+  // The old field is still written, for a page of the version before this one; nothing reads it here.
+  if (p.rotate === true) out.rotate = true;
   // Optional fields, left out when empty so an older profile stays as it was:
   // the person's own name and weight type for an exercise from the list, and this week's own training days.
   const names = {}, eqs = {};
@@ -1022,7 +1025,7 @@ function lateStart(today, days = [1, 3, 5]) {
 }
 function defaultProfile(nick, days = [1, 3, 5]) {
   const today = todayYmd();
-  return { v: 1, nick: nick || '', joined: Date.now(), start: lateStart(today, days), days: days.slice(), mode: DEFAULT_MODE,
+  return { v: 1, nick: nick || '', joined: Date.now(), start: lateStart(today, days), days: days.slice(), mode: 'same',
     plans: clone(DEFAULT_PLANS), custom: [], weights: {} };
 }
 /* An exercise as this person has it: the list entry with their own name and weight type laid over it,
@@ -1259,7 +1262,7 @@ function plannedKg(profile, key) {
    With `upTo` only trainings on or before that date are looked at. */
 const TPLS = ['A', 'B', 'C'];
 function nextTpl(id, upTo) {
-  if (S.members.get(id)?.profile?.mode !== 'abc') return 'A';
+  if (!rotates(S.members.get(id)?.profile)) return 'A';
   const done = trainings(id).filter(s => !upTo || s.date <= upTo);
   const last = done[done.length - 1];
   return last ? TPLS[(TPLS.indexOf(last.tpl) + 1) % 3] : 'A';
@@ -1306,7 +1309,7 @@ function upcoming(id, n = 3, today = todayYmd()) {
   if (!p) return [];
   const start = p.start || START;
   const trained = new Set(trainings(id, today).map(s => s.date));
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   let tpl = (id === S.uid && UI.tpl) || nextTpl(id);
   const out = [];
   let d = today < start ? start : today;
@@ -1563,7 +1566,7 @@ function weekStripHtml() {
   const p = myProfile();
   const today = todayYmd();
   if (!p || today < (p.start || START)) return '';
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
   const row = (id, mine) => {
     const w = weekModel(id, today);
@@ -1612,7 +1615,7 @@ function cardState(p) {
 
 function viewToday(p) {
   const { today, start, situation, draft, done, next, tpl } = cardState(p);
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const dateLine = situation === 'pre' ? `You start ${fmtLong(start)}` : `${dayShort(today)} · today`;
   const head = title => `<div class="head"><div class="eyebrow">${esc(dateLine)}</div><h1 class="title">${esc(title)}</h1></div>`;
   const link = (act, text, attrs = '') => `<button class="btn link" data-act="${act}"${attrs}>${text}</button>`;
@@ -1732,7 +1735,7 @@ function scoresCardHtml(pid) {
   const prof = S.members.get(pid)?.profile;
   if (!prof) return '';
   const mine = pid === S.uid;
-  const abc = prof.mode === 'abc';
+  const abc = rotates(prof);
   const tpl = !abc ? 'A' : TPLS.includes(UI.scoreTpl) ? UI.scoreTpl : (mine && UI.tpl) || nextTpl(pid);
   const plan = planFor(prof, tpl);
   const rows = SLOT_ORDER.map(slot => {
@@ -1865,7 +1868,7 @@ function logListHtml(pid) {
   const list = UI.logAll ? all : all.slice(0, 8);
   const rows = list.map(s => {
     const trial = isTrial(s, pid);
-    const tag = trial ? 'practice' : prof?.mode === 'abc' && s.tpl ? s.tpl : '';
+    const tag = trial ? 'practice' : rotates(prof) && s.tpl ? s.tpl : '';
     const reps = SLOT_ORDER.map(slot => { const b = (s.blocks || []).find(x => x.slot === slot); return b && b.done && !b.skipped && b.total > 0 ? b.total : '–'; }).join(' · ');
     const sum = sessionSummary(s, pid);
     return `<button type="button" class="lg-row${tag ? '' : ' lg-notag'}" data-act="${mine ? 'edit' : 'viewSession'}" data-id="${esc(s.id)}">
@@ -1908,8 +1911,8 @@ function settingsHtml() {
     <label class="f" for="nickIn">Your name
       <input type="text" id="nickIn" data-field="nick" maxlength="30" value="${esc(p.nick || '')}" placeholder="${esc(S.meInfo?.name || 'First name')}"></label>
     <div class="f">Exercises
-      <div class="seg full" role="group" aria-label="Exercises"><button type="button" data-act="mode" data-mode="abc" aria-pressed="${p.mode === 'abc'}">Workout A, B, C</button><button type="button" data-act="mode" data-mode="same" aria-pressed="${p.mode !== 'abc'}">Same every time</button></div>
-      <span class="tiny">${p.mode === 'abc' ? 'Three different workouts that take turns.' : 'The same three exercises every workout.'} Tap an exercise on the main screen to change it.</span></div>
+      <div class="seg full" role="group" aria-label="Exercises"><button type="button" data-act="mode" data-mode="abc" aria-pressed="${rotates(p)}">Workout A, B, C</button><button type="button" data-act="mode" data-mode="same" aria-pressed="${!rotates(p)}">Same every time</button></div>
+      <span class="tiny">${rotates(p) ? 'Three different workouts that take turns.' : 'The same three exercises every workout.'} Tap an exercise on the main screen to change it.</span></div>
     <label class="toggle-row" for="prefSound"><input type="checkbox" id="prefSound" data-field="sound" ${prefs.sound ? 'checked' : ''}> <span>Beeps during a block</span></label>
     <label class="toggle-row" for="prefLead"><input type="checkbox" id="prefLead" data-field="lead" ${prefs.lead ? 'checked' : ''}> <span>10-second countdown before a block</span></label>
     <div class="f">Backup
@@ -2424,7 +2427,7 @@ const legendHtml = () => `<div class="legend" role="group" aria-label="What push
 /* Your plan: the usual training days, the workouts with their exercises, and when each comes up. */
 function planSheet() {
   const p = myProfile();
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const today = todayYmd();
   const coming = upcoming(S.uid, 3);
   const days = [1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-act="day" data-d="${d}" aria-pressed="${p.days.includes(d)}">${WD[d]}</button>`).join('');
@@ -2451,7 +2454,7 @@ function weekSheet() {
   const p = myProfile();
   const today = todayYmd();
   const w = weekModel(S.uid, today);
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
   const monFirst = (a, c) => ((a + 6) % 7) - ((c + 6) % 7);
   const usual = (p.days || [1, 3, 5]).slice().sort(monFirst);
@@ -2523,7 +2526,7 @@ function exEditHtml(st) {
   const types = EQUIP_ORDER.map(k => `<button type="button" data-act="eq" data-eq="${k}" aria-pressed="${k === st.eq}"${allowed.includes(k) ? '' : ' disabled'}>${EQUIP[k].label}</button>`).join('');
   const ref = refBlock(scoresOf(S.uid, st.key));
   return `<form data-form="ex" data-view="edit" style="display:grid;gap:16px">
-    <div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}${p.mode === 'abc' ? ' · Workout ' + esc(st.tpl) : ''}</div><b class="h2">Exercise</b></div>
+    <div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}${rotates(p) ? ' · Workout ' + esc(st.tpl) : ''}</div><b class="h2">Exercise</b></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <label class="f" for="exName">Name
       <input type="text" id="exName" name="name" maxlength="40" value="${esc(st.name)}" autocomplete="off" enterkeyhint="done"></label>
@@ -2573,7 +2576,7 @@ function sessionViewSheet(st) {
   const s = S.members.get(st.pid)?.sessions.get(st.id);
   const prof = S.members.get(st.pid)?.profile;
   const trial = !!s && isTrial(s, st.pid);
-  const what = !s ? '' : trial ? 'Practice workout' : prof?.mode === 'abc' && s.tpl ? 'Workout ' + s.tpl : '';
+  const what = !s ? '' : trial ? 'Practice workout' : rotates(prof) && s.tpl ? 'Workout ' + s.tpl : '';
   const head = `<div class="sheet-head"><div class="grow"><div class="eyebrow">${esc([displayName(st.pid), what].filter(Boolean).join(' · '))}</div><b class="h2">${s ? esc(dayShort(s.date)) : 'Workout'}</b></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>`;
   if (!s) return `${head}<p class="small empty">This workout is no longer in the log.</p>`;
@@ -2604,7 +2607,7 @@ function exPickHtml(st) {
 }
 function exPickListHtml(st) {
   const p = myProfile();
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const word = SLOT[st.slot].label.toLowerCase();
   const found = searchExercises(p, st.slot, st.q);
   if (!found.length) return `<p class="small pick-none">No ${word} exercise called “${esc(cleanName(st.q))}”.</p>`;
@@ -2652,7 +2655,7 @@ function typedNewName(inp) {
 async function exSwitchTo(st, p, key) {
   if (st.busy) return;
   st.busy = true;
-  const abc = p.mode === 'abc';
+  const abc = rotates(p);
   const t = abc ? st.tpl : 'A';
   p.plans = p.plans || {};
   p.plans[t] = Object.assign({}, planFor(p, t), { [st.slot]: key });
@@ -2721,7 +2724,7 @@ const parseKg = v => { const t = String(v ?? '').trim().replace(/\s*kg$/i, '').r
    workout, comes first under the name stored with the workout. */
 function exOptionsHtml(p, slot, cur, storedName) {
   const all = searchExercises(p, slot, '');
-  const planned = [...new Set((p.mode === 'abc' ? TPLS : ['A']).map(t => planFor(p, t)[slot]))].map(k => all.find(e => e.k === k)).filter(Boolean);
+  const planned = [...new Set((rotates(p) ? TPLS : ['A']).map(t => planFor(p, t)[slot]))].map(k => all.find(e => e.k === k)).filter(Boolean);
   const opt = e => `<option value="${esc(e.k)}"${e.k === cur ? ' selected' : ''}>${esc(e.n)}</option>`;
   const group = (label, list) => (list.length ? `<optgroup label="${label}">${list.map(opt).join('')}</optgroup>` : '');
   return (all.some(e => e.k === cur) ? '' : `<option value="${esc(cur)}" selected>${esc(exName(cur, p, storedName))}</option>`)
@@ -2745,7 +2748,7 @@ function sessionForm(s, isNew) {
     <div class="sheet-head"><b class="h2 grow">${isNew ? 'Log a past workout' : 'Edit workout'}</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <label class="f" for="sDate">Date<input type="date" id="sDate" name="date" min="2020-01-01" max="${todayYmd()}" value="${esc(s.date)}" required></label>
     ${isNew ? `<div class="choices" id="dateChips" role="group" aria-label="Quick date" style="margin-top:-6px">${dateChips(s.date)}</div>` : ''}
-    ${isNew && p.mode === 'abc' ? `<div class="row"><span class="small grow">Workout</span><div class="seg" role="group" aria-label="Which workout">${['A', 'B', 'C'].map(t => `<button type="button" data-act="formTpl" data-tpl="${t}" aria-pressed="${t === s.tpl}">${t}</button>`).join('')}</div></div>` : ''}
+    ${isNew && rotates(p) ? `<div class="row"><span class="small grow">Workout</span><div class="seg" role="group" aria-label="Which workout">${['A', 'B', 'C'].map(t => `<button type="button" data-act="formTpl" data-tpl="${t}" aria-pressed="${t === s.tpl}">${t}</button>`).join('')}</div></div>` : ''}
     <div class="card lf">${blocks}</div>
     <p class="tiny">Leave reps empty for an exercise you skipped.</p>
     <button class="btn primary xl" type="submit">Save</button>
@@ -2855,7 +2858,7 @@ async function submitSessionForm(form) {
   // Logged other exercises than the plan? Offer to make them the plan.
   if (isNew) {
     const pr = myProfile();
-    const t = pr.mode === 'abc' ? (base.tpl || 'A') : 'A';
+    const t = rotates(pr) ? (base.tpl || 'A') : 'A';
     const plan = planFor(pr, t);
     const diff = base.blocks.filter(b => b.done && plan[b.slot] !== b.ex);
     if (diff.length) {
@@ -2867,7 +2870,7 @@ async function submitSessionForm(form) {
   closeSheet(); toast('Saved.');
 }
 function planAskHtml(p, t, plan, diff) {
-  const which = p.mode === 'abc' ? `Workout ${t}` : 'your plan';
+  const which = rotates(p) ? `Workout ${t}` : 'your plan';
   return `<div class="sheet-head"><div class="grow"><div class="eyebrow" style="color:var(--good)">✓ Workout saved</div><b class="h2">Use these from now on?</b></div><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <p class="small">This workout used different exercises from ${which}.</p>
     <div>${diff.map(b => `<div class="sum-row">${plateHtml(b.slot, true)}<span class="grow"><span class="tiny">${esc(exName(plan[b.slot], p))} →</span><br><b class="ex-n" style="font-size:17px">${esc(exName(b.ex, p, b.name))}</b></span></div>`).join('')}</div>
@@ -3003,7 +3006,7 @@ const ACT = {
     p.plans[st.tpl] = Object.assign({}, planFor(p, st.tpl), st.set);
     if (!(await saveProfile(p))) return;
     closeSheet();
-    toast(p.mode === 'abc' ? `Workout ${st.tpl} updated.` : 'Plan updated.');
+    toast(rotates(p) ? `Workout ${st.tpl} updated.` : 'Plan updated.');
   },
   pickDate(el) {
     const inp = $('#sDate'); if (!inp) return;
@@ -3042,7 +3045,7 @@ const ACT = {
     saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today)).then(redrawUnsaved);
     refreshSheet();
   },
-  mode(el) { const p = clone(myProfile()); p.mode = el.dataset.mode; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); saveProfile(p); UI.tpl = null; refreshSettings(); },
+  mode(el) { const p = clone(myProfile()); if (el.dataset.mode === 'abc') p.rotate = true; else delete p.rotate; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); saveProfile(p); UI.tpl = null; refreshSettings(); },
   export(el) { exportData(el.dataset.fmt); },
   importPick() { const f = $('#importFile'); if (f) f.click(); },
 

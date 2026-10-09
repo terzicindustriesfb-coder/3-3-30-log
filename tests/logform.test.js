@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const openLog = page => page.evaluate(() => ACT.manual());
@@ -87,7 +91,7 @@ test('in a new log a typed weight stays when you choose another exercise', async
   assert.deepEqual([await page.inputValue('#kg0'), await txt(page, '#sheet label[for="kg0"] .kglbl')], ['0', 'Extra kg (− = assist)']);
 });
 test('with the same workout every time the list has one plan, and the form fits a 320 px phone', async () => {
-  const page = await openApp({ width: 320, sessions: abc(), profile: profile({ mode: 'same' }) });
+  const page = await openApp({ width: 320, sessions: abc(), profile: profile({ rotate: false }) });
   await openLog(page);
   assert.deepEqual(await opts(page, 'ex0', 'In your plan'), ['Overhead press']);
   assert.equal(await page.evaluate(() => { const el = document.querySelector('.sheet-panel'); return el.scrollWidth <= el.clientWidth; }), true);

@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const row = (page, id) => page.locator(`.wk-row[data-id="${id}"] .wd`).evaluateAll(els => els.map(e => e.dataset.state + ':' + e.textContent.trim()));
@@ -35,7 +39,7 @@ test('at most three buddies, in the order they joined', async () => {
   assert.equal(await txt(page, '#view .title'), 'Progress');
 });
 test('same every time shows a tick instead of a letter', async () => {
-  const page = await openApp({ sessions: abc(), profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
   assert.deepEqual(await row(page, 'local'), ['done:', 'rest:', 'today:', 'rest:', 'planned:', 'rest:', 'rest:']);
   assert.equal(await page.locator('.wk-row.me .wd[data-state="done"] svg').count(), 1);
 });

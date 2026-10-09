@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const toProgress = page => page.click('#tabs [data-tab="progress"]');
@@ -59,13 +63,13 @@ test('a buddy’s workout opens to read only', async () => {
   assert.equal(await txt(page, '#view .empty'), 'Tom hasn’t logged a workout yet.');
 });
 test('same every time shows no letter', async () => {
-  const page = await openApp({ sessions: [first()], profile: profile({ mode: 'same' }) });
+  const page = await openApp({ sessions: [first()], profile: profile({ rotate: false }) });
   await toProgress(page);
   assert.equal(await page.locator('.lg-row').count(), 1);
   assert.equal(await page.locator('.lg-row .lg-tpl').count(), 0);
 });
 test('a practice workout keeps its tag, also with the same workout every time', async () => {
-  const page = await openApp({ profile: profile({ mode: 'same' }), sessions: [session('2026-09-30', 'A', [5, 5, 5]), first()] });
+  const page = await openApp({ profile: profile({ rotate: false }), sessions: [session('2026-09-30', 'A', [5, 5, 5]), first()] });
   await toProgress(page);
   assert.deepEqual(await texts(page, '.lg-row .lg-tpl'), ['practice']);
   assert.deepEqual(await texts(page, '.lg-reps'), ['62 · 77 · 85 reps', '5 · 5 · 5 reps']);

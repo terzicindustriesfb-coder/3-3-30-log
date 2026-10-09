@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const states = (page, id = 'local') => page.evaluate(i => weekModel(i === 'local' ? S.uid : i).days.map(d => d.state), id);
@@ -67,7 +71,7 @@ test('one training day a week looks three weeks ahead', async () => {
 test('a swapped letter leads, and same-every-time has no letters to turn', async () => {
   const page = await openApp({ sessions: abc() });
   assert.deepEqual(await page.evaluate(() => { UI.tpl = 'C'; return upcoming(S.uid).map(u => u.tpl); }), ['C', 'A', 'B']);
-  const same = await openApp({ sessions: abc(), profile: profile({ mode: 'same' }) });
+  const same = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
   assert.deepEqual(await same.evaluate(() => upcoming(S.uid).map(u => u.tpl)), ['A', 'A', 'A']);
 });
 test('before the start date the list begins on the start date', async () => {

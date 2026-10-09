@@ -1,6 +1,10 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const h = require('./helpers');
+const { closeAll, session, first, abc, threeWeeks, txt, texts, at } = h;
+/* These tests are about Workout A, B and C taking turns: every profile here has that switched on. */
+const profile = over => h.profile(Object.assign({ rotate: true }, over));
+const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
 const openPick = async (page, slot = 'push') => { await page.click(`.wo .ex-row[data-slot="${slot}"]`); await page.click('[data-act="exPick"]'); };
@@ -94,7 +98,7 @@ test('an exercise in two workouts says so, and same-every-time has one plan', as
   const page = await openApp({ sessions: abc(), profile: profile({ plans }) });
   await openPick(page);
   assert.deepEqual(await subs(page, 'plan'), ['Barbell · Workout A and C', 'Dumbbells · Workout B']);
-  const same = await openApp({ sessions: abc(), profile: profile({ mode: 'same' }) });
+  const same = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
   await openPick(same);
   assert.deepEqual([await rows(same, 'plan'), await subs(same, 'plan')], [['Overhead press'], ['Barbell']]);
   await same.click('.pick-row[data-ex="dips"]');

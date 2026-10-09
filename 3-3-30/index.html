@@ -284,11 +284,7 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
   .score .total { font-size: 38px; } .setlist { min-height: 22px; }
 }
 @media (max-width: 340px) { .run-kg { flex-wrap: nowrap; } .run-kg .small { font-size: 12.5px; line-height: 1.2; } .run-ctrl .btn { font-size: 15px; } }
-/* Two small line charts, in the history of an exercise */
-.pg-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px 14px; }
-.pg-chart { min-width: 0; display: grid; gap: 2px; }
-.pg-lbl { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--muted); font-weight: 650; }
-.pg-lbl b { margin-left: auto; color: var(--ink); font-family: var(--display); font-stretch: 80%; font-size: 17px; font-weight: 800; }
+/* A line chart, drawn at the width of its box */
 .pg-svg { position: relative; min-height: 96px; min-width: 0; }
 .pg-svg svg { max-width: 100%; }
 .pg-svg svg { display: block; overflow: visible; touch-action: pan-y; }
@@ -300,10 +296,6 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
   border-radius: 10px; padding: 5px 9px; font-size: 11.5px; line-height: 1.3; white-space: normal; width: max-content; max-width: 100%; box-shadow: 0 6px 18px rgb(0 0 0 / .2); z-index: 3; }
 .pg-svg .tip strong { display: block; font-size: 14px; }
 .pg-wait { min-height: 60px; display: grid; align-items: center; }
-/* The log */
-.log-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-top: 12px; }
-.log-head .h2 { flex: 1 1 10ch; }
-.log-head .btn.link, .btn.link[data-act="logAll"] { min-height: 44px; }
 .seg.scroll { min-width: 0; max-width: 100%; }
 .seg.scroll button { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; }
 .stack { grid-template-columns: minmax(0, 1fr); }
@@ -409,48 +401,40 @@ form[data-form="ex"] .f .small, form[data-form="ex"] .f .tiny { font-weight: 400
 #exPickList .eyebrow { padding: 2px 4px 0; }
 input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var(--line); border-radius: var(--r-sm); background: var(--surface); padding: 11px 13px; min-height: 48px; font-size: 16px;
   -webkit-appearance: none; appearance: none; }
-/* Progress: this week, and a score per exercise */
-.pw { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 12px 18px; gap: 2px 12px; }
-.pw .eyebrow { grid-column: 1; }
-.pw-n { grid-column: 1; font-size: 15px; font-weight: 650; }
-.pw-kg { grid-column: 2; grid-row: 1 / span 2; display: grid; justify-items: end; gap: 3px; }
-.pw-kg .goal-n { font-size: 30px; line-height: .9; }
-.sc { padding: 12px 14px 10px; gap: 4px; }
-.sc > .row { padding: 0 4px 4px; }
-.sc-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center; gap: 10px; padding: 8px 4px; min-height: 64px; border-radius: var(--r); }
-.sc-row + .sc-row { border-top: 1px solid var(--surface-2); }
-.sc-row .spark { grid-column: 3; }
-.sc-row .sc-r, .sc-row .sc-none { grid-column: 4; }
-.sc-sub { font-size: 13.5px; color: var(--muted); }
-.sc-sub b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.sc-r { display: grid; justify-items: end; gap: 4px; min-width: 46px; }
-.sc-n { font-family: var(--display); font-stretch: 75%; font-weight: 900; font-size: 36px; line-height: .86; font-variant-numeric: tabular-nums; }
-.sc-d, .sc-u, .sc-none { font-size: 12.5px; font-weight: 800; color: var(--ink-2); white-space: nowrap; }
-.sc-d.pos { color: var(--good); }
-.sc-none { color: var(--muted); font-weight: 650; }
-@media (max-width: 359px) { .sc-row .spark { display: none; } }
-.eh-charts { gap: 10px; padding: 14px 14px 10px; }
-.eh-list { padding: 4px 14px; gap: 0; }
-.eh-row { padding: 12px 4px; font-size: 15px; font-variant-numeric: tabular-nums; }
-.eh-row + .eh-row { border-top: 1px solid var(--surface-2); }
-.lg { padding: 4px 14px; gap: 0; }
-.lg-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: 92px minmax(30px, auto) minmax(0, 1fr) auto;
-  align-items: center; gap: 10px; padding: 8px 4px; min-height: 54px; }
-.lg-row.lg-notag { grid-template-columns: 92px minmax(0, 1fr) auto; }
-.lg-row + .lg-row { border-top: 1px solid var(--surface-2); }
-.lg-date { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 16px; }
-.lg-tpl { justify-self: start; border-radius: 6px; padding: 1px 7px; background: var(--surface-2); color: var(--ink-2); font-family: var(--display); font-weight: 800; font-size: 12px; }
-.lg-main { display: grid; gap: 1px; min-width: 0; }
-.lg-reps { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
-.lg-sum { font-size: 13.5px; color: var(--ink-2); }
-@media (max-width: 359px) { .lg-row { grid-template-columns: 78px minmax(26px, auto) minmax(0, 1fr) auto; gap: 8px; } .lg-row.lg-notag { grid-template-columns: 78px minmax(0, 1fr) auto; } }
-.pr-head { align-items: flex-end; flex-wrap: wrap; padding-block: 6px 4px; }
 /* Back on top of "My results" and "Settings", and the two buttons under the home screen that lead there */
 .scr-top { display: flex; padding-top: 2px; }
 .btn.back { min-height: 44px; padding: 0 18px 0 12px; font-size: 15px; gap: 6px; }
 .home-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .home-nav .btn { box-shadow: inset 0 0 0 1.5px var(--ring); font-size: 15.5px; padding-inline: 8px; }
+/* My results: the workout buttons and the table */
+.lead-s { font-size: 15px; color: var(--ink-2); }
+.res-tpl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.res-tpl button { min-height: 44px; border: 0; border-radius: 999px; padding: 0 6px; background: var(--surface-2); color: var(--ink-2); font-weight: 700; font-size: 14.5px; }
+.res-tpl button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.rt { padding: 12px 12px 4px; gap: 0; }
+.rt-head, .rt-row { display: grid; grid-template-columns: 88px repeat(3, minmax(0, 1fr)); column-gap: 8px; }
+.rt-head { align-items: end; padding: 0 4px 10px; }
+.rt-day, .rt-grp { display: block; font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rt-grp.push { color: var(--bad); } .rt-grp.pull { color: var(--pull); } .rt-grp.legs { color: var(--legs-mark); }
+.rt-ex { display: block; min-width: 0; }
+.rt-name { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; hyphens: auto;
+  font-family: var(--display); font-stretch: 75%; font-weight: 750; font-size: 14.5px; line-height: 1.15; }
+.rt-kg { display: block; font-size: 12.5px; line-height: 1.25; color: var(--ink-2); overflow-wrap: anywhere; }
+.rt-row { width: 100%; align-items: center; border: 0; border-top: 1px solid var(--surface-2); background: transparent; text-align: left; padding: 6px 4px; min-height: 52px; }
+.rt-date { font-weight: 700; font-size: 15px; line-height: 1.2; }
+.rt-date small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.rt-c { font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rt-c i { font-style: normal; font-size: 13px; color: var(--good); margin-left: 3px; }
+.rt-c sup { font-size: 14px; color: var(--muted); }
+.rt-all { width: 100%; min-height: 44px; border-top: 1px solid var(--surface-2); border-radius: 0; color: var(--ink); }
+.rt-none { padding: 14px 4px; border-top: 1px solid var(--surface-2); }
+.rt-note, .rt-star { padding: 0 4px; font-size: 14.5px; color: var(--ink-2); }
+.rt-note b { color: var(--good); }
+@media (max-width: 359px) {
+  .rt { padding-inline: 8px; }
+  .rt-head, .rt-row { grid-template-columns: 76px repeat(3, minmax(0, 1fr)); column-gap: 5px; }
+  .rt-c { font-size: 21px; } .rt-date { font-size: 13.5px; } .rt-name { font-size: 12.5px; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -1102,7 +1086,6 @@ function blockVolume(b) {
   if (sets.length) return sets.reduce((a, x) => a + (x.kg != null ? Number(x.kg) : (Number(b.kg) || 0)) * x.r, 0);
   return (Number(b.kg) || 0) * (b.total || 0);
 }
-const scored = b => !b.bw && Number(b.kg) > 0;
 function setKgs(b) { return [...new Set((b.sets || []).map(x => Number(x.kg ?? b.kg)))]; }
 function setsText(b, info) {
   const sets = b.sets || [];
@@ -1173,22 +1156,6 @@ function sessionSummary(s, pid) {
     n.cut ? `${n.cut} stopped early` : '',
   ].filter(Boolean).join(' · ');
 }
-/* One exercise on Progress: its latest score next to the one before. It looks at the full scores (blocks
-   that ran the ten minutes), or at all scores when none is full. state: 'none' | 'one' | 'same' (the last
-   two at the same weight) | 'changed'. */
-function scoreRow(pid, key) {
-  const hist = scoresOf(pid, key);
-  const full = hist.filter(h => !h.cut);
-  const list = full.length ? full : hist;
-  if (!list.length) return { state: 'none', series: [] };
-  const last = list[list.length - 1], before = list[list.length - 2];
-  const kg = Number(last.kg) || 0;
-  const row = { state: 'one', kg, n: last.total, date: last.date,
-    best: Math.max(...list.filter(h => (Number(h.kg) || 0) === kg).map(h => h.total)), series: list.slice(-8).map(h => h.total) };
-  if (!before) return row;
-  const was = Number(before.kg) || 0;
-  return Object.assign(row, { state: was === kg ? 'same' : 'changed', delta: last.total - before.total, dk: Math.round((kg - was) * 10) / 10, prev: { n: before.total, kg: was } });
-}
 /* 'reps': more reps than ever at this weight or lighter; 'kg': same best reps, heavier. */
 function recordKind(b, hist) {
   if (!hist.length || !(b.total > 0)) return null;
@@ -1246,11 +1213,13 @@ function blockKgLabel(b, info) {
   }
   return kgLabel(b.kg, info);
 }
-function plannedKg(profile, key) {
+/* The weight an exercise is set to: the one in the profile, else the weight of that person's last score,
+   else the weight the exercise starts at. `pid` says whose scores those are. */
+function plannedKg(profile, key, pid = S.uid) {
   const info = exInfo(key, profile);
   const w = profile?.weights && Object.hasOwn(profile.weights, key) ? profile.weights[key] : null;
   if (w != null) return { kg: w, suggested: false };
-  const hist = scoresOf(S.uid, key);
+  const hist = scoresOf(pid, key);
   if (hist.length) return { kg: hist[hist.length - 1].kg, suggested: false };
   return { kg: info.start ?? 0, suggested: true };
 }
@@ -1285,6 +1254,28 @@ function weekCount(id, today = todayYmd()) {
   const mon = mondayOf(today);
   const n = trainings(id).filter(s => mondayOf(s.date) === mon).length;
   return n <= 3 ? { n, text: `${n} of 3 workouts`, short: `${n} of 3` } : { n, text: `${n} workouts this week`, short: `${n} workouts` };
+}
+/* The table under "My results", for one person and one workout. `head`: the three exercises now in that
+   plan, each with its name and the weight it is set to, as text. `rows`: a row per workout that is shown,
+   newest first; with turns on only the workouts of that letter. A cell is null when that group was not
+   done; else the reps, `up` (more reps than the score to beat at the same weight; never in a practice
+   workout) and `other` (another exercise than the one in the head). */
+function resultRows(pid, tpl) {
+  const prof = S.members.get(pid)?.profile;
+  const plan = planFor(prof, tpl);
+  const head = SLOT_ORDER.map(slot => {
+    const key = plan[slot], info = exInfo(key, prof);
+    return { slot, key, name: info.n, kg: kgLabel(plannedKg(prof, key, pid).kg, info) };
+  });
+  const rows = shownSessions(pid).filter(s => !rotates(prof) || s.tpl === tpl).reverse().map(s => {
+    const practice = isTrial(s, pid);
+    const cells = head.map(h => {
+      const b = (s.blocks || []).find(x => x.slot === h.slot && isDone(x));
+      return b ? { reps: b.total, up: !practice && verdict(b, pid, s.id).kind === 'up', other: b.ex !== h.key } : null;
+    });
+    return { id: s.id, date: s.date, practice, cells };
+  });
+  return { head, rows };
 }
 /* Weekday numbers (0 = Sunday) planned in the week that starts on `mon`: this week's own list
    when it has one, otherwise the usual training days. */
@@ -1424,7 +1415,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
  * ------------------------------------------------------------------ */
-const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', scoreTpl: null };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', resTpl: null };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1527,20 +1518,46 @@ function viewHome() {
   }
   return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewToday(p) + homeNavHtml();
 }
-/* "My results": whose they are, their progress, their log. */
+/* "My results": whose they are, with turns on which workout, and the table of that workout. */
 function viewResults() {
   const { pid, seg } = personPick();
   const m = S.members.get(pid);
   const mine = pid === S.uid;
   const nm = esc(displayName(pid));
-  const head = `${backHtml()}<div class="row pr-head"><h1 class="title grow">Progress</h1>${seg}</div>`;
+  const head = `${backHtml()}<div class="head"><h1 class="title">${mine ? 'My' : nm + '’s'} results</h1>
+    <p class="lead-s">${mine ? 'Your' : nm + '’s'} workouts, newest first. The numbers are ${mine ? 'your' : 'the'} reps in 10 minutes.</p></div>${seg}`;
   if (!mine && !m?.seen) {
     return head + (m?.err
       ? `<div class="card"><b>${nm}’s workouts couldn’t be loaded.</b><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`
       : `<div class="skeleton">Loading ${nm}’s workouts…</div>`);
   }
-  const logHead = `<div class="log-head"><h2 class="h2 grow">Log</h2>${mine ? '<button class="btn link" data-act="manual">Log a past workout</button>' : ''}</div>`;
-  return head + weekCardHtml(pid) + scoresCardHtml(pid) + logHead + logListHtml(pid);
+  const add = mine ? '<button type="button" class="btn ghost" data-act="manual">Add a workout by hand</button>' : '';
+  if (!shownSessions(pid).length) return `${head}<p class="small empty">${mine ? 'No workouts yet.' : nm + ' hasn’t logged a workout yet.'}</p>${add}`;
+  const turns = rotates(m?.profile);
+  const tpl = turns ? (TPLS.includes(UI.resTpl) ? UI.resTpl : turnTpl(pid)) : 'A';
+  const pick = turns ? `<div class="res-tpl" role="group" aria-label="Workout">${TPLS.map(t => `<button type="button" data-act="resTpl" data-tpl="${t}" aria-pressed="${t === tpl}">Workout ${t}</button>`).join('')}</div>` : '';
+  return head + pick + resultsTableHtml(pid, tpl) + add;
+}
+/* The table: a head with the three exercises, then a row per workout, six at first. Your own row opens to
+   fix that workout, a buddy's to read it. A weight in the head may wrap, so that it stays in its own column. */
+function resultsTableHtml(pid, tpl) {
+  const mine = pid === S.uid;
+  const t = resultRows(pid, tpl);
+  const list = UI.logAll ? t.rows : t.rows.slice(0, 6);
+  const head = `<div class="rt-head"><span class="rt-day">Day</span>${t.head.map(h => `<span class="rt-ex"><b class="rt-grp ${h.slot}">${SLOT[h.slot].label}</b><span class="rt-name">${esc(h.name)}</span><span class="rt-kg">${esc(h.kg).replace(/\u00a0/g, ' ').replace('bodyweight', 'body<wbr>weight')}</span></span>`).join('')}</div>`;
+  const rows = list.map(r => {
+    const said = r.cells.map((c, i) => (c ? `${t.head[i].slot} ${c.reps}${c.up ? ', beat the last score' : ''}${c.other ? ', another exercise' : ''}` : `${t.head[i].slot} not done`)).join('; ');
+    const label = `${dayShort(r.date)}${r.practice ? ', practice' : ''}: ${said}. ${mine ? 'Edit' : 'View'}`;
+    return `<button type="button" class="rt-row" data-act="${mine ? 'edit' : 'viewSession'}" data-id="${esc(r.id)}" aria-label="${esc(label)}">
+      <span class="rt-date">${esc(dayShort(r.date))}${r.practice ? ' <small>practice</small>' : ''}</span>${r.cells.map(c => `<span class="rt-c">${c ? `${c.reps}${c.up ? '<i>▲</i>' : ''}${c.other ? '<sup>*</sup>' : ''}` : '–'}</span>`).join('')}
+    </button>`;
+  }).join('');
+  const none = t.rows.length ? '' : `<p class="small rt-none">No Workout ${tpl} yet.</p>`;
+  const more = t.rows.length > list.length ? `<button type="button" class="btn link rt-all" data-act="logAll">Show all ${t.rows.length} workouts</button>` : '';
+  const note = t.rows.length
+    ? `<p class="rt-note"><b>▲</b> means ${mine ? 'you beat your last score' : esc(displayName(pid)) + ' beat the last score'}. Tap a day to see ${mine ? 'or fix ' : ''}that workout.</p>` : '';
+  const star = list.some(r => r.cells.some(c => c && c.other)) ? '<p class="rt-star">* another exercise that day</p>' : '';
+  return `<section class="card rt" aria-label="Workouts">${head}${rows}${none}${more}</section>${note}${star}`;
 }
 const LOAD_ERR = `<div class="card"><b>Your log couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
 
@@ -1709,74 +1726,15 @@ function upHint(p, key, exclude) {
   return `<div class="up"><span class="grow">${esc(info.n)} went well. Go up to ${esc(kgLabel(adv.up, info))}?</span><button class="btn sm good" data-act="applyUp" data-ex="${esc(key)}" data-kg="${adv.up}">Yes</button><button class="btn sm link" data-act="skipUp" data-ex="${esc(key)}" data-kg="${adv.up}">Not now</button></div>`;
 }
 
-/* ---------- Progress ---------- */
+/* ---------- My results ---------- */
 function personPick() {
   const ids = [...S.members.keys()].filter(id => id === S.uid || S.members.get(id)?.profile);
   const pid = UI.person && S.members.has(UI.person) ? UI.person : S.uid;
-  const seg = ids.length > 1 ? `<div class="seg scroll" role="group" aria-label="Whose progress and log">${ids.map(id => `<button data-act="person" data-id="${esc(id)}" aria-pressed="${id === pid}">${esc(id === S.uid ? 'Me' : displayName(id))}</button>`).join('')}</div>` : '';
+  const seg = ids.length > 1 ? `<div class="seg scroll" role="group" aria-label="Whose results">${ids.map(id => `<button data-act="person" data-id="${esc(id)}" aria-pressed="${id === pid}">${esc(id === S.uid ? 'Me' : displayName(id))}</button>`).join('')}</div>` : '';
   return { pid, seg };
 }
 /* Workouts shown for a person: every finished one, practice workouts included. */
 function shownSessions(pid) { return sessionsOf(pid).filter(finished(pid)); }
-/* This week on Progress: the counter of the week strip in words, and the kilos lifted so far.
-   Nothing before the start date. */
-function weekCardHtml(pid) {
-  const today = todayYmd();
-  if (today < startOf(pid)) return '';
-  const w = weekModel(pid, today);
-  const kg = Math.round(trainings(pid, today).filter(s => mondayOf(s.date) === w.mon)
-    .reduce((sum, s) => sum + doneBlocks(s).reduce((a, b) => a + blockVolume(b), 0), 0));
-  const count = !w.planned && !w.done ? 'Nothing planned this week.'
-    : w.planned ? `${w.done} of ${w.planned} workout${w.planned === 1 ? '' : 's'}` : `${w.done} workout${w.done === 1 ? '' : 's'}`;
-  return `<section class="card pw" aria-label="This week"><span class="eyebrow">This week</span><span class="pw-n">${count}</span>
-    ${kg > 0 ? `<span class="pw-kg"><span class="goal-n">${esc(fmtNum(kg))}</span><span class="goal-l">kg lifted</span></span>` : ''}</section>`;
-}
-/* A small line through the last scores, ending in a dot. */
-function sparkHtml(series, slot) {
-  const n = series.length;
-  if (n < 2) return '';
-  const lo = Math.min(...series), hi = Math.max(...series);
-  const r1 = v => String(Math.round(v * 10) / 10);
-  const pts = series.map((v, i) => `${r1(3 + (50 * i) / (n - 1))},${r1(hi === lo ? 14 : 23 - (18 * (v - lo)) / (hi - lo))}`);
-  const [cx, cy] = pts[n - 1].split(',');
-  const c = `var(--c-${slot})`;
-  return `<svg class="spark" width="56" height="28" viewBox="0 0 56 28" aria-hidden="true"><path d="M${pts.join('L')}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${cx}" cy="${cy}" r="3.2" fill="${c}"/></svg>`;
-}
-/* The scores of one workout's three exercises: the last score, and how it compares with the one before.
-   The workout is the one that is next for that person, until a letter is picked. */
-function scoresCardHtml(pid) {
-  const prof = S.members.get(pid)?.profile;
-  if (!prof) return '';
-  const mine = pid === S.uid;
-  const abc = rotates(prof);
-  const tpl = !abc ? 'A' : TPLS.includes(UI.scoreTpl) ? UI.scoreTpl : (mine && UI.tpl) || nextTpl(pid);
-  const plan = planFor(prof, tpl);
-  const rows = SLOT_ORDER.map(slot => {
-    const key = plan[slot];
-    const info = exInfo(key, prof);
-    const r = scoreRow(pid, key);
-    const kg = v => `<b>${esc(kgLabel(v, info))}</b>`;
-    let sub, right;
-    if (r.state === 'none') {
-      // No score, so no weight from a workout either: the weight this person set, else the start weight.
-      sub = kg(prof.weights && Object.hasOwn(prof.weights, key) ? prof.weights[key] : info.start ?? 0);
-      right = '<span class="sc-none">No score yet</span>';
-    } else if (r.state === 'one') {
-      sub = `${kg(r.kg)} · first score, ${esc(dayShort(r.date)).replace(/ /g, '\u00a0')}`;   // the date stays on one line
-      right = `<span class="sc-r"><span class="sc-n">${r.n}</span><span class="sc-u">reps</span></span>`;
-    } else {
-      const same = r.state === 'same';
-      sub = same ? `${kg(r.kg)} · best ${r.best}` : `${kg(r.kg)} · was ${r.prev.n} at ${esc(kgLabel(r.prev.kg, info))}`;
-      const d = !same ? `${r.dk > 0 ? '+' : '−'}${fmtNum(Math.abs(r.dk))} kg` : r.delta > 0 ? `▲ +${r.delta}` : r.delta < 0 ? `▼ −${-r.delta}` : 'same';
-      right = `${sparkHtml(r.series, slot)}<span class="sc-r"><span class="sc-n">${r.n}</span><span class="sr-only"> reps, </span><span class="sc-d${same && r.delta > 0 ? ' pos' : ''}">${d}</span></span>`;
-    }
-    return `<button type="button" class="sc-row" data-act="exHistory" data-ex="${esc(key)}" data-slot="${slot}">${plateHtml(slot)}
-      <span class="ex-main"><span class="sr-only">${SLOT[slot].label}: </span><span class="ex-n">${esc(info.n)}</span><span class="sc-sub">${sub}</span></span>${right}</button>`;
-  }).join('');
-  const seg = abc ? `<div class="seg" role="group" aria-label="Workout">${TPLS.map(t => `<button type="button" data-act="scoreTpl" data-tpl="${t}" aria-pressed="${t === tpl}">${t}</button>`).join('')}</div>` : '';
-  return `<section class="card sc" aria-label="Scores"><div class="row"><span class="eyebrow grow">${mine ? 'Your' : esc(displayName(pid)) + '’s'} scores</span>${seg}</div>${rows}</section>`;
-}
-
 /* Small line charts, drawn at the real pixel width of their box so text never scales. */
 const CH = {};
 function chartBox(id, pts, slot, metric) {
@@ -1869,29 +1827,6 @@ function drawChart(el) {
 document.addEventListener('pointerdown', ev => { document.querySelectorAll('.pg-svg').forEach(c => { if (c._hide && !c.contains(ev.target)) c._hide(); }); }, true);
 let chartResize = null;
 window.addEventListener('resize', () => { clearTimeout(chartResize); chartResize = setTimeout(() => drawCharts(document), 150); });
-
-/* ---------- The log: a row per workout ---------- */
-/* Every finished workout of one person, newest first: the date, the letter, the reps of push, pull and legs,
-   and the verdict in a few words. Your own opens to edit, a buddy's to read. */
-function logListHtml(pid) {
-  const mine = pid === S.uid;
-  const prof = S.members.get(pid)?.profile;
-  const all = shownSessions(pid).reverse();
-  if (!all.length) return `<p class="small empty">${mine ? 'No workouts yet.' : esc(displayName(pid)) + ' hasn’t logged a workout yet.'}</p>`;
-  const list = UI.logAll ? all : all.slice(0, 8);
-  const rows = list.map(s => {
-    const trial = isTrial(s, pid);
-    const tag = trial ? 'practice' : rotates(prof) && s.tpl ? s.tpl : '';
-    const reps = SLOT_ORDER.map(slot => { const b = (s.blocks || []).find(x => x.slot === slot); return b && b.done && !b.skipped && b.total > 0 ? b.total : '–'; }).join(' · ');
-    const sum = sessionSummary(s, pid);
-    return `<button type="button" class="lg-row${tag ? '' : ' lg-notag'}" data-act="${mine ? 'edit' : 'viewSession'}" data-id="${esc(s.id)}">
-      <span class="lg-date">${esc(dayShort(s.date))}</span>${tag ? `${trial ? '' : '<span class="sr-only">Workout </span>'}<span class="lg-tpl">${esc(tag)}</span>` : ''}
-      <span class="lg-main"><span class="lg-reps">${reps} reps</span>${sum ? `<span class="lg-sum">${esc(sum)}</span>` : ''}</span>${CHEV}<span class="sr-only">. ${mine ? 'Edit' : 'View'}</span>
-    </button>`;
-  }).join('');
-  const more = all.length > list.length ? `<button class="btn link" data-act="logAll" style="justify-self:center">Show all ${all.length} workouts</button>` : '';
-  return `<section class="card lg" aria-label="Workouts">${rows}</section>${more}`;
-}
 
 /* ---------- First visit ---------- */
 function hasCrew() { return [...S.members.keys()].some(id => id !== S.uid && S.members.get(id)?.profile); }
@@ -2573,30 +2508,6 @@ function exEditHtml(st) {
   </form>`;
 }
 SHEETS.ex = { label: 'Exercise', html: exSheet };
-/* The history of one exercise of one person: reps and kilos lifted as lines, then every score, newest first. */
-function exHistorySheet(st) {
-  const prof = S.members.get(st.pid)?.profile;
-  const info = exInfo(st.key, prof);
-  const hist = scoresOf(st.pid, st.key);
-  const head = `<div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}</div><b class="h2">${esc(info.n)}</b></div>
-      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>`;
-  if (!hist.length) return `${head}<p class="small empty">No score yet.</p>`;
-  const pts = hist.map(h => ({ date: h.date, reps: h.total, kg: scored(h) ? blockVolume(h) : null, ex: info.n, cut: !!h.cut }));
-  const repPts = pts.map(x => Object.assign({}, x, { y: x.reps }));
-  const kgPts = pts.filter(x => x.kg != null).map(x => Object.assign({}, x, { y: x.kg }));
-  const lastKg = kgPts[kgPts.length - 1];
-  const box = (list, metric) => (list.length > 1
-    ? chartBox(`${st.pid}:${st.key}:${metric}`, list, st.slot, metric)
-    : `<p class="tiny pg-wait">${list.length ? 'The line starts the 2nd time.' : 'Bodyweight: counted in reps.'}</p>`);
-  const rows = hist.slice().reverse().map(h => `<div class="eh-row">${esc(dayShort(h.date))} · ${esc(blockKgLabel(h, Object.assign({}, info, { bw: !!h.bw })))} · ${plural(h.total, 'rep', 'reps')}${h.cut ? ' · stopped early' : ''}</div>`).join('');
-  return `${head}
-    <div class="card eh-charts"><div class="pg-charts">
-      <div class="pg-chart"><div class="pg-lbl"><span>Reps</span><b class="num">${pts[pts.length - 1].reps}</b></div>${box(repPts, 'reps')}</div>
-      <div class="pg-chart"><div class="pg-lbl"><span>Kilos lifted</span>${lastKg ? `<b class="num">${esc(kgTotal(lastKg.kg))}</b>` : ''}</div>${box(kgPts, 'kg')}</div>
-    </div></div>
-    <section class="card eh-list" aria-label="All scores">${rows}</section>`;
-}
-SHEETS.exHistory = { label: 'Exercise history', html: exHistorySheet };
 /* A buddy's workout, to read: per exercise the name, the weight and the reps. Nothing in it can be changed. */
 function sessionViewSheet(st) {
   const s = S.members.get(st.pid)?.sessions.get(st.id);
@@ -2606,7 +2517,7 @@ function sessionViewSheet(st) {
   const head = `<div class="sheet-head"><div class="grow"><div class="eyebrow">${esc([displayName(st.pid), what].filter(Boolean).join(' · '))}</div><b class="h2">${s ? esc(dayShort(s.date)) : 'Workout'}</b></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>`;
   if (!s) return `${head}<p class="small empty">This workout is no longer in the log.</p>`;
-  return `${head}<section class="card wo" aria-label="Exercises">${resultRowsHtml(s, st.pid, !trial)}${totalRowHtml(s)}</section>`;
+  return `${head}<section class="card wo" aria-label="Exercises">${resultRowsHtml(s, st.pid, !trial)}</section>`;
 }
 SHEETS.sessionView = { label: 'Workout', html: sessionViewSheet };
 /* Another view of the sheet: drawn from the top, with focus on `focus` or else on its first control. */
@@ -3030,7 +2941,7 @@ const ACT = {
     clearDraftFor(id);
     if (await deleteSession(id)) {
       UI.sheetReturn = null; closeSheet(); toast('Workout deleted.');
-      const t = $('#view .lg-row') || $('#view [data-act="back"]'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
+      const t = $('#view .rt-row') || $('#view [data-act="back"]'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
     }
   },
   closeSheet() { dismissSheet(); },
@@ -3060,10 +2971,9 @@ const ACT = {
     });
     f.querySelectorAll('[data-act="formTpl"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tpl === t)));
   },
-  person(el) { UI.person = el.dataset.id; UI.logAll = false; UI.scoreTpl = null; render(); },
-  scoreTpl(el) { UI.scoreTpl = el.dataset.tpl; render(); },
+  person(el) { UI.person = el.dataset.id; UI.logAll = false; UI.resTpl = null; render(); },
+  resTpl(el) { UI.resTpl = el.dataset.tpl; render(); },
   viewSession(el) { const pid = personPick().pid; if (S.members.get(pid)?.sessions.get(el.dataset.id)) showSheet({ kind: 'sessionView', pid, id: el.dataset.id }); },
-  exHistory(el) { if (SLOT[el.dataset.slot]) showSheet({ kind: 'exHistory', pid: personPick().pid, key: el.dataset.ex, slot: el.dataset.slot }); },
   logAll() { UI.logAll = true; render(); },
   skipUp(el) { prefs.noUp = Object.assign({}, prefs.noUp, { [el.dataset.ex]: Number(el.dataset.kg) }); savePrefs(); render(); },
   day(el) {

@@ -36,7 +36,7 @@ test('at most three buddies, in the order they joined', async () => {
   assert.deepEqual(await texts(page, '.wk-row[data-id] .wk-who'), ['You', 'A', 'B', 'C']);
   assert.equal(await txt(page, '.wk-more'), '+1 more');
   await page.click('.wk-more');
-  assert.equal(await txt(page, '#view .title'), 'Progress');
+  assert.equal(await txt(page, '#view .title'), 'My results');
 });
 test('same every time shows a tick instead of a letter', async () => {
   const page = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });

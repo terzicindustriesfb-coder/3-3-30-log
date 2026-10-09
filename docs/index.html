@@ -498,6 +498,8 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
 .xc-sub { font-size: 13px; color: var(--ink-2); }
 .xc-goal { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
 .xc-goal b { font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 19px; color: var(--ink); }
+.xc-stop { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.xc-stop .btn { min-height: 48px; padding-inline: 8px; font-size: 15px; }
 @media (max-height: 620px) {
   .clockbtn { min-height: 84px; grid-template-rows: 44px auto auto; padding-block: 8px; } .clockbtn .ledbox { height: 44px; }
   .xc[data-form="open"] { gap: 8px; } .xc .pad { gap: 6px; } .xc .pad button { min-height: 44px; }
@@ -1329,7 +1331,8 @@ function cardModel(today = todayYmd()) {
 }
 /* The open card: the exercise and the weight as they were fixed at Start, what to beat, the time left, the
    sets so far and, after the bell, the result. `left` is in seconds; `past` says the total is past the score
-   to beat; `good` that the result is a first score or more reps than last time. */
+   to beat; `armed` that Throw away waits for its second tap; `good` that the result is a first score or more
+   reps than last time. */
 function openCardModel(p) {
   const b = blk();
   const info = Object.assign({}, exInfo(b.ex, p), { bw: !!b.bw });
@@ -1339,7 +1342,7 @@ function openCardModel(p) {
   const goal = prev ? { label: Number(b.kg) > Number(prev.kg) ? 'To match' : 'To beat', n: prev.total } : { label: 'First time', n: null };
   const left = R.phase === 'lead' ? Math.max(1, Math.ceil((R.leadEnd - Date.now()) / 1000)) : R.phase === 'over' ? 0 : Math.max(0, Math.ceil(BLOCK_SEC - elapsed()));
   const v = total ? verdict(live, S.uid, R.session.id) : null;
-  return { slot: b.slot, form: 'open', name: blockName(b, p), kgText: kgLabel(b.kg, info), goal, phase: R.phase, left, total, sets: b.sets.map(x => x.r), last: R.lastSet,
+  return { slot: b.slot, form: 'open', name: blockName(b, p), kgText: kgLabel(b.kg, info), goal, phase: R.phase, left, total, sets: b.sets.map(x => x.r), last: R.lastSet, armed: R.confirm === 'throw',
     past: total > 0 && !!prev && compare(live, prev)?.verdict === 'beter', saved: R.saved,
     title: b.cut ? 'Stopped early' : 'Time is up', verdict: v ? v.long : 'No reps logged.', good: !!v && (v.kind === 'first' || v.kind === 'up') };
 }
@@ -1799,8 +1802,9 @@ function clockHtml(c) {
     </button><span id="clockSr" class="sr-only" aria-live="polite"></span>`;
 }
 /* The open card. Until the bell the button is the clock: the countdown (with Cancel under it), then the time
-   left, with the total, the number pad and the sets under it. After the bell the clock makes room for the
-   result; the pad stays for a last set, and Done closes the card. */
+   left, with the total, the number pad and the sets under it. On pause there are two ways out under the
+   clock. After the bell the clock makes room for the result; the pad stays for a last set, and Done closes
+   the card. */
 function cardOpenHtml(c) {
   const nm = esc(c.name), over = c.phase === 'over', lead = c.phase === 'lead';
   const top = `<div class="xc-top">${plateHtml(c.slot)}
@@ -1817,6 +1821,7 @@ function cardOpenHtml(c) {
   return `<section class="card xc" data-slot="${c.slot}" data-form="open" aria-label="${SLOT[c.slot].label}: ${nm}">${top}
     ${over ? result : clockHtml(c)}
     ${lead ? '<button type="button" class="btn link" data-act="cancelLead">Cancel</button>' : ''}
+    ${c.phase === 'paused' ? `<div class="xc-stop"><button type="button" class="btn line" data-act="stopSave">Stop and save</button><button type="button" class="btn danger" data-act="throwAway">${c.armed ? 'Tap again to throw away' : 'Throw away'}</button></div>` : ''}
     ${over || lead ? '' : score}
     ${pad}${sets}
     ${over ? '<button type="button" class="btn primary xl" data-act="cardDone">Done</button>' : ''}
@@ -2935,13 +2940,26 @@ const ACT = {
     if (R.phase === 'lead') beginBlock();
     else if (R.phase === 'run') {
       Object.assign(R, { phase: 'paused', pausedAt: Date.now(), since: Date.now() });
-      stopTick(); wakeOff(); saveDraft(); render();
+      stopTick(); wakeOff(); saveDraft(); render(); keepPadInView();
     } else if (R.phase === 'paused') {
       Object.assign(R, { phase: 'run', pausedMs: R.pausedMs + (Date.now() - R.pausedAt), pausedAt: 0, since: Date.now(), confirm: null });
       wakeOn(); saveDraft(); render(); startTick(); keepPadInView();
     }
   },
   cancelLead() { if (R.session && R.phase === 'lead') closeCard(blk().slot); },
+  /* On pause: stop here and keep the reps so far as a score that stopped early. */
+  stopSave() {
+    if (!R.session || R.phase !== 'paused') return;
+    if (!blk().sets.length) { toast('Nothing to save yet.'); return; }
+    endBlock(false);
+  },
+  /* On pause: give up this attempt. The first tap asks for a second one; then the card closes and nothing of
+     the attempt is stored. */
+  throwAway() {
+    if (!R.session || R.phase !== 'paused') return;
+    if (R.confirm !== 'throw') { armConfirm('throw', R); render(); return; }
+    closeCard(blk().slot);
+  },
   /* A done card opens today's workout to fix it. */
   fixToday() { const s = todaySession(); if (s && !R.session) ACT.edit({ dataset: { id: s.id } }); },
   manual() {

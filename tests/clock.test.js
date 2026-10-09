@@ -291,3 +291,71 @@ test('the browser’s forward button cannot leave an open card, and its step bec
   await page.waitForFunction(() => history.state === null);      // else a later Back would land on "My results" again
   assert.deepEqual([await page.evaluate(() => UI.screen), await forms(page)], ['home', ['push:open', 'pull:wait', 'legs:wait']]);
 });
+const pause = async (page, after = 100) => { await forward(page, after); await page.click('.clockbtn'); };
+
+test('on pause there are two ways out, and none while the clock runs', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page, 'pull');
+  assert.equal(await page.locator('.xc-stop').count(), 0);
+  await pause(page);
+  assert.deepEqual(await texts(page, '.xc-stop .btn'), ['Stop and save', 'Throw away']);
+  assert.equal(await page.evaluate(() => [...document.querySelectorAll('.xc-stop .btn')].every(e => e.getBoundingClientRect().height >= 44)), true);
+  await forward(page, 1);
+  await page.click('.clockbtn');
+  assert.equal(await page.locator('.xc-stop').count(), 0);
+});
+test('Stop and save keeps the reps as a score that stopped early', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page, 'pull');
+  await tap(page, 20, 20, 20, 20);
+  await pause(page, 240);
+  await page.click('.xc [data-act="stopSave"]');
+  await saved(page);
+  assert.deepEqual(await result(page), ['Stopped early', '80 reps', 'It counts, but it is not your next score to beat.']);
+  assert.equal(await page.locator('.xc-result.good').count(), 0);
+  assert.deepEqual(await page.evaluate(() => { const b = todaySession().blocks[1]; return [b.total, b.dur, b.cut]; }), [80, 240, true]);
+  await page.click('.xc [data-act="cardDone"]');
+  assert.deepEqual([await txt(page, '.xc[data-slot="pull"] .goal-n'), await txt(page, '.xc[data-slot="pull"] .xc-verdict')], ['80', 'stopped early']);
+  assert.equal(await page.evaluate(() => refBlock(scoresOf(S.uid, 'kabelroeien')).total), 77);       // the score to beat is still the full one
+});
+test('without reps there is nothing to stop and save', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page);
+  await pause(page);
+  await page.click('.xc [data-act="stopSave"]');
+  assert.equal(await txt(page, '#toast'), 'Nothing to save yet.');
+  assert.equal((await clock(page))[0], 'paused');
+});
+test('Throw away asks for a second tap, then the attempt is gone', async () => {
+  const page = await openApp({ sessions: [first(), session('2026-10-14', 'A', [68, 0, 0], { id: 't1' })], prefs: QUIET });
+  await start(page, 'pull');
+  await tap(page, 8, 8);
+  await pause(page);
+  await page.click('.xc [data-act="throwAway"]');
+  assert.equal(await txt(page, '.xc [data-act="throwAway"]'), 'Tap again to throw away');
+  assert.deepEqual(await forms(page), ['push:done', 'pull:open', 'legs:wait']);
+  await page.click('.xc [data-act="throwAway"]');
+  assert.deepEqual(await forms(page), ['push:done', 'pull:todo', 'legs:todo']);
+  assert.deepEqual(await page.evaluate(() => [R.session, localStorage.getItem(DRAFT_KEY()), todaySession().id, todaySession().blocks[1].done, document.activeElement.dataset.slot]), [null, null, 't1', false, 'pull']);
+});
+test('the second tap has to come within three and a half seconds', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page);
+  await pause(page);
+  await page.click('.xc [data-act="throwAway"]');
+  await page.waitForFunction(() => document.querySelector('.xc [data-act="throwAway"]').textContent.trim() === 'Throw away', null, { timeout: 6000 });
+  await page.click('.xc [data-act="throwAway"]');
+  assert.equal(await txt(page, '.xc [data-act="throwAway"]'), 'Tap again to throw away');
+  assert.equal((await clock(page))[0], 'paused');
+});
+test('after throwing away, the weight can be changed and the exercise started again', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page, 'pull');
+  await pause(page);
+  await page.click('.xc [data-act="throwAway"]');
+  await page.click('.xc [data-act="throwAway"]');
+  await page.evaluate(async () => { const p = clone(myProfile()); p.weights.kabelroeien = 70; await saveProfile(p); });
+  await page.waitForFunction(() => /70/.test(document.querySelector('.xc[data-slot="pull"] .ex-kg').textContent));
+  await start(page, 'pull');
+  assert.deepEqual([await txt(page, open + '.ex-kg'), await txt(page, open + '.goal-l')], ['70 kg', 'To match']);
+});

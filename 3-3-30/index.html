@@ -99,7 +99,7 @@ p { margin: 0; }
 .small { font-size: 14px; color: var(--ink-2); }
 .tiny { font-size: 12.5px; color: var(--muted); }
 .num { font-variant-numeric: tabular-nums; }
-.title, .h2, .run-name, .ex-n, .note-text { overflow-wrap: anywhere; hyphens: auto; }
+.title, .h2, .ex-n, .note-text { overflow-wrap: anywhere; hyphens: auto; }
 
 /* Building blocks */
 .stack { display: grid; gap: 14px; }
@@ -186,24 +186,7 @@ textarea { min-height: 76px; resize: vertical; }
 .stepper button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); font-size: 22px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
 .stepper .val { min-width: 104px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; padding-inline: 6px; font-size: 16px; }
 
-/* Workout mode: one screen, rep pad in the thumb zone */
-.runner { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
-  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-.run { max-width: 560px; margin: 0 auto; min-height: 100%; padding-inline: 16px; padding-block: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
-.run-top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 12px; }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.steps i { height: 6px; border-radius: 3px; background: var(--surface-3); display: block; }
-.steps i.done.push, .steps i.cur.push { background: var(--push); }
-.steps i.done.pull, .steps i.cur.pull { background: var(--pull); }
-.steps i.done.legs, .steps i.cur.legs { background: var(--legs); }
-.steps i.cur { opacity: .55; }
-.run-ex { display: grid; gap: 6px; }
-.run-name { font-family: var(--display); font-stretch: 68%; font-weight: 800; font-size: clamp(30px, 9.4vw, 40px); line-height: .95; }
-.run-kg { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.clock { flex: 1 1 0; min-height: 100px; max-height: 210px; background: var(--clock-bg); border-radius: 22px; padding: 12px 14px 10px; box-shadow: inset 0 2px 6px rgb(0 0 0 / .6), 0 0 0 1px var(--clock-edge);
-  display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 8px; justify-items: center; color: #9AA3AD; }
-.ledbox { width: 100%; height: 100%; min-height: 0; display: grid; place-items: center; }
-.clock svg.led { width: auto; height: 100%; max-width: 100%; max-height: 132px; display: block; }
+/* The LED digits of the clock, the number pad and the list of sets */
 .led .seg { fill: var(--led-off); }
 .led .seg.on { fill: var(--led-on); }
 .led .on, .led .colon { filter: drop-shadow(0 0 5px rgb(255 61 46 / .5)); }
@@ -212,31 +195,14 @@ textarea { min-height: 76px; resize: vertical; }
 @keyframes tick { 50% { opacity: .25; } }
 .led.lead .seg.on, .led.lead .colon { fill: var(--led-lead); filter: drop-shadow(0 0 5px rgb(255 176 32 / .5)); }
 .led .colon { fill: var(--led-on); }
-.led.paused { animation: blink 1.2s step-end infinite; }
-@keyframes blink { 50% { opacity: .35; } }
-.clock .status { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: #C9D0D7; }
-.clock .prog { width: 100%; height: 4px; border-radius: 2px; background: #22272E; overflow: hidden; }
-.clock .prog b { display: block; height: 100%; background: var(--led-on); width: 0; }
-.score { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
-.score .total { font-family: var(--display); font-stretch: 75%; font-weight: 900; font-size: 64px; line-height: .82; font-variant-numeric: tabular-nums; }
-.score .unit { display: grid; gap: 1px; padding-bottom: 3px; font-weight: 750; color: var(--muted); font-size: 14px; }
-.score .cmp { margin-left: auto; text-align: right; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 1px; padding-bottom: 3px; }
 .pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
 .pad button { min-height: 50px; border-radius: 12px; border: 0; background: var(--surface); box-shadow: var(--shadow); font-family: var(--display); font-stretch: 80%;
   font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
 .pad button.last { box-shadow: inset 0 0 0 2.5px var(--ink); }
 .pad button:active { transform: scale(.95); background: var(--surface-2); }
 .pad.off { opacity: .35; pointer-events: none; }
-.run-ctrl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.run-ctrl .wide { grid-column: 1 / -1; }
-.run-ctrl .btn { padding-inline: 10px; }
-.run-ctrl.two { grid-template-columns: 1fr 1fr; }
 .setlist { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-height: 26px; font-size: 13px; color: var(--muted); }
 .setlist span { background: var(--surface-2); color: var(--ink-2); border-radius: 7px; padding: 1px 8px; font-weight: 750; font-variant-numeric: tabular-nums; }
-.result { border-radius: var(--r); padding: 12px 14px; background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 4px; }
-.result.pr { background: var(--good-wash); box-shadow: none; }
-.result b.v { font-family: var(--display); font-stretch: 75%; font-size: 22px; font-weight: 800; }
-.ready-info { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px; display: grid; gap: 8px; }
 .flash { animation: flash .45s ease-out; }
 @keyframes flash { from { color: var(--good); transform: scale(1.06); } to { color: inherit; transform: none; } }
 
@@ -256,29 +222,12 @@ textarea { min-height: 76px; resize: vertical; }
 
 .skeleton { color: var(--muted); padding-block: 48px; text-align: center; }
 #sheet:not([hidden]) ~ #toast { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); }
-#runner:not([hidden]) ~ #toast { bottom: auto; top: calc(60px + env(safe-area-inset-top, 0px)); }
-
-.run-label { display: grid; gap: 6px; justify-items: center; min-width: 0; }
-.run-label .steps { width: 100%; max-width: 168px; }
-.run-label .eyebrow { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.run-menu { position: fixed; inset: 0; z-index: 60; background: rgb(6 8 10 / .5); display: grid; align-items: end; justify-items: center; }
 
 .kg-in { width: 96px !important; min-height: 44px !important; padding: 6px 8px !important; text-align: center; font-weight: 800 !important; font-size: 16px; background: transparent !important; box-shadow: none !important; font-variant-numeric: tabular-nums; }
 .kg-in:focus { box-shadow: inset 0 0 0 2px var(--pull) !important; background: var(--surface) !important; }
 
   
 
-@media (max-height: 700px) { .pad button { min-height: 43px; font-size: 24px; } .pad { gap: 6px; } .score .total { font-size: 44px; } .run { gap: 7px; } .run-name { font-size: 27px; } .run-kg .stepper button { width: 40px; height: 40px; } }
-@media (max-height: 620px) {
-  .run { gap: 5px; padding-block: 4px 8px; }
-  .run-top { grid-template-columns: 40px 1fr 40px; } .run-top .iconbtn { width: 40px; height: 40px; }
-  .run-name { font-size: 24px; }
-  .pad button { min-height: 37px; font-size: 21px; } .pad { gap: 5px; }
-  .clock { min-height: 78px; padding: 8px 10px; gap: 4px; } .clock .status { font-size: 11px; }
-  .run-ctrl .btn { min-height: 42px; white-space: nowrap; }
-  .score .total { font-size: 38px; } .setlist { min-height: 22px; }
-}
-@media (max-width: 340px) { .run-kg { flex-wrap: nowrap; } .run-kg .small { font-size: 12.5px; line-height: 1.2; } .run-ctrl .btn { font-size: 15px; } }
 /* A line chart, drawn at the width of its box */
 .pg-svg { position: relative; min-height: 96px; min-width: 0; }
 .pg-svg svg { max-width: 100%; }
@@ -296,8 +245,6 @@ textarea { min-height: 76px; resize: vertical; }
 .stack { grid-template-columns: minmax(0, 1fr); }
 .ex-row.static { cursor: default; } .ex-row.static:hover { background: transparent; }
 .empty { text-align: center; padding: 18px 8px; }
-.sum-total { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; font-weight: 700; }
-.sum-total b { font-family: var(--display); font-stretch: 80%; font-size: 22px; font-weight: 800; }
 .lf { gap: 0; padding-block: 4px; }
 .lf-block { display: grid; gap: 8px; padding-block: 12px; border-top: 1px solid var(--line); }
 .lf-block:first-child { border-top: 0; }
@@ -334,7 +281,6 @@ textarea { min-height: 76px; resize: vertical; }
 .wo .ex-list li + li { border-top: 1px solid var(--surface-2); }
 .wo .ex-row { padding: 8px 4px; min-height: 64px; }
 .wo > .btn.xl { margin-top: 8px; }
-.wo > .sum-total { margin: 4px 4px 0; padding-bottom: 6px; }
 .wo-next { display: grid; gap: 4px; padding: 2px 4px; }
 .wo-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 2px; }
 .wo-links { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0 12px; }
@@ -503,6 +449,46 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
 .wkc-n { margin-left: auto; font-weight: 700; font-size: 15px; white-space: nowrap; }
 .wkc-row[data-id]:not(.me) .wkc-who, .wkc-row[data-id]:not(.me) .wkc-n { color: var(--ink-2); }
 .wkc-more { justify-self: start; min-height: 44px; font-size: 14px; }
+/* The open card: the clock on the button, the result after the bell, and the cards that wait */
+.clockbtn { width: 100%; min-height: 104px; border: 0; border-radius: 36px; padding: 12px 28px; background: var(--clock-bg); box-shadow: inset 0 0 0 1.5px var(--clock-edge);
+  display: grid; grid-template-rows: 58px auto auto; gap: 7px; justify-items: center; align-items: center; }
+.clockbtn .ledbox { width: 100%; height: 58px; display: grid; place-items: center; }
+.clockbtn svg.led { height: 100%; width: auto; max-width: 100%; display: block; }
+.clockbtn .prog { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--clock-edge); overflow: hidden; }
+.clockbtn .prog b { display: block; height: 100%; width: 0; background: var(--led-on); }
+.clockbtn[data-phase="paused"] .prog b { background: var(--led-lead); }
+.clockbtn .status { font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #C8CCD2; }
+.clockbtn[data-phase="paused"] .status { color: #FFFFFF; }
+.xc[data-form="open"] > .btn.link { justify-self: center; min-height: 44px; }
+.xc-score { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.xc-total .total, .xc-big .total { display: inline-block; margin-right: 8px; font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 44px; line-height: .9; font-variant-numeric: tabular-nums; }
+.xc-total .xc-u, .xc-big .xc-u { font-size: 16px; font-weight: 600; color: var(--ink); }
+.xc-past { margin-left: auto; }
+.xc-how { font-size: 15.5px; font-weight: 600; }
+.xc .pad { gap: 8px; }
+.xc .pad button { min-height: 52px; border-radius: 12px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); font-stretch: 75%; font-size: 22px; }
+.xc .pad button.last { box-shadow: inset 0 0 0 2.5px var(--ink); }
+.xc-setrow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 10px; }
+.xc-sets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 15px; color: var(--ink-2); }
+.xc-sets .setlist { min-height: 0; font-size: 15px; }
+.xc-setrow .btn.link { min-height: 44px; font-size: 15px; color: var(--ink); }
+.xc-result { border-radius: var(--r-lg); padding: 12px 16px 14px; background: var(--surface-2); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 6px 10px; }
+.xc-result .eyebrow { grid-column: 1 / -1; }
+.xc-result.good { background: var(--good-wash); }
+.xc-result.good .eyebrow, .xc-result.good .xc-verdict { color: var(--good-ink); }
+.xc-big .total { font-size: 48px; }
+.xc-result .xc-verdict { font-size: 15px; white-space: normal; text-align: right; }
+.xc-saved { font-size: 15px; }
+.xc[data-form="wait"] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px; }
+.xc[data-form="wait"] .plate { width: 28px; height: 28px; } .xc[data-form="wait"] .plate::after { width: 9px; height: 9px; }
+.xc[data-form="wait"] .ex-n { font-size: 16.5px; }
+.xc-sub { font-size: 13px; color: var(--ink-2); }
+.xc-goal { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+.xc-goal b { font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 19px; color: var(--ink); }
+@media (max-height: 620px) {
+  .clockbtn { min-height: 84px; grid-template-rows: 44px auto auto; padding-block: 8px; } .clockbtn .ledbox { height: 44px; }
+  .xc[data-form="open"] { gap: 8px; } .xc .pad { gap: 6px; } .xc .pad button { min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -517,7 +503,6 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
   </main>
 </div>
 
-<div class="runner" id="runner" role="dialog" aria-modal="true" aria-label="Workout" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -648,7 +633,6 @@ const daysBetween = (a, b) => Math.round((parseYmd(b) - parseYmd(a)) / 864e5);
 const weekNo = (s, start) => Math.floor(daysBetween(mondayOf(start), mondayOf(s)) / 7) + 1;
 const LOC = 'en-GB';
 const fmtLong = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
-const fmtShort = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'short', day: 'numeric', month: 'short' });
 const fmtWeekday = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long' });
 const fmtDM = s => parseYmd(s).toLocaleDateString(LOC, { day: 'numeric', month: 'short' });
 const fmtNum = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 1 });
@@ -1186,13 +1170,6 @@ function compare(b, prev) {
   parts.push(dr === 0 ? 'same reps' : `${dr > 0 ? '+' : '−'}${plural(Math.abs(dr), 'rep', 'reps')}`);
   return { dk, dr, verdict, text: parts.join(' · '), tone: verdict === 'beter' ? 'pos' : verdict === 'minder' ? 'neg' : '' };
 }
-const VERDICT_TEXT = {
-  beter: 'You beat last time!',
-  gelijk: 'Dead even with last time.',
-  minder: 'Just short this time.',
-  zwaarder: 'Heavier, slightly fewer reps — normal after a weight jump.',
-  lichter: 'Lighter weight, more reps.',
-};
 /* How one finished exercise did against the score to beat from before that workout.
    Another weight is named, not judged; a block that stopped early is not compared.
    `text` is the short form for a card or a row, `long` the sentence for the result after the ten minutes. */
@@ -1224,18 +1201,6 @@ function sessionSummary(s, pid) {
     n.cut ? `${n.cut} stopped early` : '',
   ].filter(Boolean).join(' · ');
 }
-/* 'reps': more reps than ever at this weight or lighter; 'kg': same best reps, heavier. */
-function recordKind(b, hist) {
-  if (!hist.length || !(b.total > 0)) return null;
-  const kg = Number(b.kg) || 0;
-  const ref = hist.filter(h => (Number(h.kg) || 0) <= kg);
-  if (!ref.length) return null;
-  const best = Math.max(...ref.map(h => h.total));
-  if (b.total > best) return 'reps';
-  if (b.total === best && ref.every(h => (Number(h.kg) || 0) < kg || h.total < best)) return 'kg';
-  return null;
-}
-
 /* Progression advice. When to go heavier is a tip, not from the article: the first
    fresh set had 12+ reps (the weight is lighter than the 5-10 rep weight the article
    asks for), or +20 % reps on the same weight (Escalating Density Training's rule). */
@@ -1319,13 +1284,17 @@ function turnTpl(id = S.uid, today = todayYmd()) {
 }
 /* What the three cards show, in push, pull, legs order. A group is done when today's workout has a done block
    for it: the card then shows what you did. Otherwise it is to do: the exercise of the workout whose turn it
-   is, the weight it is set to, and the score to beat (to match, when the set weight is heavier). */
+   is, the weight it is set to, and the score to beat (to match, when the set weight is heavier).
+   While a card is open the cards follow the working copy (R.session) instead of the stored workout: the open
+   group has the form 'open', and a group that is still to do waits (form 'wait', the fields of a card to do). */
 function cardModel(today = todayYmd()) {
   const p = myProfile();
-  const tpl = turnTpl(S.uid, today);
-  const s = todaySession(S.uid, today);
+  const open = R.session ? { slot: blk().slot, phase: R.phase } : null;
+  const s = R.session || todaySession(S.uid, today);
+  const tpl = R.session ? R.session.tpl : turnTpl(S.uid, today);
   const plan = planFor(p, tpl);
   const cards = SLOT_ORDER.map(slot => {
+    if (open && open.slot === slot) return openCardModel(p);
     const b = s ? (s.blocks || []).find(x => x.slot === slot && isDone(x)) : null;
     if (b) {
       const info = Object.assign({}, exInfo(b.ex, p), { bw: !!b.bw });
@@ -1335,9 +1304,25 @@ function cardModel(today = todayYmd()) {
     const kg = plannedKg(p, key).kg;
     const ref = refBlock(scoresOf(S.uid, key));
     const goal = ref ? { label: Number(kg) > Number(ref.kg) ? 'To match' : 'To beat', n: ref.total } : { label: 'First time', n: null };
-    return { slot, form: 'todo', key, name: info.n, kgText: kgLabel(kg, info), goal };
+    return { slot, form: open ? 'wait' : 'todo', key, name: info.n, kgText: kgLabel(kg, info), goal };
   });
-  return { tpl, done: cards.filter(c => c.form === 'done').length, cards };
+  return { tpl, done: cards.filter(c => c.form === 'done').length, open, cards };
+}
+/* The open card: the exercise and the weight as they were fixed at Start, what to beat, the time left, the
+   sets so far and, after the bell, the result. `left` is in seconds; `past` says the total is past the score
+   to beat; `good` that the result is a first score or more reps than last time. */
+function openCardModel(p) {
+  const b = blk();
+  const info = Object.assign({}, exInfo(b.ex, p), { bw: !!b.bw });
+  const prev = prevBlock();
+  const total = b.sets.reduce((a, x) => a + x.r, 0);
+  const live = Object.assign({}, b, { total, done: total > 0, skipped: false });
+  const goal = prev ? { label: Number(b.kg) > Number(prev.kg) ? 'To match' : 'To beat', n: prev.total } : { label: 'First time', n: null };
+  const left = R.phase === 'lead' ? Math.max(1, Math.ceil((R.leadEnd - Date.now()) / 1000)) : R.phase === 'over' ? 0 : Math.max(0, Math.ceil(BLOCK_SEC - elapsed()));
+  const v = total ? verdict(live, S.uid, R.session.id) : null;
+  return { slot: b.slot, form: 'open', name: blockName(b, p), kgText: kgLabel(b.kg, info), goal, phase: R.phase, left, total, sets: b.sets.map(x => x.r), last: R.lastSet,
+    past: total > 0 && !!prev && compare(live, prev)?.verdict === 'beter', saved: R.saved,
+    title: b.cut ? 'Stopped early' : 'Time is up', verdict: v ? v.long : 'No reps logged.', good: !!v && (v.kind === 'first' || v.kind === 'up') };
 }
 /* The week counter: workouts that count in this Monday-to-Sunday week, against a goal of three. */
 function weekCount(id, today = todayYmd()) {
@@ -1516,14 +1501,13 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
  * ------------------------------------------------------------------ */
-const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false } };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false } };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
   renderQueued = true;
   requestAnimationFrame(() => { renderQueued = false; render(); });
 }
-document.addEventListener('focusout', e => { if (e.target.id === 'runKgIn') commitRunKg(e.target); });
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the page's HTML; put keyboard focus back on the same control. */
@@ -1565,13 +1549,20 @@ function render() {
   maybeReopen();
 }
 
-/* After a reload with an exercise open, go straight back to it. */
+/* After a reload with a card open, the same card opens again in the same state: the clock running, on pause,
+   or after the bell. A reload in the countdown puts the card back to "to do". */
 let reopenChecked = false;
 function maybeReopen() {
   if (reopenChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
   reopenChecked = true;
   const d = loadDraft();
-  if (d) openRunner(true);
+  if (!d) return;
+  if (!['run', 'paused', 'over'].includes(d.phase)) { LS.del(DRAFT_KEY()); return; }
+  // A save that was still on its way when the page went is tried again by Done.
+  Object.assign(R, { session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: 0, pausedAt: d.pausedAt, pausedMs: d.pausedMs,
+    lastRem: null, confirm: null, lastSet: null, saved: d.saved === 'saved' ? 'saved' : d.saved ? 'failed' : null, since: 0, storing: null });
+  render();
+  if (R.phase === 'run') { wakeOn(); startTick(); }
 }
 
 function renderHeader() {
@@ -1597,7 +1588,6 @@ const ICON = {
 };
 const plateHtml = (slot, sm) => `<span class="plate ${slot}${sm ? ' sm' : ''}" aria-hidden="true"></span>`;
 const dayShort = d => `${WD[parseYmd(d).getDay()]} ${fmtDM(d)}`;
-const kgTotal = n => `${fmtNum(Math.round(n))} kg`;
 
 /* "Back" on top of "My results" and "Settings", and the two buttons under the home screen that lead there. */
 const backHtml = () => `<div class="scr-top"><button type="button" class="btn back" data-act="back">${ICON.back}Back</button></div>`;
@@ -1614,7 +1604,7 @@ function viewHome() {
     if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
     return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
   }
-  return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewCards(p) + homeNavHtml();
+  return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewCards(p) + (R.session ? '' : homeNavHtml());
 }
 /* "My results": whose they are, with turns on which workout, and the table of that workout. */
 function viewResults() {
@@ -1676,11 +1666,6 @@ function resultRowsHtml(s, pid, judged = true) {
   }).join('');
   return `<ul class="ex-list">${rows}</ul>`;
 }
-/* "Lifted in total": weight × reps over the whole workout. Nothing when that is zero. */
-function totalRowHtml(s) {
-  const kg = doneBlocks(s).reduce((a, b) => a + blockVolume(b), 0);
-  return kg > 0 ? `<div class="sum-total"><span class="grow">Lifted in total</span> <b class="num">${esc(kgTotal(kg))}</b></div>` : '';
-}
 /* One day in the week strip: a filled disc (trained), a ring (planned), a dashed ring (missed, or
    today when it is a rest day) or a small dot (rest). `text` is a letter, the tick, or nothing. */
 const dayDotHtml = (state, text) => `<span class="wd" data-state="${state}" aria-hidden="true">${text || ''}</span>`;
@@ -1728,6 +1713,8 @@ function weekStripHtml() {
 /* The home screen: a title that follows how much of today is done, a card for each exercise, the week counter. */
 function viewCards(p) {
   const m = cardModel();
+  // A card is open: only the cards, so that the open one fits the screen with its number pad.
+  if (m.open) return m.cards.map(c => (c.form === 'open' ? cardOpenHtml(c) : c.form === 'done' ? cardDoneHtml(c, true) : cardWaitHtml(c))).join('');
   const turns = rotates(p);
   let title, lead;
   if (m.done === 0) { title = turns ? `Today: Workout ${m.tpl}` : 'Today: 3 exercises'; lead = 'Each one takes 10 minutes. Do them in any order and beat your last score.'; }
@@ -1756,14 +1743,65 @@ function cardTodoHtml(c, tpl, first, p) {
   </section>`;
 }
 /* A card that is done: what you did, the reps large and the verdict under them. The whole card is a button
-   that opens today's workout to fix it. */
-function cardDoneHtml(c) {
+   that opens today's workout to fix it; while another card is open (`still`) it is not a button. */
+function cardDoneHtml(c, still) {
   const nm = esc(c.name), v = c.verdict;
-  return `<button type="button" class="card xc" data-slot="${c.slot}" data-form="done" data-act="fixToday" aria-label="${SLOT[c.slot].label}, done: ${nm}, ${c.n} reps, ${esc(v.text)}. Fix it">
-    <span class="xc-top"><span class="xc-tick" aria-hidden="true">${ICON.check}</span>
+  const label = `${SLOT[c.slot].label}, done: ${nm}, ${c.n} reps, ${esc(v.text)}`;
+  const inner = `<span class="xc-top"><span class="xc-tick" aria-hidden="true">${ICON.check}</span>
       <span class="ex-main"><span class="xc-grp done">${SLOT[c.slot].label} · done</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span></span>
-      <span class="goal"><span class="goal-n">${c.n}</span><span class="xc-u">reps</span><span class="xc-verdict${v.tone ? ' ' + v.tone : ''}">${esc(v.text)}</span></span></span>
-  </button>`;
+      <span class="goal"><span class="goal-n">${c.n}</span><span class="xc-u">reps</span><span class="xc-verdict${v.tone ? ' ' + v.tone : ''}">${esc(v.text)}</span></span></span>`;
+  return still
+    ? `<section class="card xc" data-slot="${c.slot}" data-form="done" aria-label="${label}">${inner}</section>`
+    : `<button type="button" class="card xc" data-slot="${c.slot}" data-form="done" data-act="fixToday" aria-label="${label}. Fix it">${inner}</button>`;
+}
+/* A card that waits while another one is open: one line, no buttons. */
+function cardWaitHtml(c) {
+  const nm = esc(c.name);
+  return `<section class="card xc" data-slot="${c.slot}" data-form="wait" aria-label="${SLOT[c.slot].label}: ${nm}, still to do">${plateHtml(c.slot, true)}
+    <span class="ex-main"><span class="ex-n">${nm}</span><span class="xc-sub">${SLOT[c.slot].label} · ${esc(c.kgText)} · still to do</span></span>
+    <span class="xc-goal">${c.goal.n == null ? c.goal.label : `${c.goal.label} <b>${c.goal.n}</b>`}</span></section>`;
+}
+/* The clock on the button, per phase: the words under the digits, and its name for a screen reader. */
+const CLOCK_WORDS = {
+  lead: ['Get ready · tap to start now', 'Get ready. Tap to start now'],
+  run: ['Tap to pause or stop', 'Clock. Tap to pause or stop'],
+  paused: ['Paused · tap to go on', 'Clock paused. Tap to go on'],
+};
+const SAVED_WORDS = { saving: 'Saving…', saved: 'Your score is saved. Last set not in yet? Tap it now.', failed: 'Not saved yet. Tap Done to try again.' };
+/* The class of the LED digits: amber in the countdown, on pause and in the last ten seconds, else red. */
+const ledClass = (phase, left) => (phase === 'lead' ? 'lead' : phase === 'paused' ? 'amber' : left <= 10 ? 'amber run' : 'run');
+function clockHtml(c) {
+  const lead = c.phase === 'lead';
+  const left = lead ? String(c.left) : clockText(c.left);
+  const used = lead ? 0 : Math.min(1, (BLOCK_SEC - c.left) / BLOCK_SEC) * 100;
+  const [words, label] = CLOCK_WORDS[c.phase] || CLOCK_WORDS.run;
+  return `<button type="button" class="clockbtn" data-act="clock" data-phase="${c.phase}" data-left="${left}" aria-label="${label}">
+      <span class="ledbox">${ledSvg(left, ledClass(c.phase, c.left))}</span><span class="prog"><b style="width:${used.toFixed(2)}%"></b></span><span class="status">${words}</span>
+    </button><span id="clockSr" class="sr-only" aria-live="polite"></span>`;
+}
+/* The open card. Until the bell the button is the clock: the countdown (with Cancel under it), then the time
+   left, with the total, the number pad and the sets under it. After the bell the clock makes room for the
+   result; the pad stays for a last set, and Done closes the card. */
+function cardOpenHtml(c) {
+  const nm = esc(c.name), over = c.phase === 'over', lead = c.phase === 'lead';
+  const top = `<div class="xc-top">${plateHtml(c.slot)}
+      <span class="ex-main"><span class="xc-grp ${c.slot}">${SLOT[c.slot].label}</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span></span>
+      <span class="goal"><span class="goal-l">${c.goal.label}</span>${c.goal.n == null ? '' : `<span class="goal-n">${c.goal.n}</span>`}</span></div>`;
+  const result = `<div class="xc-result${c.good ? ' good' : ''}" role="status"><span class="eyebrow">${c.title}</span>
+      <span class="xc-big"><b class="total">${c.total}</b> <span class="xc-u">reps</span></span><span class="xc-verdict">${esc(c.verdict)}</span></div>
+    ${c.saved ? `<p class="xc-saved">${SAVED_WORDS[c.saved]}</p>` : ''}`;
+  const score = `<div class="xc-score"><span class="xc-total"><b class="total">${c.total}</b> <span class="xc-u">reps so far</span></span>${c.past ? `<span class="xc-past delta pos">✓ Past last time (${c.goal.n})</span>` : ''}</div>
+    ${c.phase === 'run' ? '<p class="xc-how">After each set, tap how many reps you did.</p>' : ''}`;
+  const pad = `<div class="pad${lead ? ' off' : ''}">${Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<button type="button" data-act="set" data-n="${n}"${c.last === n ? ' class="last"' : ''} aria-label="Log a set of ${n} reps"${lead ? ' disabled' : ''}>${n}</button>`).join('')}</div>`;
+  const sets = c.sets.length ? `<div class="xc-setrow"><div class="xc-sets"><span class="xc-u">Your sets:</span> <span class="setlist">${c.sets.map(r => `<span>${r}</span>`).join(' ')}</span></div>
+      <button type="button" class="btn link" data-act="undo">Undo last set</button></div>` : '';
+  return `<section class="card xc" data-slot="${c.slot}" data-form="open" aria-label="${SLOT[c.slot].label}: ${nm}">${top}
+    ${over ? result : clockHtml(c)}
+    ${lead ? '<button type="button" class="btn link" data-act="cancelLead">Cancel</button>' : ''}
+    ${over || lead ? '' : score}
+    ${pad}${sets}
+    ${over ? '<button type="button" class="btn primary xl" data-act="cardDone">Done</button>' : ''}
+  </section>`;
 }
 /* The week counter: three dots and a few words. With buddies a row each: you first, then up to three of them. */
 function weekCountHtml() {
@@ -2012,13 +2050,19 @@ function showScreen(screen, from) {
 window.addEventListener('popstate', e => {
   const from = UI.screen;
   if (!$('#sheet').hidden) { UI.sheetReturn = null; closeSheet(); }
-  showScreen(e.state && e.state.screen ? e.state.screen : 'home', from);
+  const want = e.state && e.state.screen ? e.state.screen : 'home';
+  showScreen(want, from);
+  // With a card open every step shows the home screen: then this step becomes one of the home screen.
+  if (UI.screen !== want) { try { history.replaceState(null, ''); } catch { /* ignore */ } }
 });
 
 /* ------------------------------------------------------------------ *
- * Workout mode: live 10-minute AMRAP blocks
+ * The card clock: one exercise at a time, ten minutes on the button of its card
  * ------------------------------------------------------------------ */
-const R = { session: null, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, timer: null, lastRem: null, wake: null, confirm: null, confirm2: null, lastSet: null, menuPaused: false, menuLead: 0, dirty: false };
+/* While a card is open R.session is the working copy of today's workout (null otherwise) and R.idx the open
+   group in it. phase: 'lead' (the countdown), 'run', 'paused' or 'over' (the bell has gone). saved tells how
+   storing the score went: null, 'saving', 'saved' or 'failed'. since is when the phase last changed. */
+const R = { session: null, idx: 0, phase: 'run', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, timer: null, lastRem: null, wake: null, confirm: null, lastSet: null, saved: null, since: 0, storeN: 0, storing: null };
 const DRAFT_KEY = () => 'd330.draft.' + (S.uid || 'local');
 function loadDraft() {
   const d = LS.get(DRAFT_KEY(), null);
@@ -2029,7 +2073,7 @@ function loadDraft() {
 }
 function saveDraft() {
   if (!R.session) { LS.del(DRAFT_KEY()); return; }
-  LS.set(DRAFT_KEY(), { session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, leadEnd: R.leadEnd, pausedAt: R.pausedAt, pausedMs: R.pausedMs, corr: R.corr });
+  LS.set(DRAFT_KEY(), { session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, leadEnd: R.leadEnd, pausedAt: R.pausedAt, pausedMs: R.pausedMs, saved: R.saved });
 }
 function clearDraftFor(id) { const d = loadDraft(); if (d && d.session.id === id) LS.del(DRAFT_KEY()); }
 
@@ -2051,43 +2095,6 @@ function newSession(tpl) {
 function setBackgroundInert(on) {
   $('#app').inert = on;
 }
-function openRunner(fromDraft, tpl) {
-  const d = fromDraft ? loadDraft() : null;
-  if (d) {
-    Object.assign(R, { session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, leadEnd: d.leadEnd, pausedAt: d.pausedAt, pausedMs: d.pausedMs, corr: Array.isArray(d.corr) ? d.corr.filter(Number.isInteger) : null });
-    if (R.phase === 'lead') R.phase = 'ready';
-    if (!['ready', 'run', 'paused', 'over', 'finish'].includes(R.phase)) R.phase = 'ready';
-    // Started on an earlier day but nothing done yet: it's today's workout now.
-    if (R.session.date < todayYmd() && !R.session.blocks.some(b => b.done) && !R.session.blocks[R.idx]?.sets.length) {
-      R.session.date = todayYmd(); R.session.startedAt = Date.now();
-    }
-  } else {
-    Object.assign(R, { session: newSession(tpl), idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, corr: null });
-  }
-  R.lastRem = null; R.confirm = null; R.confirm2 = null; R.lastSet = null; R.menuPaused = false; R.menuLead = 0; R.dirty = false;
-  const a = document.activeElement;
-  UI.runReturn = a && a !== document.body ? focusSel(a) : null;
-  $('#runner').hidden = false;
-  document.body.style.overflow = 'hidden';
-  setBackgroundInert(true);
-  saveDraft();
-  if (R.phase === 'run') { wakeOn(); startTick(); }
-  renderRunner();
-  if (R.phase === 'run' || R.phase === 'over') keepPadInView();
-  const first = $('#runner .run-name') || $('#runner [data-act]');
-  if (first) { first.setAttribute('tabindex', '-1'); try { first.focus({ preventScroll: true }); } catch { /* ignore */ } }
-}
-function closeRunner() {
-  stopTick(); wakeOff();
-  $('#runner').hidden = true;
-  $('#runner').innerHTML = '';
-  document.body.style.overflow = '';
-  setBackgroundInert(false);
-  R.session = null;
-  render();
-  const back = [UI.runReturn && $('#main ' + UI.runReturn), $('#view [data-act="start"]')].find(el => el && !el.disabled);
-  if (back) { try { back.focus({ preventScroll: true }); } catch { /* ignore */ } }
-}
 /* The working copy for one exercise: a workout of today with the three exercises of the workout whose turn it
    is, none of them done. When there is a workout today the copy is that workout: its id, its start, its feel
    and note, and what is done in the other two groups. So the exercise and its weight are fixed from here on. */
@@ -2098,7 +2105,7 @@ function openCard(slot) {
     Object.assign(s, { id: t.id, startedAt: t.startedAt, manual: !!t.manual, feel: t.feel, note: t.note });
     s.blocks = s.blocks.map(b => { const did = b.slot === slot ? null : (t.blocks || []).find(x => x.slot === b.slot && isDone(x)); return did ? clone(did) : b; });
   }
-  Object.assign(R, { session: s, idx: SLOT_ORDER.indexOf(slot), phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, corr: null });
+  Object.assign(R, { session: s, idx: SLOT_ORDER.indexOf(slot), phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, lastRem: null, confirm: null, lastSet: null, saved: null, since: 0, storing: null });
 }
 /* Store the open exercise in today's workout. The workout is stored as done; a group that is not done is an
    empty block that keeps its exercise and weight. A copy with nothing done is not stored: a workout with
@@ -2120,6 +2127,46 @@ async function storeOpen() {
     saveProfile(q, { quiet: true });
   }
   return true;
+}
+/* Store the open exercise now and say on the card how that went: "Saving…", then saved or not. One store runs
+   at a time, in the order of the taps, and only the newest call has the last word. Without reps and without a
+   stored score of this exercise there is nothing to store. */
+function storeNow() {
+  const n = ++R.storeN, sid = R.session.id, slot = blk().slot;
+  const reps = () => blk().sets.reduce((a, x) => a + x.r, 0);
+  const stored = me().sessions.get(sid);
+  const nothing = !reps() && !(stored && (stored.blocks || []).some(x => x.slot === slot && isDone(x)));
+  R.saved = nothing ? null : 'saving';
+  saveDraft(); render();
+  if (nothing) return Promise.resolve(true);
+  const mine = () => !!R.session && R.session.id === sid && blk().slot === slot;
+  R.storing = (R.storing || Promise.resolve(true)).then(async () => {
+    if (!mine() || n !== R.storeN) return true;          // the card is closed, or a newer call stores a newer state
+    const had = reps();
+    const ok = await storeOpen();
+    if (mine() && n === R.storeN) { R.saved = !ok ? 'failed' : had ? 'saved' : null; saveDraft(); render(); }
+    return ok;
+  });
+  return R.storing;
+}
+/* Close the open card: the clock and the working copy go, and the home screen is whole again. Focus goes to
+   Start of that card when it is to do again, else to the first Start, else to the title. */
+function closeCard(slot) {
+  stopTick(); wakeOff();
+  Object.assign(R, { session: null, saved: null, confirm: null, lastSet: null, storing: null });
+  LS.del(DRAFT_KEY());
+  render();
+  window.scrollTo(0, 0);
+  const t = $(`#view [data-act="start"][data-slot="${slot}"]`) || $('#view [data-act="start"]') || $('#view .title');
+  if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
+}
+/* Keep the keyboard on the open card: when the control that had focus is gone, the clock gets it, or Done
+   after the bell. */
+function focusCard() {
+  const a = document.activeElement;
+  if (a && a !== document.body && $('#view').contains(a)) return;
+  const t = $('#view .clockbtn') || $('#view [data-act="cardDone"]');
+  if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 const blk = () => R.session.blocks[R.idx];
 function elapsed() {
@@ -2153,31 +2200,28 @@ function tick() {
   updateClock(rem, false);
 }
 function beginBlock() {
-  R.phase = 'run'; R.t0 = Date.now(); R.pausedMs = 0; R.pausedAt = 0; R.lastRem = BLOCK_SEC;
+  Object.assign(R, { phase: 'run', t0: Date.now(), pausedMs: 0, pausedAt: 0, lastRem: BLOCK_SEC, since: Date.now() });
   beep(1175, 0.35); buzz(200);
-  saveDraft(); renderRunner(); startTick();
-  keepPadInView();
+  wakeOn(); saveDraft(); render(); startTick();
+  keepPadInView(); focusCard();
 }
-/* During a block the rep pad must stay reachable without scrolling. */
+/* While a card is open its number pad must be reachable without scrolling. */
 function keepPadInView() {
-  const el = $('#runner .run-ctrl') || $('#runner .pad');
+  const el = $('#view .xc[data-form="open"] .pad');
   if (el && el.getBoundingClientRect().bottom > window.innerHeight) el.scrollIntoView({ block: 'end' });
 }
-/* Let training buddies see "training now" while a block runs. */
-
+/* The ten minutes are over (`auto`), or the block was stopped before that: the score is stored at once. */
 function endBlock(auto) {
-  // A weight still being typed belongs to the running block, not to the after-buzzer correction.
-  const k = document.activeElement; if (k && k.id === 'runKgIn') k.blur();
   const b = blk();
   b.dur = Math.min(BLOCK_SEC, Math.round(R.phase === 'paused' || R.phase === 'run' ? elapsed() : BLOCK_SEC));
   b.cut = !auto && b.dur < BLOCK_SEC - 1;
-  R.phase = 'over';
-  stopTick();
+  Object.assign(R, { phase: 'over', since: Date.now(), confirm: null });
+  stopTick(); wakeOff();
   if (auto) { beep(988, 0.7); buzz([300, 100, 300]); }
   b.total = b.sets.reduce((a, s) => a + s.r, 0);
   if (b.sets.length) b.kg = workKg(b);
-  R.corr = b.sets.map((x, i) => i).filter(i => Number(b.sets[i].kg ?? b.kg) === Number(b.kg));
-  saveDraft(); renderRunner(); keepPadInView();
+  storeNow();
+  keepPadInView(); focusCard();
 }
 
 /* Sound + vibration + wake lock — all optional and failure-tolerant. */
@@ -2231,17 +2275,17 @@ function ledSvg(text, cls) {
   return `<svg class="led ${cls || ''}" viewBox="-4 0 ${x + 4} 72" aria-hidden="true">${out}</svg>`;
 }
 const mmss = s => `${Math.floor(Math.max(0, s) / 60)}:${pad2(Math.max(0, s) % 60)}`;
-function clockText(rem) { const t = mmss(rem); return t.length === 4 ? ' ' + t : t; }
-function statusText(rem, lead) { return lead ? 'Get set' : rem > 60 ? `${Math.ceil(rem / 60)} minutes left` : rem > 0 ? 'Last minute' : 'Time!'; }
+function clockText(rem) { const t = mmss(rem); return t.length === 4 ? '0' + t : t; }   // "06:42"
+/* The digits, the bar and the words for a screen reader, changed in place on every tick: the card itself is
+   only drawn again when something else changes. */
 function updateClock(rem, lead) {
-  const c = $('#runner .clock');
+  const c = $('#view .clockbtn');
   if (!c) return;
-  const key = (lead ? 'L' : 'R') + rem;
-  if (c.dataset.k === key) return;
-  c.dataset.k = key;
-  $('.ledbox', c).innerHTML = ledSvg(clockText(rem), lead ? 'lead' : rem <= 10 ? 'amber run' : 'run');
+  const left = lead ? String(rem) : clockText(rem);
+  if (c.dataset.left === left) return;
+  c.dataset.left = left;
+  $('.ledbox', c).innerHTML = ledSvg(left, ledClass(R.phase, rem));
   $('.prog b', c).style.width = lead ? '0%' : (Math.min(1, (BLOCK_SEC - rem) / BLOCK_SEC) * 100).toFixed(2) + '%';
-  $('.status', c).textContent = statusText(rem, lead);
   const sr = $('#clockSr');
   if (sr && !lead && rem % 60 === 0 && rem > 0) sr.textContent = `${rem / 60} ${rem === 60 ? 'minute' : 'minutes'} left`;
 }
@@ -2251,208 +2295,7 @@ function prevBlock() {
   return refBlock(scoresOf(S.uid, b.ex, R.session.id));
 }
 
-function renderRunner() {
-  const el = $('#runner');
-  if (!R.session) { setRunHtml(el, ''); return; }
-  R.dirty = false;
-  const fsel = el.contains(document.activeElement) ? focusSel(document.activeElement) : null;
-  // Keep a half-typed weight while the screen redraws.
-  const ka = document.activeElement;
-  const kgEdit = ka && ka.id === 'runKgIn' ? { v: ka.value, a: ka.selectionStart, b: ka.selectionEnd } : null;
-  const menuOpen = R.confirm === 'menu';
-  if (R.phase === 'finish') { setRunHtml(el, runnerFinish()); restoreFocus(el, fsel); return; }
-  const p = myProfile();
-  const b = blk();
-  const info = exInfo(b.ex, p);
-  const prev = prevBlock();
-  const tot = b.sets.reduce((a, s) => a + s.r, 0);
-  const liveB = Object.assign({}, b, { total: tot, kg: b.sets.length ? workKg(b) : b.kg });
-  const trial = isTrial(R.session, S.uid);
-  const steps = R.session.blocks.map((x, i) => `<i class="${x.slot} ${i < R.idx || x.done ? 'done' : i === R.idx ? 'cur' : ''}"></i>`).join('');
-  const rem = R.phase === 'lead' ? Math.max(0, Math.ceil((R.leadEnd - Date.now()) / 1000)) : R.phase === 'over' ? 0 : Math.ceil(BLOCK_SEC - elapsed());
-  const status = { ready: 'Ready when you are', lead: 'Get set', run: statusText(rem, false), paused: 'Paused', over: b.cut ? 'Block stopped' : 'Time!' }[R.phase];
-  const prog = R.phase === 'over' ? 100 : R.phase === 'run' || R.phase === 'paused' ? Math.min(100, elapsed() / BLOCK_SEC * 100) : 0;
-  const endLbl = R.confirm === 'end' ? 'Tap again' : 'End block';
-  const padOn = R.phase === 'run' || R.phase === 'paused' || R.phase === 'over';
-
-  const kgVal = info.dbl ? (Number(b.kg) || 0) / 2 : Number(b.kg) || 0;
-  const ledCls = R.phase === 'lead' ? 'lead' : R.phase === 'paused' ? (rem <= 10 ? 'paused amber' : 'paused') : R.phase === 'run' ? (rem <= 10 ? 'amber run' : 'run') : '';
-  const header = `
-    <div class="run-top">
-      <button class="iconbtn" data-act="runMenu" aria-label="Pause or leave workout">${CLOSE_ICON}</button>
-      <div class="run-label"><span class="eyebrow">${SLOT[b.slot].label} · Block ${R.idx + 1} of 3${trial ? ' · practice' : ''}</span><div class="steps" role="img" aria-label="Block ${R.idx + 1} of 3">${steps}</div></div>
-      <button class="iconbtn" data-act="toggleSound" aria-label="Turn sound ${prefs.sound ? 'off' : 'on'}" aria-pressed="${prefs.sound}">${prefs.sound
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M16 10l4 4M20 10l-4 4"/></svg>'}</button>
-    </div>
-    <div class="run-ex">
-      <h2 class="run-name">${esc(blockName(b, p))}</h2>
-      <div class="run-kg">
-        <div class="stepper" role="group" aria-label="Weight">
-          <button data-act="runKg" data-dir="-1" aria-label="Lighter">−</button>
-          <input class="kg-in" id="runKgIn" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(kgInText(kgVal))}" aria-label="${esc(kgFieldLabel(info))}">
-          <button data-act="runKg" data-dir="1" aria-label="Heavier">+</button>
-        </div>
-        <span class="small">${kgUnitText(info)}</span>
-      </div>
-    </div>
-    <div class="clock" data-k="">
-      <div class="ledbox">${ledSvg(clockText(rem), ledCls)}</div>
-      <div class="prog"><b style="width:${prog.toFixed(2)}%"></b></div>
-      <div class="status">${status}</div>
-      <span id="clockSr" class="sr-only" aria-live="polite"></span>
-    </div>`;
-
-  if (R.phase === 'ready' || R.phase === 'lead') {
-    setRunHtml(el, `<div class="run"${menuOpen ? ' inert' : ''}>${header}
-      <div class="ready-info small">${prev ? (Number(b.kg) || 0) > (Number(prev.kg) || 0) ? `Heavier today: match <b>${prev.total} reps</b> (last time ${esc(blockKgLabel(prev, info))})` : `To beat: <b>${prev.total} reps</b> at ${esc(blockKgLabel(prev, info))}` : trial ? 'Practice — this doesn’t count yet.' : 'First time: this block sets the score to beat.'}</div>
-      <div class="run-ctrl two" style="margin-top:auto">
-        ${R.phase === 'ready'
-          ? `<button class="btn primary xl wide" data-act="go">Start 10:00</button>`
-          : `<button class="btn primary xl wide" data-act="goNow">Start now</button>`}
-      </div>
-    </div>${menuOpen ? runMenu() : ''}`);
-    restoreFocus(el, fsel);
-    keepKgEdit(kgEdit);
-    if (fsel && !el.contains(document.activeElement)) { const f = el.querySelector('.run-ctrl button:not([disabled])'); if (f) { try { f.focus({ preventScroll: true }); } catch { /* ignore */ } } }
-    return;
-  }
-
-  let middle;
-  if (R.phase === 'over') {
-    const c = compare(liveB, prev);
-    const rk = tot > 0 ? recordKind(liveB, scoresOf(S.uid, b.ex, R.session.id)) : null;
-    const title = rk === 'reps' ? 'New PR! 🎉' : rk === 'kg' ? 'New PR — heavier, same reps!' : !tot ? 'No reps logged.' : c ? (bigDrop(c, prev) ? (c.verdict === 'zwaarder' ? 'Heavier weight, fewer reps — it still counts.' : c.verdict === 'minder' ? 'Fewer reps than last time — it still counts.' : VERDICT_TEXT[c.verdict]) : VERDICT_TEXT[c.verdict]) : trial ? 'Practice block done.' : 'First score set.';
-    middle = `<div class="result${rk ? ' pr' : ''}">
-      <div class="row"><b class="v grow">${title}</b><b class="num" style="font-size:26px">${tot}<span class="tiny"> reps</span></b></div>
-      <span class="small">${prev ? `Last time ${prev.total} reps · ${esc(blockKgLabel(prev, info))}${c && tot ? ` · <b class="delta ${c.tone}">${c.text}</b>` : ''}` : trial ? 'Practice — doesn’t count yet.' : 'Next time, beat this.'}</span>
-      ${b.cut ? '<span class="tiny">Stopped before 10:00: it counts, but isn’t your next target.</span>' : ''}
-    </div>`;
-  } else {
-    middle = `<div class="score">
-      <span class="total">${tot}</span>
-      <span class="unit"><span>reps</span></span>
-      <span class="cmp">${prev ? (tot && compare(liveB, prev)?.verdict === 'beter' ? `<span class="delta pos">✓ Past last time (${prev.total})</span>` : `<span>${(Number(liveB.kg) || 0) > (Number(prev.kg) || 0) ? 'Match' : 'To beat'} <b>${prev.total}</b></span>`) : `<span>${trial ? 'Practice' : 'First time'}</span>`}</span>
-    </div>`;
-  }
-  const mixed = setKgs(b).length > 1 && !b.bw;
-  const sets = b.sets.map(x => `<span>${x.r}${mixed ? `<small style="font-weight:600;color:var(--muted)"> × ${esc(kgShort(x.kg ?? b.kg, info))}</small>` : ''}</span>`).join('');
-  const pad = Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<button data-act="set" data-n="${n}" class="${R.lastSet === n ? 'last' : ''}" aria-label="Log a set of ${n} reps"${padOn ? '' : ' disabled'}>${n}</button>`).join('');
-  const ctrl = R.phase === 'over'
-    ? `<div class="run-ctrl two"><button class="btn ghost" data-act="undo" ${b.sets.length ? '' : 'disabled'}>Undo set</button><button class="btn primary" data-act="nextBlock">Done</button></div>`
-    : `<div class="run-ctrl">${R.phase === 'run' ? '<button class="btn" data-act="pause">Pause</button>' : '<button class="btn primary" data-act="resumeClock">Resume</button>'}<button class="btn ghost" data-act="undo" ${b.sets.length ? '' : 'disabled'}>Undo set</button><button class="btn ghost" data-act="endEarly">${endLbl}</button></div>`;
-
-  setRunHtml(el, `<div class="run"${menuOpen ? ' inert' : ''}>${header}
-    ${middle}
-    <div class="setlist" aria-label="Sets">${sets ? `<span style="background:none;padding:0;color:var(--muted);font-weight:650">Sets</span>${sets}` : 'Tap the reps of each set you finish'}</div>
-    <div class="pad">${pad}</div>
-    ${ctrl}
-  </div>${menuOpen ? runMenu() : ''}`);
-  restoreFocus(el, fsel);
-  keepKgEdit(kgEdit);
-  if (fsel && !el.contains(document.activeElement)) { const f = el.querySelector('.run-ctrl button:not([disabled])'); if (f) { try { f.focus({ preventScroll: true }); } catch { /* ignore */ } } }
-}
-/* Replacing the runner's HTML removes a focused weight box; the browser then fires its
-   blur/change, which must not commit a half-typed number. */
-let runRendering = false;
-function setRunHtml(el, html) {
-  runRendering = true;
-  try { el.innerHTML = html; } finally { runRendering = false; }
-}
-const bigDrop = (c, prev) => c.dr < -Math.max(3, Math.round((prev.total || 0) * 0.1));
-function keepKgEdit(k) {
-  const inp = k && $('#runKgIn');
-  if (!inp) return;
-  try { inp.focus({ preventScroll: true }); } catch { /* ignore */ }
-  inp.value = k.v;
-  try { inp.setSelectionRange(k.a, k.b); } catch { /* ignore */ }
-}
 const kgInText = v => String(Math.round((Number(v) || 0) * 100) / 100);
-const kgUnitText = info => (info.bw ? 'extra kg · minus = assist' : info.dbl ? 'kg each dumbbell' : 'kg');
-/* The weight typed in the workout screen: per dumbbell for a pair, extra kg for bodyweight. */
-function commitRunKg(inp) {
-  if (!R.session || runRendering || !inp.isConnected) return;
-  const b = blk();
-  const info = exInfo(b.ex, myProfile());
-  const raw = inp.value.trim();
-  const v = parseKg(raw);
-  if (raw === '' || !Number.isFinite(v) || (!info.bw && v < 0)) {
-    if (raw !== '') toast(info.bw ? 'Type the weight as a number, e.g. 10, or -15 for assistance.' : 'Type the weight as a number, e.g. 14 or 12.5.');
-    inp.value = kgInText(info.dbl ? b.kg / 2 : b.kg);
-    return;
-  }
-  let kg = Math.round(clampN(info.dbl ? v * 2 : v, -300, 1000) * 10) / 10;
-  if (!info.bw) kg = Math.max(0, kg);
-  inp.value = kgInText(info.dbl ? kg / 2 : kg);
-  if (kg === Number(b.kg)) return;
-  setBlockKg(b, kg);
-  saveDraft();
-  // Redraw after the tap that moved focus here has landed; redrawing now would swallow it.
-  R.dirty = true;
-  if (!pointerIsDown) setTimeout(flushRunner, 0);
-}
-/* After the buzzer a weight change is a correction of the sets logged at that weight. */
-function setBlockKg(b, kg) {
-  const old = Number(b.kg) || 0;
-  b.kg = kg;
-  if (R.phase !== 'over') return;
-  const fix = Array.isArray(R.corr) ? new Set(R.corr) : null;
-  b.sets = b.sets.map((x, i) => ((fix ? fix.has(i) : Number(x.kg ?? old) === old) ? Object.assign({}, x, { kg }) : x));
-}
-function flushRunner() { if (R.dirty && R.session) renderRunner(); }
-let pointerIsDown = false;
-document.addEventListener('pointerdown', () => { pointerIsDown = true; }, true);
-document.addEventListener('pointerup', () => { pointerIsDown = false; if (R.dirty) setTimeout(flushRunner, 0); }, true);
-document.addEventListener('pointercancel', () => { pointerIsDown = false; if (R.dirty) setTimeout(flushRunner, 0); }, true);
-function runMenu() {
-  return `<div class="run-menu"><div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Workout menu">
-    <b class="h2">${R.phase === 'paused' ? 'Clock paused' : 'Workout menu'}</b>
-    <div style="display:grid;gap:8px">
-      <button class="btn primary" data-act="menuBack">Keep going</button>
-      <button class="btn" data-act="stopSave">Stop and save what I did</button>
-      <button class="btn danger" data-act="discardRun">${R.confirm2 === 'discard' ? 'Sure? This deletes the whole workout' : 'Discard workout'}</button>
-    </div>
-  </div></div>`;
-}
-function runnerFinish() {
-  const s = R.session;
-  const p = myProfile();
-  const done = doneBlocks(s);
-  if (!done.length) {
-    return `<div class="run">
-      <div class="head"><div class="eyebrow">Workout · ${esc(fmtShort(s.date))}</div><h2 class="title">No blocks done</h2></div>
-      <p class="small">There’s nothing to save. Discard this workout and start again whenever you like.</p>
-      <button class="btn primary xl" data-act="discardEmpty">Discard workout</button>
-    </div>`;
-  }
-  const trial = isTrial(s, S.uid);
-  const sub = sessionSummary(s, S.uid);
-  return `<div class="run">
-    <div class="head"><div class="eyebrow">${esc(dayShort(s.date))}${trial ? ' · practice' : ''}</div><h2 class="title">${trial ? 'Practice done' : 'Workout done'}</h2>${sub ? `<span class="small">${esc(sub)}</span>` : ''}</div>
-    <div class="card wo">${resultRowsHtml(s, S.uid, !trial)}${totalRowHtml(s)}</div>
-    <button class="btn primary xl" data-act="saveSession">Save workout</button>
-    <button class="btn link" data-act="finishBack" style="justify-self:center">Back to the last exercise</button>
-  </div>`;
-}
-
-async function finishAndSave() {
-  const s = R.session;
-  if (!doneBlocks(s).length) { await discardActive(); return; }
-  s.status = 'done'; s.paused = false; s.endedAt = Date.now(); s.updatedAt = Date.now();
-  const p = clone(myProfile());
-  p.weights = p.weights || {};
-  for (const b of s.blocks) if (b.done && !b.skipped) p.weights[b.ex] = b.kg;
-  const ok = await saveSession(s);
-  if (!ok) return;
-  LS.del(DRAFT_KEY());
-  closeRunner();
-  UI.tpl = null; UI.person = null; UI.logAll = false;
-  // On a rest day this workout took the place of a planned day.
-  const saving = saveProfile(moveFor(p, S.uid, s.date) || p, { quiet: true });   // the profile in memory is up to date from here on
-  const coming = upcoming(S.uid, 1)[0];
-  toast(coming ? `Saved. Next workout: ${fmtLong(coming.date)}.` : 'Saved.');
-  saving.then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
-}
 
 /* ------------------------------------------------------------------ *
  * Sheets: log a past workout / edit
@@ -2470,7 +2313,7 @@ function openSheet(html, label) {
 function closeSheet() {
   const sh = $('#sheet');
   sh.hidden = true; sh.innerHTML = ''; UI.sheet = null;
-  setBackgroundInert(!$('#runner').hidden);
+  setBackgroundInert(false);
   const r = UI.sheetReturn; UI.sheetReturn = null;
   if (document.activeElement && document.activeElement !== document.body) { try { document.activeElement.blur(); } catch { /* ignore */ } }
   render();
@@ -2957,13 +2800,11 @@ function armConfirm(key, holder = UI) {
   confirmTimer = setTimeout(() => {
     if (holder.confirm !== key) return;
     holder.confirm = null;
-    if (holder === R) renderRunner(); else scheduleRender();
+    scheduleRender();
   }, 3500);
 }
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
-  const c = !$('#runner').hidden && $('#runner .clock');
-  t.style.top = c ? Math.max(8, c.getBoundingClientRect().bottom - 54) + 'px' : '';
   clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 4000);
 }
 function stepKg(kg, info, dir) {
@@ -3053,13 +2894,35 @@ const ACT = {
     refreshSheet();
   },
   async applyUp(el) { const p = clone(myProfile()); p.weights = p.weights || {}; p.weights[el.dataset.ex] = Number(el.dataset.kg); if (await saveProfile(p)) toast('New weight is set.'); },
-  /* "Start 10 minutes" on a card. For now the clock runs on the workout screen, for that one exercise. */
+  /* "Start 10 minutes": the card opens and its button becomes the clock; first the countdown, when that is on.
+     Nothing while a card is open, or for a group that is done. */
   start(el) {
     const slot = el.dataset.slot;
     if (R.session || cardModel().cards.find(c => c.slot === slot)?.form !== 'todo') return;
     audio();
-    openCard(slot); saveDraft(); openRunner(true);
+    openCard(slot);
+    if (prefs.lead) {
+      Object.assign(R, { phase: 'lead', leadEnd: Date.now() + LEAD_SEC * 1000, lastRem: null, since: Date.now() });
+      wakeOn(); saveDraft(); render(); startTick();
+    } else beginBlock();
+    window.scrollTo(0, 0);
+    keepPadInView();
+    const c = $('#view .clockbtn'); if (c) { try { c.focus({ preventScroll: true }); } catch { /* ignore */ } }
   },
+  /* A tap on the clock: in the countdown it starts at once, running it pauses, on pause it goes on. A second
+     tap within half a second does nothing: the clock stands where Start stood. */
+  clock() {
+    if (!R.session || Date.now() - R.since < 500) return;
+    if (R.phase === 'lead') beginBlock();
+    else if (R.phase === 'run') {
+      Object.assign(R, { phase: 'paused', pausedAt: Date.now(), since: Date.now() });
+      stopTick(); wakeOff(); saveDraft(); render();
+    } else if (R.phase === 'paused') {
+      Object.assign(R, { phase: 'run', pausedMs: R.pausedMs + (Date.now() - R.pausedAt), pausedAt: 0, since: Date.now(), confirm: null });
+      wakeOn(); saveDraft(); render(); startTick(); keepPadInView();
+    }
+  },
+  cancelLead() { if (R.session && R.phase === 'lead') closeCard(blk().slot); },
   /* A done card opens today's workout to fix it. */
   fixToday() { const s = todaySession(); if (s && !R.session) ACT.edit({ dataset: { id: s.id } }); },
   manual() {
@@ -3151,86 +3014,40 @@ const ACT = {
   export(el) { exportData(el.dataset.fmt); },
   importPick() { const f = $('#importFile'); if (f) f.click(); },
 
-  // workout mode
-  go() {
-    audio(); wakeOn();
-    if (prefs.lead) { R.phase = 'lead'; R.leadEnd = Date.now() + LEAD_SEC * 1000; R.lastRem = null; saveDraft(); renderRunner(); startTick(); }
-    else beginBlock();
-  },
-  goNow() { beginBlock(); },
-  pause() { if (R.phase !== 'run') return; R.phase = 'paused'; R.pausedAt = Date.now(); stopTick(); saveDraft(); renderRunner(); },
-  resumeClock() { if (R.phase !== 'paused') return; R.pausedMs += Date.now() - R.pausedAt; R.pausedAt = 0; R.phase = 'run'; wakeOn(); saveDraft(); renderRunner(); startTick(); keepPadInView(); },
-  endEarly() {
-    if (R.confirm !== 'end') { armConfirm('end', R); renderRunner(); return; }
-    R.confirm = null; endBlock(false);
-  },
+  /* A tap on the number pad is one set of that many reps. After the bell every change is stored again. */
   set(el) {
-    if (!(R.phase === 'run' || R.phase === 'paused' || R.phase === 'over')) return;
     const n = Number(el.dataset.n);
+    if (!R.session || !['run', 'paused', 'over'].includes(R.phase) || !(n >= 1 && n <= 20)) return;
     const b = blk();
-    const before = b.sets.reduce((a, s) => a + s.r, 0);
+    const prev = R.phase !== 'over' ? prevBlock() : null;
+    const beats = () => !!prev && b.sets.length > 0 && compare(Object.assign({}, b, { total: b.sets.reduce((a, s) => a + s.r, 0) }), prev)?.verdict === 'beter';
+    const was = beats();
     b.sets.push({ r: n, t: Math.round(Math.min(BLOCK_SEC, elapsed())), kg: Number(b.kg) || 0 });
-    if (R.phase === 'over' && Array.isArray(R.corr)) R.corr.push(b.sets.length - 1);
     b.total = b.sets.reduce((a, s) => a + s.r, 0);
     R.lastSet = n;
     buzz(25);
-    const prev = R.phase !== 'over' ? prevBlock() : null;
-    if (prev) {
-      const was = before ? compare(Object.assign({}, b, { total: before, kg: workKg(Object.assign({}, b, { sets: b.sets.slice(0, -1) })) }), prev)?.verdict : null;
-      const now = compare(Object.assign({}, b, { kg: workKg(b) }), prev)?.verdict;
-      if (now === 'beter' && was !== 'beter') buzz([40, 60, 40]);
-    }
-    saveDraft(); renderRunner(); keepPadInView();
-    const t = $('#runner .total') || $('#runner .result .num'); if (t) { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
+    if (!was && beats()) buzz([40, 60, 40]);      // just past the score to beat
+    if (R.phase === 'over') storeNow(); else { saveDraft(); render(); }
+    const t = $('#view .xc[data-form="open"] .total'); if (t) { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
   },
-  undo() { const b = blk(); if (!b.sets.length) return; b.sets.pop(); if (Array.isArray(R.corr)) R.corr = R.corr.filter(i => i < b.sets.length); b.total = b.sets.reduce((a, s) => a + s.r, 0); R.lastSet = b.sets.length ? b.sets[b.sets.length - 1].r : null; saveDraft(); renderRunner(); },
-  runKg(el) {
-    const b = blk();
-    setBlockKg(b, stepKg(b.kg, exInfo(b.ex, myProfile()), Number(el.dataset.dir)));
-    saveDraft(); renderRunner();
+  undo() {
+    if (!R.session || !['run', 'paused', 'over'].includes(R.phase)) return;
+    const b = blk(); if (!b.sets.length) return;
+    b.sets.pop();
+    b.total = b.sets.reduce((a, s) => a + s.r, 0);
+    R.lastSet = b.sets.length ? b.sets[b.sets.length - 1].r : null;
+    if (R.phase === 'over') storeNow(); else { saveDraft(); render(); }
+    focusCard();
   },
-  async nextBlock() {
-    if (await storeOpen()) { LS.del(DRAFT_KEY()); closeRunner(); }
-    else toast('Couldn’t save. Your data is still on screen — try again in a moment.');
-  },
-  toggleSound() { prefs.sound = !prefs.sound; savePrefs(); if (prefs.sound) { audio(); beep(880, 0.08); } renderRunner(); },
-  runMenu() {
-    if (R.phase === 'lead') { R.menuLead = Math.max(1000, R.leadEnd - Date.now()); stopTick(); R.phase = 'ready'; R.lastRem = null; saveDraft(); }
-    R.menuPaused = R.phase === 'run'; if (R.menuPaused) ACT.pause();
-    R.confirm = 'menu'; R.confirm2 = null; renderRunner();
-    const k = $('#runner [data-act="menuBack"]'); if (k) k.focus({ preventScroll: true });
-  },
-  menuBack() {
-    R.confirm = null;
-    const lead = R.menuLead; R.menuLead = 0;
-    if (R.menuPaused && R.phase === 'paused') { R.menuPaused = false; ACT.resumeClock(); }
-    else if (lead && R.phase === 'ready') { R.menuPaused = false; R.phase = 'lead'; R.leadEnd = Date.now() + lead; R.lastRem = null; saveDraft(); renderRunner(); startTick(); }
-    else { R.menuPaused = false; renderRunner(); }
-    const x = $('#runner [data-act="runMenu"]'); if (x) { try { x.focus({ preventScroll: true }); } catch { /* ignore */ } }
-  },
-  stopSave() {
-    const b = blk();
-    if (b.sets.length && !b.done) { b.total = b.sets.reduce((a, s) => a + s.r, 0); b.done = true; b.kg = workKg(b); b.dur = Math.round(Math.min(BLOCK_SEC, elapsed())); b.cut = b.dur < BLOCK_SEC - 1; }
-    if (!doneBlocks(R.session).length) { toast('Nothing to save yet.'); return; }
-    R.menuLead = 0;
-    R.session.blocks.forEach(x => { if (!x.done) x.skipped = true; });
-    R.phase = 'finish'; R.confirm = null; R.menuPaused = false; stopTick(); wakeOff(); saveDraft(); renderRunner();
-    const h = $('#runner h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
-  },
-  discardRun() {
-    if (R.confirm2 !== 'discard') { R.confirm2 = 'discard'; renderRunner(); return; }
-    discardActive();
-  },
-  discardEmpty() { discardActive(); },
-  saveSession() { finishAndSave(); },
-  finishBack() {
-    if (R.phase !== 'finish') return;
-    R.idx = R.session.blocks.length - 1;
-    const b = blk();
-    if (b.skipped && !b.sets.length) { b.skipped = false; R.phase = 'ready'; }
-    else { b.done = false; b.skipped = false; R.phase = 'over'; }
-    R.session.blocks.forEach((x, i) => { if (i < R.idx && !x.done && !x.sets.length) x.skipped = true; });
-    saveDraft(); renderRunner();
+  /* Done, after the bell: the card closes once the score is stored. A save that failed is tried again first,
+     one on its way is waited for; when that does not work the card stays open. */
+  async cardDone() {
+    if (!R.session || R.phase !== 'over') return;
+    const sid = R.session.id, slot = blk().slot;
+    if (R.saved === 'failed') storeNow();
+    const ok = R.storing ? await R.storing : true;
+    if (!R.session || R.session.id !== sid) return;      // closed meanwhile by a second tap
+    if (ok && R.saved !== 'failed') closeCard(slot);
   },
 };
 function syncDateChips() {
@@ -3243,29 +3060,6 @@ function syncDateChips() {
     if (btn && btn.getAttribute('aria-pressed') !== 'true') ACT.formTpl(btn);
   }
 }
-function advance() {
-  if (R.idx < R.session.blocks.length - 1) {
-    R.idx++; R.phase = 'ready'; R.t0 = 0; R.pausedMs = 0; R.pausedAt = 0; R.lastSet = null; R.confirm = null; R.corr = null;
-  } else {
-    R.phase = 'finish'; wakeOff();
-  }
-  stopTick(); saveDraft(); renderRunner();
-  $('#runner').scrollTo(0, 0);
-  const h = $('#runner .run-name') || $('#runner h2');
-  if (h) { h.setAttribute('tabindex', '-1'); try { h.focus({ preventScroll: true }); } catch { /* ignore */ } }
-}
-async function discardActive() {
-  const d = loadDraft();
-  const id = R.session?.id || d?.session?.id;
-  const stored = id ? me().sessions.get(id) : null;
-  // Only an unfinished copy is ours to delete; a finished one stays.
-  if (stored && stored.status !== 'done' && !(await deleteSession(id))) return;
-  LS.del(DRAFT_KEY());
-  if (R.session) closeRunner();
-  toast('Workout discarded.');
-  scheduleRender();
-}
-
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
@@ -3273,21 +3067,15 @@ document.addEventListener('click', e => {
   if (fn) { e.preventDefault(); fn(el, e); }
 });
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') dismissSheet(); });
-$('#runner').addEventListener('click', e => { if (e.target.classList.contains('run-menu')) ACT.menuBack(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'exSearch') { e.target.blur(); return; }   // puts the phone's keyboard away
   if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('kg-in')) {
     e.preventDefault();
-    const sel = e.target.id === 'runKgIn' ? '#runner [data-act="runKg"][data-dir="1"]' : '[data-act="exKg"][data-dir="1"]';
     e.target.blur();
-    setTimeout(() => { const pl = $(sel); if (pl) { try { pl.focus({ preventScroll: true }); } catch { /* ignore */ } } }, 0);
+    setTimeout(() => { const pl = $('[data-act="exKg"][data-dir="1"]'); if (pl) { try { pl.focus({ preventScroll: true }); } catch { /* ignore */ } } }, 0);
     return;
   }
-  if (e.key !== 'Escape') return;
-  if (!$('#sheet').hidden) dismissSheet();
-  else if (R.session && R.confirm === 'menu') ACT.menuBack();
-  else if (R.session && R.phase === 'finish') ACT.finishBack();
-  else if (R.session) ACT.runMenu();
+  if (e.key === 'Escape' && !$('#sheet').hidden) dismissSheet();   // Escape closes a sheet; an open card stays open
 });
 document.addEventListener('input', e => {
   const el = e.target;
@@ -3329,7 +3117,6 @@ document.addEventListener('submit', async e => {
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.id === 'importFile') { importData(el.files && el.files[0]); el.value = ''; return; }
-  if (el.id === 'runKgIn') return;   // committed on focusout
   if (el.id === 'exKgIn') {
     const v = parseKg(el.value);
     if (!Number.isFinite(v)) toast('Type the weight as a number, e.g. 14 or 12.5.');

@@ -1,6 +1,6 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward } = require('./helpers');
+const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
 after(closeAll);
 
 const titles = async page => [await txt(page, '#view .title'), await txt(page, '#view .head .lead-s')];
@@ -159,34 +159,4 @@ test('the home screen fits a 390 × 844 phone without scrolling, and its buttons
   assert.equal(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight), true);
   const low = await page.evaluate(() => [...document.querySelectorAll('#view button')].filter(e => e.getBoundingClientRect().height < 44).length);
   assert.equal(low, 0);
-});
-
-/* The next two drive the old workout screen; Task 10 replaces them by tests of the clock on the card. */
-const doExercise = async (page, slot, reps) => {
-  await page.click(`.xc[data-slot="${slot}"] [data-act="start"]`);
-  await page.click('#runner [data-act="go"]');
-  for (const n of reps) await page.click(`#runner [data-act="set"][data-n="${n}"]`);
-  await forward(page, 600);
-  assert.equal(await txt(page, '#runner [data-act="nextBlock"]'), 'Done');
-  await page.click('#runner [data-act="nextBlock"]');
-  await page.waitForSelector('#runner', { state: 'hidden' });
-};
-test('Start runs that one exercise and stores it in today’s workout', async () => {
-  const page = await openApp({ sessions: [first()], prefs: { sound: false, lead: false } });
-  await doExercise(page, 'pull', [8, 8, 7]);
-  assert.deepEqual(await forms(page), ['push:todo', 'pull:done', 'legs:todo']);
-  const stored = await page.evaluate(() => { const t = todaySession(); return [t.status, t.tpl, t.blocks.map(b => [b.slot, b.ex, b.done, b.skipped, b.total, b.kg, b.dur, b.cut])]; });
-  assert.deepEqual(stored, ['done', 'A', [['push', 'schouderdrukken', false, true, 0, 35, 0, false], ['pull', 'kabelroeien', true, false, 23, 65, 600, false], ['legs', 'c-seated-leg-press', false, true, 0, 75, 0, false]]]);
-  await doExercise(page, 'push', [10]);
-  assert.equal(await page.evaluate(() => sessionsOf(S.uid).filter(x => x.date === '2026-10-14').length), 1);       // the same workout, not a second one
-  assert.deepEqual(await forms(page), ['push:done', 'pull:done', 'legs:todo']);
-  assert.equal(await txt(page, '#view .title'), 'One to go');
-});
-test('a reload in the middle of an exercise comes back to it', async () => {
-  const page = await openApp({ sessions: [first()], prefs: { sound: false, lead: false } });
-  await page.click('.xc[data-slot="legs"] [data-act="start"]');
-  await page.reload();
-  await page.waitForFunction(() => !document.querySelector('#view .skeleton'));
-  await page.waitForSelector('#runner .run-name');
-  assert.equal(await txt(page, '#runner .run-name'), 'Seated leg press');
 });

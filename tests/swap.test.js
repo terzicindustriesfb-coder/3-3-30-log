@@ -37,16 +37,14 @@ test('picking the letter that is next in line clears the choice', async () => {
   await page.click('[data-sheet="swap"] [data-tpl="A"]');
   assert.equal(await page.evaluate(() => UI.tpl), null);
 });
-test('the choice is used up by the workout it was made for', async () => {
-  const page = await openApp({ sessions: abc() });
-  await page.evaluate(async () => {
-    UI.tpl = 'C';
-    openRunner(false, UI.tpl);
-    R.session.blocks.forEach(b => { b.sets = [{ r: 10, kg: b.kg, t: 5 }]; b.total = 10; b.done = true; b.dur = 600; });
-    R.phase = 'finish';
-    await finishAndSave();
-  });
-  assert.deepEqual(await page.evaluate(() => [UI.tpl, nextTpl(S.uid)]), [null, 'A']);
+test('the choice is used up by the first exercise that is stored', async () => {
+  const page = await openApp({ sessions: abc(), prefs: { sound: false, lead: false } });
+  await page.evaluate(() => { UI.tpl = 'C'; render(); });
+  await page.click('.xc[data-slot="push"] [data-act="start"]');
+  await page.click('.xc .pad [data-act="set"][data-n="10"]');
+  await h.forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'saved');
+  assert.deepEqual(await page.evaluate(() => [UI.tpl, todaySession().tpl, turnTpl(), nextTpl(S.uid)]), [null, 'C', 'C', 'A']);
 });
 test('same every time has nothing to swap', async () => {
   const page = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });

@@ -55,29 +55,3 @@ test('stopped early comes before every other verdict', async () => {
   const v = await page.evaluate(i => { const s = me().sessions.get(i); const x = verdict(s.blocks[0], S.uid, s.id); return [x.kind, x.text, x.tone]; }, ID);
   assert.deepEqual(v, ['cut', 'stopped early', '']);
 });
-test('the finish screen shows reps first, with the verdict under them', async () => {
-  const page = await openApp({ today: '2026-10-05' });
-  await page.evaluate(() => {
-    openRunner(false, 'A');
-    R.session.blocks.forEach((b, i) => { const r = [62, 77, 85][i]; b.sets = [{ r, kg: b.kg, t: 300 }]; b.total = r; b.done = true; b.dur = 600; });
-    R.phase = 'finish'; renderRunner();
-  });
-  assert.equal(await txt(page, '#runner .title'), 'Workout done');
-  assert.deepEqual(await texts(page, '#runner .goal-n'), ['62', '77', '85']);
-  assert.deepEqual(await texts(page, '#runner .goal-l'), ['first score', 'first score', 'first score']);
-  assert.deepEqual(await texts(page, '#runner .ex-kg'), ['35 kg', '65 kg', '75 kg']);
-  assert.equal(await txt(page, '#runner .head .small'), '3 first scores');
-  assert.match(await txt(page, '#runner .sum-total'), /Lifted in total 13,550 kg/);
-  assert.deepEqual(await texts(page, '#runner .run > .btn'), ['Save workout', 'Back to the last exercise']);
-});
-test('the finish screen of a practice workout has no verdicts', async () => {
-  const page = await openApp({ today: '2026-10-05', profile: profile({ joined: at('2026-10-12'), start: '2026-10-12' }) });
-  await page.evaluate(() => {
-    openRunner(false, 'A');
-    R.session.blocks.forEach(b => { b.sets = [{ r: 9, kg: b.kg, t: 300 }]; b.total = 9; b.done = true; b.dur = 600; });
-    R.phase = 'finish'; renderRunner();
-  });
-  assert.equal(await txt(page, '#runner .title'), 'Practice done');
-  assert.deepEqual(await texts(page, '#runner .goal-n'), ['9', '9', '9']);
-  assert.equal(await page.locator('#runner .goal-l').count(), 0);
-});

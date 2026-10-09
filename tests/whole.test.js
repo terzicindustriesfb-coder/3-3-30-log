@@ -33,7 +33,9 @@ test('no function of the app hides the browser’s own history', async () => {
 test('nothing of the old screens is left in the source', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', '3-3-30', 'index.html'), 'utf8');
   for (const gone of ['templateFor', 'nextTrainingDay', 'beatPrev', 'logTable', 'logCell', 'viewLog', 'chartEx', 'exByName', 'resolveExercise',
-    'fillNameList', 'sheetHit', 'syncExSheet', 'equipOptions', 'exNames', '.lt-row', '.pg-card', 'pick 3', 'next to Progress']) {
+    'fillNameList', 'sheetHit', 'syncExSheet', 'equipOptions', 'exNames', '.lt-row', '.pg-card', 'pick 3', 'next to Progress',
+    'renderRunner', 'openRunner', 'runMenu', 'finishAndSave', 'id="runner"', 'Workout done', 'Save workout', 'Skip this exercise', 'End block', 'New PR', 'Lifted in total',
+    'Finish later', 'Resume workout', 'Train again today']) {
     assert.equal(src.includes(gone), false, gone + ' is still in the source');
   }
 });

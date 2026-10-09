@@ -63,14 +63,3 @@ test('changing the date of a workout to a rest day moves a day', async () => {
   await page.waitForSelector('#sheet', { state: 'hidden' });
   assert.deepEqual(await week(page), { mon: '2026-10-12', days: [1, 2, 5] });
 });
-test('finishing a workout on a rest day moves the day and names the next one', async () => {
-  const page = await openApp({ today: '2026-10-13', sessions: abc() });
-  await page.evaluate(async () => {
-    openRunner(false, nextTpl(S.uid));
-    R.session.blocks.forEach(b => { b.sets = [{ r: 10, kg: b.kg, t: 5 }]; b.total = 10; b.done = true; b.dur = 600; });
-    R.phase = 'finish';
-    await finishAndSave();
-  });
-  assert.deepEqual(await week(page), { mon: '2026-10-12', days: [1, 2, 5] });
-  assert.match(await txt(page, '#toast'), /Next workout: Friday 16 October/);
-});

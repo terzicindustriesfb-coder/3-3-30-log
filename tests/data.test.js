@@ -46,7 +46,7 @@ test('saving drops a week list that belongs to another week', async () => {
 });
 test('a renamed exercise shows under its new name', async () => {
   const page = await openApp({ profile: profile({ names: { schouderdrukken: 'Shoulder press' } }) });
-  assert.match(await txt(page, '#view .ex-row .ex-n'), /Shoulder press$/);
+  assert.match(await txt(page, '#view .xc .ex-n'), /Shoulder press$/);
 });
 test('a backup carries the new fields, and an old backup still restores', async () => {
   const mine = profile({ names: { schouderdrukken: 'Shoulder press' }, eqs: { schouderdrukken: 'machine' }, week: { mon: '2026-10-12', days: [1, 2, 5] } });

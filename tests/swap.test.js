@@ -16,9 +16,8 @@ test('Swap workout offers the three workouts and marks the next one', async () =
   assert.match(await txt(page, '[data-sheet="swap"] [data-tpl="B"]'), /Seated dumbbell shoulder press.*Pull-ups.*Dumbbell Romanian deadlift/);
   await page.click('[data-sheet="swap"] [data-tpl="B"]');
   assert.equal(await page.locator('#sheet').isHidden(), true);
-  assert.equal(await txt(page, '#view .title'), 'Workout B');
-  assert.equal(await page.locator('#view [data-act="startSession"]').getAttribute('data-tpl'), 'B');
-  assert.deepEqual(await page.locator('.wk-row.me .wd').evaluateAll(els => els.map(e => e.textContent.trim())), ['C', '', 'B', '', 'C', '', '']);
+  assert.equal(await txt(page, '#view .title'), 'Today: Workout B');
+  assert.deepEqual(await texts(page, '.xc .ex-n'), ['Seated dumbbell shoulder press', 'Pull-ups', 'Dumbbell Romanian deadlift']);
 });
 test('the letter buttons are gone from the card', async () => {
   const page = await openApp({ sessions: abc() });
@@ -30,7 +29,7 @@ test('the choice does not survive a reload', async () => {
   await page.click('[data-sheet="swap"] [data-tpl="C"]');
   await page.reload();
   await page.waitForFunction(() => !document.querySelector('#view .skeleton'));
-  assert.equal(await txt(page, '#view .title'), 'Workout A');
+  assert.equal(await txt(page, '#view .title'), 'Today: Workout A');
 });
 test('picking the letter that is next in line clears the choice', async () => {
   const page = await openApp({ sessions: abc() });

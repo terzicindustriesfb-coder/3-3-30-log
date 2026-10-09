@@ -466,6 +466,43 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 .st-more ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 .st-card > * + * { border-top: 1px solid var(--surface-2); }   /* after .st-link, whose own rule takes every border away */
 .st-local { padding: 0 4px; }
+/* Home: a card for each exercise, and the week counter */
+.xc { padding: 14px; gap: 12px; }
+button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
+.xc-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.xc .plate { width: 36px; height: 36px; } .xc .plate::after { width: 11px; height: 11px; }
+.xc-grp { font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.xc-grp.push { color: var(--bad); } .xc-grp.pull { color: var(--pull); } .xc-grp.legs { color: var(--legs-mark); } .xc-grp.done { color: var(--good); }
+.xc .ex-n { font-size: 18px; line-height: 1.15; }
+.xc .ex-kg { font-size: 13.5px; font-weight: 400; color: var(--ink-2); white-space: normal; }
+.xc .goal { gap: 2px; }
+.xc .goal-l { font-size: 10.5px; }
+.xc .goal-n { font-size: 28px; font-weight: 800; line-height: 1; }
+.xc-btns { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.xc-btns .btn { min-height: 50px; font-size: 16.5px; padding-inline: 12px; }
+.xc-btns [data-act="editEx"] { font-size: 15px; padding-inline: 18px; }
+.btn.line { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.xc .up .btn { min-height: 44px; }
+.xc-tick { width: 36px; height: 36px; border-radius: 50%; background: var(--good); color: var(--on-good); display: grid; place-items: center; }
+.xc-tick svg { width: 18px; height: 18px; stroke-width: 3; }
+.xc-u { font-size: 13.5px; font-weight: 400; color: var(--ink-2); }
+.xc-verdict { font-size: 13.5px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.xc-verdict.pos { color: var(--good); }
+.xc[data-form="done"] .goal { grid-template-columns: auto auto; column-gap: 5px; align-items: baseline; justify-content: end; }
+.xc[data-form="done"] .xc-verdict { grid-column: 1 / -1; justify-self: end; }
+.head .btn.link { justify-self: start; min-height: 44px; }
+.hint { padding: 0 4px; text-align: center; }
+.wkc { padding: 13px 16px; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; }
+.wkc .eyebrow { font-size: 11px; }
+.wkc-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.wkc-row[data-id], .wkc-more { grid-column: 1 / -1; }
+.wkc-who { flex: 0 1 96px; min-width: 0; font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wkc-dots { display: flex; gap: 6px; }
+.wkc-dots i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--dot); }
+.wkc-dots i.on { background: var(--ink); box-shadow: none; }
+.wkc-n { margin-left: auto; font-weight: 700; font-size: 15px; white-space: nowrap; }
+.wkc-row[data-id]:not(.me) .wkc-who, .wkc-row[data-id]:not(.me) .wkc-n { color: var(--ink-2); }
+.wkc-more { justify-self: start; min-height: 44px; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -1280,6 +1317,28 @@ function turnTpl(id = S.uid, today = todayYmd()) {
   if (s && countsAsTraining(s)) return s.tpl;
   return (id === S.uid && UI.tpl) || nextTpl(id);
 }
+/* What the three cards show, in push, pull, legs order. A group is done when today's workout has a done block
+   for it: the card then shows what you did. Otherwise it is to do: the exercise of the workout whose turn it
+   is, the weight it is set to, and the score to beat (to match, when the set weight is heavier). */
+function cardModel(today = todayYmd()) {
+  const p = myProfile();
+  const tpl = turnTpl(S.uid, today);
+  const s = todaySession(S.uid, today);
+  const plan = planFor(p, tpl);
+  const cards = SLOT_ORDER.map(slot => {
+    const b = s ? (s.blocks || []).find(x => x.slot === slot && isDone(x)) : null;
+    if (b) {
+      const info = Object.assign({}, exInfo(b.ex, p), { bw: !!b.bw });
+      return { slot, form: 'done', name: blockName(b, p), kgText: blockKgLabel(b, info), n: b.total, verdict: verdict(b, S.uid, s.id) };
+    }
+    const key = plan[slot], info = exInfo(key, p);
+    const kg = plannedKg(p, key).kg;
+    const ref = refBlock(scoresOf(S.uid, key));
+    const goal = ref ? { label: Number(kg) > Number(ref.kg) ? 'To match' : 'To beat', n: ref.total } : { label: 'First time', n: null };
+    return { slot, form: 'todo', key, name: info.n, kgText: kgLabel(kg, info), goal };
+  });
+  return { tpl, done: cards.filter(c => c.form === 'done').length, cards };
+}
 /* The week counter: workouts that count in this Monday-to-Sunday week, against a goal of three. */
 function weekCount(id, today = todayYmd()) {
   const mon = mondayOf(today);
@@ -1506,13 +1565,13 @@ function render() {
   maybeReopen();
 }
 
-/* After a reload in the middle of a block, go straight back to the clock. */
+/* After a reload with an exercise open, go straight back to it. */
 let reopenChecked = false;
 function maybeReopen() {
   if (reopenChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
   reopenChecked = true;
   const d = loadDraft();
-  if (d && (d.phase === 'run' || d.phase === 'over')) openRunner(true);
+  if (d) openRunner(true);
 }
 
 function renderHeader() {
@@ -1555,7 +1614,7 @@ function viewHome() {
     if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
     return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
   }
-  return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewToday(p) + homeNavHtml();
+  return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewCards(p) + homeNavHtml();
 }
 /* "My results": whose they are, with turns on which workout, and the table of that workout. */
 function viewResults() {
@@ -1666,95 +1725,62 @@ function weekStripHtml() {
   </section>`;
 }
 
-/* What Today is about. The situation is the first of these that applies: a workout left open on this
-   device ('progress'), today before the start date ('pre'), trained today ('done'), today planned
-   ('train'), otherwise a rest day ('rest'). */
-function cardState(p) {
-  const today = todayYmd();
-  const start = p.start || START;
-  const draft = loadDraft();
-  const mine = trainings(S.uid, today).filter(s => s.date === today);
-  const done = mine.length ? mine[mine.length - 1] : null;
-  const next = upcoming(S.uid, 1)[0] || { date: today, tpl: nextTpl(S.uid) };
-  const plannedToday = weekModel(S.uid, today).days.some(d => d.date === today && d.planned);
-  const situation = draft ? 'progress' : today < start ? 'pre' : done ? 'done' : plannedToday ? 'train' : 'rest';
-  const tpl = draft ? (draft.session.tpl || 'A') : next.tpl;
-  return { today, start, situation, draft, done, next, tpl };
+/* The home screen: a title that follows how much of today is done, a card for each exercise, the week counter. */
+function viewCards(p) {
+  const m = cardModel();
+  const turns = rotates(p);
+  let title, lead;
+  if (m.done === 0) { title = turns ? `Today: Workout ${m.tpl}` : 'Today: 3 exercises'; lead = 'Each one takes 10 minutes. Do them in any order and beat your last score.'; }
+  else if (m.done === 1) { title = 'Two to go'; lead = 'One done. Start the next one when you are ready.'; }
+  else if (m.done === 2) { title = 'One to go'; lead = 'Two done. Start the last one when you are ready.'; }
+  else { title = 'Done for today'; const sum = sessionSummary(todaySession(), S.uid); lead = sum ? sum + '.' : ''; }
+  // Another workout can be picked until the first exercise of today is done.
+  const swap = turns && m.done === 0 ? '<button type="button" class="btn link" data-act="swap">Do another workout</button>' : '';
+  const first = m.cards.find(c => c.form === 'todo');
+  return `<div class="head"><h1 class="title" tabindex="-1">${title}</h1>${lead ? `<p class="lead-s">${esc(lead)}</p>` : ''}${swap}</div>
+    ${m.cards.map(c => (c.form === 'done' ? cardDoneHtml(c) : cardTodoHtml(c, m.tpl, c === first, p))).join('')}
+    ${m.done ? '<p class="tiny hint">Something wrong? Tap an exercise to fix its reps.</p>' : ''}
+    ${weekCountHtml()}`;
 }
-
-function viewToday(p) {
-  const { today, start, situation, draft, done, next, tpl } = cardState(p);
-  const abc = rotates(p);
-  const dateLine = situation === 'pre' ? `You start ${fmtLong(start)}` : `${dayShort(today)} · today`;
-  const head = title => `<div class="head"><div class="eyebrow">${esc(dateLine)}</div><h1 class="title">${esc(title)}</h1></div>`;
-  const link = (act, text, attrs = '') => `<button class="btn link" data-act="${act}"${attrs}>${text}</button>`;
-
-  // A workout left open shows its own exercises, with what is done so far.
-  if (situation === 'progress') {
-    return `${head('Workout in progress')}${weekStripHtml()}
-      <section class="card wo" aria-label="Workout in progress">
-        <ul class="ex-list">${draft.session.blocks.map(b => draftRow(b, p)).join('')}</ul>
-        <button class="btn primary xl" data-act="resume">Resume workout</button>
-        <div class="wo-links" style="justify-content:center">${link('discardDraft', UI.confirm === 'discardDraft' ? 'Tap again to discard it' : 'Discard it')}</div>
-      </section>`;
-  }
-  // Trained today: the result, and what comes next.
-  if (situation === 'done') {
-    const coming = `${dayShort(next.date)}${abc ? ' · Workout ' + next.tpl : ''}`;
-    return `${head(abc ? `Workout ${done.tpl} done` : 'Workout done')}${weekStripHtml()}
-      <section class="card wo" aria-label="Today’s result">${resultRowsHtml(done, S.uid)}${totalRowHtml(done)}</section>
-      <div class="after">
-        <span class="next-line">Next: <b>${esc(coming)}</b></span>
-        <div class="wo-links">${link('edit', 'Edit', ` data-id="${esc(done.id)}"`)}${link('startSession', 'Train again today', ` data-tpl="${nextTpl(S.uid)}"`)}${link('plan', 'Your plan')}</div>
-      </div>`;
-  }
-  // Otherwise the next workout: today's, a practice one before the start, or the one a rest day could take.
-  const plan = planFor(p, tpl);
-  const rows = SLOT_ORDER.map(slot => exRow(p, tpl, slot, plan[slot])).join('');
-  const ups = SLOT_ORDER.map(slot => upHint(p, plan[slot])).filter(Boolean).join('');
-  const planLink = link('plan', 'Your plan');
-  let title, top = '', main, note = '', links = planLink + (abc ? link('swap', 'Swap workout') : '');
-  if (situation === 'pre') {
-    title = 'Get ready';
-    main = `<button class="btn ghost xl" data-act="startSession" data-tpl="${tpl}">Try a practice workout</button>`;
-  } else if (situation === 'train') {
-    title = abc ? `Workout ${tpl}` : 'Today’s workout';
-    main = `<button class="btn primary xl" data-act="startSession" data-tpl="${tpl}">Start · 30 min</button>`;
-  } else {
-    title = 'Rest day';
-    top = `<div class="wo-next"><span class="eyebrow">Next up · ${esc(dayShort(next.date))}</span>${abc ? `<b class="h2">Workout ${tpl}</b>` : ''}</div>`;
-    const from = movedDay(S.uid, today);
-    main = `<button class="btn ${from ? 'primary' : 'ghost'} xl" data-act="startSession" data-tpl="${tpl}">${from ? 'Train today instead' : 'Train anyway'}</button>`;
-    note = `<p class="wo-note">${from ? `Moves ${esc(fmtWeekday(from))}’s workout to today.` : 'Counts as an extra workout this week.'}</p>`;
-    links = planLink + link('week', 'Change this week', ' data-from="card"');
-  }
-  return `${head(title)}${weekStripHtml()}
-    <section class="card wo" aria-label="${situation === 'train' ? esc(title) : 'Next workout'}">
-      ${top}<ul class="ex-list">${rows}</ul>
-      ${ups}
-      ${main}${note}
-      ${links ? `<div class="wo-links">${links}</div>` : ''}
-    </section>`;
+/* A card that is still to do: the exercise and the weight of the plan, what to beat, and its own two buttons.
+   The first one that is to do has the black button; the others do the same with an outlined one. */
+function cardTodoHtml(c, tpl, first, p) {
+  const nm = esc(c.name);
+  return `<section class="card xc" data-slot="${c.slot}" data-form="todo" aria-label="${SLOT[c.slot].label}: ${nm}">
+    <div class="xc-top">${plateHtml(c.slot)}
+      <span class="ex-main"><span class="xc-grp ${c.slot}">${SLOT[c.slot].label}</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span></span>
+      <span class="goal"><span class="goal-l">${c.goal.label}</span>${c.goal.n == null ? '' : `<span class="goal-n">${c.goal.n}</span>`}</span></div>
+    ${upHint(p, c.key)}
+    <div class="xc-btns"><button type="button" class="btn ${first ? 'primary' : 'line'}" data-act="start" data-slot="${c.slot}" aria-label="Start 10 minutes: ${nm}">Start 10 minutes</button>
+      <button type="button" class="btn" data-act="editEx" data-tpl="${tpl}" data-slot="${c.slot}" aria-label="Change ${nm}">Change</button></div>
+  </section>`;
 }
-
-/* One exercise of the coming workout: its weight, and the reps to beat. Tap to change it. */
-function exRow(p, tpl, slot, key) {
-  const info = exInfo(key, p);
-  const pk = plannedKg(p, key);
-  const ref = refBlock(scoresOf(S.uid, key));
-  const goal = ref
-    ? `<span class="goal-n">${ref.total}</span><span class="goal-l">${Number(pk.kg) > Number(ref.kg) ? 'reps to match' : 'reps to beat'}</span>`
-    : '<span class="goal-l">First time</span>';
-  return `<li><button class="ex-row" data-act="editEx" data-tpl="${tpl}" data-slot="${slot}">
-    ${plateHtml(slot)}
-    <span class="ex-main"><span class="sr-only">${esc(SLOT[slot].label)}: </span><span class="ex-n">${esc(info.n)}</span><span class="ex-sub"><span class="ex-kg">${esc(kgLabel(pk.kg, info))}</span></span></span>
-    <span class="goal">${goal}</span><span class="sr-only">. Change</span>
-  </button></li>`;
+/* A card that is done: what you did, the reps large and the verdict under them. The whole card is a button
+   that opens today's workout to fix it. */
+function cardDoneHtml(c) {
+  const nm = esc(c.name), v = c.verdict;
+  return `<button type="button" class="card xc" data-slot="${c.slot}" data-form="done" data-act="fixToday" aria-label="${SLOT[c.slot].label}, done: ${nm}, ${c.n} reps, ${esc(v.text)}. Fix it">
+    <span class="xc-top"><span class="xc-tick" aria-hidden="true">${ICON.check}</span>
+      <span class="ex-main"><span class="xc-grp done">${SLOT[c.slot].label} · done</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span></span>
+      <span class="goal"><span class="goal-n">${c.n}</span><span class="xc-u">reps</span><span class="xc-verdict${v.tone ? ' ' + v.tone : ''}">${esc(v.text)}</span></span></span>
+  </button>`;
 }
-function draftRow(b, p) {
-  const info = exInfo(b.ex, p);
-  const sub = b.done && !b.skipped ? `✓ ${b.total} reps` : b.skipped ? 'skipped' : 'to do';
-  return `<li><div class="ex-row static">${plateHtml(b.slot)}<span class="ex-main"><span class="ex-n"><span class="sr-only">${esc(SLOT[b.slot].label)}: </span>${esc(blockName(b, p))}</span><span class="ex-sub"><span class="ex-kg">${esc(kgLabel(b.kg, info))}</span> · ${esc(sub)}</span></span></div></li>`;
+/* The week counter: three dots and a few words. With buddies a row each: you first, then up to three of them. */
+function weekCountHtml() {
+  const buddies = buddyIds();
+  const dots = n => `<span class="wkc-dots" aria-hidden="true">${[0, 1, 2].map(i => `<i${i < n ? ' class="on"' : ''}></i>`).join('')}</span>`;
+  const said = w => (w.n > 3 ? w.text : `${w.text} this week`);
+  if (!buddies.length) {
+    const w = weekCount(S.uid);
+    return `<section class="card wkc" aria-label="This week"><span class="eyebrow">This week</span>
+      <div class="wkc-row me" role="img" aria-label="${said(w)}">${dots(w.n)}<span class="wkc-n">${w.text}</span></div></section>`;
+  }
+  const row = (id, mine) => {
+    const w = weekCount(id), who = esc(mine ? 'You' : displayName(id));
+    return `<div class="wkc-row${mine ? ' me' : ''}" data-id="${esc(id)}" role="img" aria-label="${who}: ${said(w)}"><span class="wkc-who">${who}</span>${dots(w.n)}<span class="wkc-n">${w.short}</span></div>`;
+  };
+  const more = buddies.length > 3 ? `<button type="button" class="btn link wkc-more" data-act="screen" data-screen="results">+${buddies.length - 3} more</button>` : '';
+  return `<section class="card wkc" aria-label="This week"><span class="eyebrow">This week</span>${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}</section>`;
 }
 /* The go-heavier tip, as one tap (or a "not now" that this device remembers). */
 function upHint(p, key, exclude) {
@@ -1999,9 +2025,6 @@ function loadDraft() {
   if (!d || !d.session) return null;
   const s = normSession(d.session);
   if (!s || s.blocks.length !== 3) return null;
-  // Finished on another device meanwhile: the shared copy wins.
-  const stored = S.uid ? S.members.get(S.uid)?.sessions.get(s.id) : null;
-  if (stored && stored.status === 'done' && !(R.session && R.session.id === s.id)) { LS.del(DRAFT_KEY()); return null; }
   return Object.assign({}, d, { session: s, idx: Math.min(2, Math.max(0, d.idx | 0)) });
 }
 function saveDraft() {
@@ -2062,8 +2085,41 @@ function closeRunner() {
   setBackgroundInert(false);
   R.session = null;
   render();
-  const back = [UI.runReturn && $('#main ' + UI.runReturn), $('[data-act="resume"]'), $('[data-act="startSession"]')].find(el => el && !el.disabled);
+  const back = [UI.runReturn && $('#main ' + UI.runReturn), $('#view [data-act="start"]')].find(el => el && !el.disabled);
   if (back) { try { back.focus({ preventScroll: true }); } catch { /* ignore */ } }
+}
+/* The working copy for one exercise: a workout of today with the three exercises of the workout whose turn it
+   is, none of them done. When there is a workout today the copy is that workout: its id, its start, its feel
+   and note, and what is done in the other two groups. So the exercise and its weight are fixed from here on. */
+function openCard(slot) {
+  const s = newSession(turnTpl());
+  const t = todaySession();
+  if (t) {
+    Object.assign(s, { id: t.id, startedAt: t.startedAt, manual: !!t.manual, feel: t.feel, note: t.note });
+    s.blocks = s.blocks.map(b => { const did = b.slot === slot ? null : (t.blocks || []).find(x => x.slot === b.slot && isDone(x)); return did ? clone(did) : b; });
+  }
+  Object.assign(R, { session: s, idx: SLOT_ORDER.indexOf(slot), phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, corr: null });
+}
+/* Store the open exercise in today's workout. The workout is stored as done; a group that is not done is an
+   empty block that keeps its exercise and weight. A copy with nothing done is not stored: a workout with
+   that id is deleted instead. Quiet, because the caller says itself when it did not work. After a score is
+   stored, the weight the exercise is set to becomes the weight of that score. */
+async function storeOpen() {
+  const b = blk();
+  b.total = b.sets.reduce((a, x) => a + x.r, 0); b.done = b.total > 0; b.skipped = !b.done;
+  if (b.sets.length) b.kg = workKg(b);
+  const now = Date.now();
+  const copy = Object.assign(clone(R.session), { status: 'done', paused: false, updatedAt: now, endedAt: now });
+  copy.blocks = copy.blocks.map(x => (isDone(x) ? x : Object.assign(x, { done: false, skipped: true, sets: [], total: 0, dur: 0, cut: false })));
+  if (!copy.blocks.some(isDone)) return me().sessions.has(copy.id) ? deleteSession(copy.id) : true;
+  if (!(await saveSession(copy, { quiet: true }))) return false;
+  UI.tpl = null;
+  const p = myProfile();
+  if (b.done && p && !(p.weights && p.weights[b.ex] === b.kg)) {
+    const q = clone(p); q.weights = Object.assign({}, q.weights, { [b.ex]: b.kg });
+    saveProfile(q, { quiet: true });
+  }
+  return true;
 }
 const blk = () => R.session.blocks[R.idx];
 function elapsed() {
@@ -2216,8 +2272,6 @@ function renderRunner() {
   const rem = R.phase === 'lead' ? Math.max(0, Math.ceil((R.leadEnd - Date.now()) / 1000)) : R.phase === 'over' ? 0 : Math.ceil(BLOCK_SEC - elapsed());
   const status = { ready: 'Ready when you are', lead: 'Get set', run: statusText(rem, false), paused: 'Paused', over: b.cut ? 'Block stopped' : 'Time!' }[R.phase];
   const prog = R.phase === 'over' ? 100 : R.phase === 'run' || R.phase === 'paused' ? Math.min(100, elapsed() / BLOCK_SEC * 100) : 0;
-  const nextB = R.session.blocks[R.idx + 1];
-  const isLast = R.idx === R.session.blocks.length - 1;
   const endLbl = R.confirm === 'end' ? 'Tap again' : 'End block';
   const padOn = R.phase === 'run' || R.phase === 'paused' || R.phase === 'over';
 
@@ -2254,7 +2308,7 @@ function renderRunner() {
       <div class="ready-info small">${prev ? (Number(b.kg) || 0) > (Number(prev.kg) || 0) ? `Heavier today: match <b>${prev.total} reps</b> (last time ${esc(blockKgLabel(prev, info))})` : `To beat: <b>${prev.total} reps</b> at ${esc(blockKgLabel(prev, info))}` : trial ? 'Practice — this doesn’t count yet.' : 'First time: this block sets the score to beat.'}</div>
       <div class="run-ctrl two" style="margin-top:auto">
         ${R.phase === 'ready'
-          ? `<button class="btn primary xl wide" data-act="go">Start 10:00</button><button class="btn link wide" data-act="skipBlock">Skip this exercise</button>`
+          ? `<button class="btn primary xl wide" data-act="go">Start 10:00</button>`
           : `<button class="btn primary xl wide" data-act="goNow">Start now</button>`}
       </div>
     </div>${menuOpen ? runMenu() : ''}`);
@@ -2285,7 +2339,7 @@ function renderRunner() {
   const sets = b.sets.map(x => `<span>${x.r}${mixed ? `<small style="font-weight:600;color:var(--muted)"> × ${esc(kgShort(x.kg ?? b.kg, info))}</small>` : ''}</span>`).join('');
   const pad = Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<button data-act="set" data-n="${n}" class="${R.lastSet === n ? 'last' : ''}" aria-label="Log a set of ${n} reps"${padOn ? '' : ' disabled'}>${n}</button>`).join('');
   const ctrl = R.phase === 'over'
-    ? `<div class="run-ctrl two"><button class="btn ghost" data-act="undo" ${b.sets.length ? '' : 'disabled'}>Undo set</button><button class="btn primary" data-act="nextBlock">${isLast ? 'Finish workout' : `Next: ${esc(SLOT[nextB.slot].label)} →`}</button></div>`
+    ? `<div class="run-ctrl two"><button class="btn ghost" data-act="undo" ${b.sets.length ? '' : 'disabled'}>Undo set</button><button class="btn primary" data-act="nextBlock">Done</button></div>`
     : `<div class="run-ctrl">${R.phase === 'run' ? '<button class="btn" data-act="pause">Pause</button>' : '<button class="btn primary" data-act="resumeClock">Resume</button>'}<button class="btn ghost" data-act="undo" ${b.sets.length ? '' : 'disabled'}>Undo set</button><button class="btn ghost" data-act="endEarly">${endLbl}</button></div>`;
 
   setRunHtml(el, `<div class="run"${menuOpen ? ' inert' : ''}>${header}
@@ -2355,7 +2409,6 @@ function runMenu() {
     <b class="h2">${R.phase === 'paused' ? 'Clock paused' : 'Workout menu'}</b>
     <div style="display:grid;gap:8px">
       <button class="btn primary" data-act="menuBack">Keep going</button>
-      <button class="btn" data-act="runClose">Finish later (clock pauses)</button>
       <button class="btn" data-act="stopSave">Stop and save what I did</button>
       <button class="btn danger" data-act="discardRun">${R.confirm2 === 'discard' ? 'Sure? This deletes the whole workout' : 'Discard workout'}</button>
     </div>
@@ -3000,9 +3053,15 @@ const ACT = {
     refreshSheet();
   },
   async applyUp(el) { const p = clone(myProfile()); p.weights = p.weights || {}; p.weights[el.dataset.ex] = Number(el.dataset.kg); if (await saveProfile(p)) toast('New weight is set.'); },
-  startSession(el) { audio(); UI.person = null; UI.logAll = false; openRunner(false, el.dataset.tpl); },
-  resume() { audio(); UI.person = null; UI.logAll = false; openRunner(true); },
-  discardDraft() { if (UI.confirm !== 'discardDraft') { armConfirm('discardDraft'); render(); return; } UI.confirm = null; discardActive(); },
+  /* "Start 10 minutes" on a card. For now the clock runs on the workout screen, for that one exercise. */
+  start(el) {
+    const slot = el.dataset.slot;
+    if (R.session || cardModel().cards.find(c => c.slot === slot)?.form !== 'todo') return;
+    audio();
+    openCard(slot); saveDraft(); openRunner(true);
+  },
+  /* A done card opens today's workout to fix it. */
+  fixToday() { const s = todaySession(); if (s && !R.session) ACT.edit({ dataset: { id: s.id } }); },
   manual() {
     UI.person = null; UI.logAll = false;
     const s = newSession(UI.tpl || nextTpl(S.uid)); s.status = 'done';
@@ -3020,7 +3079,7 @@ const ACT = {
     clearDraftFor(id);
     if (await deleteSession(id)) {
       UI.sheetReturn = null; closeSheet(); toast('Workout deleted.');
-      const t = $('#view .rt-row') || $('#view [data-act="back"]'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
+      const t = $('#view .rt-row') || $('#view [data-act="back"]') || $('#view [data-act="start"]'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
     }
   },
   closeSheet() { dismissSheet(); },
@@ -3130,13 +3189,9 @@ const ACT = {
     setBlockKg(b, stepKg(b.kg, exInfo(b.ex, myProfile()), Number(el.dataset.dir)));
     saveDraft(); renderRunner();
   },
-  skipBlock() { const b = blk(); b.skipped = true; b.done = false; advance(); },
-  nextBlock() {
-    const b = blk(); b.total = b.sets.reduce((a, s) => a + s.r, 0); b.done = b.total > 0; b.skipped = b.total === 0;
-    if (b.sets.length) b.kg = workKg(b);
-    R.session.updatedAt = Date.now();
-    if (doneBlocks(R.session).length && !isTrial(R.session, S.uid)) saveSession(R.session, { quiet: true });
-    advance();
+  async nextBlock() {
+    if (await storeOpen()) { LS.del(DRAFT_KEY()); closeRunner(); }
+    else toast('Couldn’t save. Your data is still on screen — try again in a moment.');
   },
   toggleSound() { prefs.sound = !prefs.sound; savePrefs(); if (prefs.sound) { audio(); beep(880, 0.08); } renderRunner(); },
   runMenu() {
@@ -3152,15 +3207,6 @@ const ACT = {
     else if (lead && R.phase === 'ready') { R.menuPaused = false; R.phase = 'lead'; R.leadEnd = Date.now() + lead; R.lastRem = null; saveDraft(); renderRunner(); startTick(); }
     else { R.menuPaused = false; renderRunner(); }
     const x = $('#runner [data-act="runMenu"]'); if (x) { try { x.focus({ preventScroll: true }); } catch { /* ignore */ } }
-  },
-  runClose() {
-    R.menuLead = 0;
-    if (R.phase === 'run') { R.phase = 'paused'; R.pausedAt = Date.now(); }
-    if (R.phase === 'lead') R.phase = 'ready';
-    saveDraft();
-    if (me().sessions.has(R.session.id)) saveSession(Object.assign(clone(R.session), { paused: true, updatedAt: Date.now() }), { quiet: true });
-    closeRunner();
-    toast('Workout paused. Tap “Resume workout” to continue.');
   },
   stopSave() {
     const b = blk();
@@ -3273,7 +3319,7 @@ document.addEventListener('submit', async e => {
     const ok = await saveProfile(dev && dev.profile ? Object.assign(dev.profile, nick ? { nick } : {}) : defaultProfile(nick));
     if (btn) btn.disabled = false;
     render();
-    { const t = $('[data-act="startSession"]'); if (t) t.focus({ preventScroll: true }); }
+    { const t = $('#view [data-act="start"]'); if (t) t.focus({ preventScroll: true }); }
     if (ok) toast(nick ? `Welcome, ${nick}!` : 'Welcome!');
   }
   if (f.dataset.form === 'session') submitSessionForm(f);

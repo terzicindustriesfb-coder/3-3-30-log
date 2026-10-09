@@ -6,8 +6,8 @@ after(closeAll);
 test('a profile without the field does the same three every time', async () => {
   const page = await openApp({ sessions: abc() });                 // the owner's stored profile still says mode: 'abc'
   assert.deepEqual(await page.evaluate(() => [rotates(myProfile()), 'rotate' in myProfile(), myProfile().mode, nextTpl(S.uid)]), [false, false, 'same', 'A']);
-  assert.equal(await txt(page, '#view .title'), 'Today’s workout');
-  assert.deepEqual(await texts(page, '.wo .ex-n'), ['Overhead press', 'Seated cable row', 'Seated leg press']);
+  assert.equal(await txt(page, '#view .title'), 'Today: 3 exercises');
+  assert.deepEqual(await texts(page, '.xc .ex-n'), ['Overhead press', 'Seated cable row', 'Seated leg press']);
 });
 test('with the field on, A, B and C take turns', async () => {
   const page = await openApp({ sessions: [first()], profile: profile({ rotate: true }) });

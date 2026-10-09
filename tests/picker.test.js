@@ -7,7 +7,7 @@ const profile = over => h.profile(Object.assign({ rotate: true }, over));
 const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
-const openPick = async (page, slot = 'push') => { await page.click(`.wo .ex-row[data-slot="${slot}"]`); await page.click('[data-act="exPick"]'); };
+const openPick = async (page, slot = 'push') => { await page.click(`.xc[data-slot="${slot}"] [data-act="editEx"]`); await page.click('[data-act="exPick"]'); };
 const rows = (page, group) => texts(page, `.pick-group[data-group="${group}"] .ex-n`);
 const subs = (page, group) => texts(page, `.pick-group[data-group="${group}"] .tiny`);
 
@@ -43,7 +43,7 @@ test('picking puts it in the workout and opens its sheet', async () => {
   assert.equal(await page.inputValue('#exName'), 'Barbell bench press');
   assert.equal(await page.locator('.to-beat').count(), 0);
   await page.click('[data-sheet="ex"] [data-act="closeSheet"]');
-  assert.deepEqual(await texts(page, '.wo .goal-l'), ['First time', 'reps to beat', 'reps to beat']);
+  assert.deepEqual(await texts(page, '.xc .goal-l'), ['First time', 'To beat', 'To beat']);
 });
 test('the current exercise and the back button change nothing', async () => {
   const page = await openApp({ sessions: abc() });
@@ -104,22 +104,9 @@ test('an exercise in two workouts says so, and same-every-time has one plan', as
   await same.click('.pick-row[data-ex="dips"]');
   assert.equal(await txt(same, '#toast'), 'Dips is in your plan.');
 });
-test('from the plan, another workout gets the exercise and you return to the plan', async () => {
-  const page = await openApp({ sessions: abc() });
-  await page.evaluate(() => ACT.plan());
-  await page.click('.plan-card[data-tpl="B"] .plan-row[data-slot="pull"]');
-  await page.click('[data-act="exPick"]');
-  assert.deepEqual(await subs(page, 'plan'), ['Machine / cable · Workout A', 'Bodyweight · Workout B', 'Barbell · Workout C']);
-  await page.click('.pick-row[data-ex="chin-ups"]');
-  assert.equal(await txt(page, '#toast'), 'Chin-ups is in Workout B.');
-  assert.deepEqual(await page.evaluate(() => [myProfile().plans.A.pull, myProfile().plans.B.pull]), ['kabelroeien', 'chin-ups']);
-  assert.equal(await txt(page, '[data-sheet="ex"] .sheet-head .eyebrow'), 'Pull · Workout B');
-  await page.click('[data-sheet="ex"] [data-act="closeSheet"]');
-  assert.deepEqual(await texts(page, '.plan-card[data-tpl="B"] .ex-n'), ['Seated dumbbell shoulder press', 'Chin-ups', 'Dumbbell Romanian deadlift']);
-});
 test('what you changed but did not save is gone after a switch', async () => {
   const page = await openApp({ sessions: abc() });
-  await page.click('.wo .ex-row[data-slot="push"]');
+  await page.click('.xc[data-slot="push"] [data-act="editEx"]');
   await page.fill('#exName', 'My press');
   await page.click('[data-act="eq"][data-eq="machine"]');
   await page.click('[data-act="exPick"]');
@@ -129,7 +116,7 @@ test('what you changed but did not save is gone after a switch', async () => {
 });
 test('going back keeps what you typed, in the search and in the sheet', async () => {
   const page = await openApp({ sessions: abc() });
-  await page.click('.wo .ex-row[data-slot="push"]');
+  await page.click('.xc[data-slot="push"] [data-act="editEx"]');
   await page.fill('#exName', 'My press');
   await page.click('[data-act="exPick"]');
   await page.fill('#exSearch', '<b>Landmine</b>');

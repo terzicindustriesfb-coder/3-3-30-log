@@ -35,7 +35,7 @@ test('deleting the newest workout steps the letter back', async () => {
 });
 test('the main screen offers the next letter', async () => {
   const page = await openApp({ sessions: [first()] });
-  assert.equal(await txt(page, '#view .title'), 'Workout B');
+  assert.equal(await txt(page, '#view .title'), 'Today: Workout B');
 });
 test('logging a past workout suggests the letter for its date', async () => {
   const page = await openApp({ sessions: [first(), session('2026-10-09', 'B', [30, 8, 40])] });

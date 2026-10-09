@@ -123,6 +123,7 @@ async function openApp(opts = {}) {
   page.on('pageerror', e => page.__errors.push(String(e)));
   await page.route('**/*', r => (r.request().url().startsWith(base) ? r.continue() : r.abort()));
   await page.clock.setFixedTime(new Date(`${o.today}T${o.time}:00+02:00`));
+  page.__now = new Date(`${o.today}T${o.time}:00+02:00`).getTime();
   const uid = o.crew ? 'me' : 'local';
   const seedLS = ([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, JSON.stringify(v)); };
   if (o.crew) {
@@ -145,6 +146,12 @@ async function openApp(opts = {}) {
 const squash = t => t.replace(/\s+/g, ' ').trim();
 const txt = async (page, sel) => squash(await page.locator(sel).first().textContent());
 const texts = async (page, sel) => (await page.locator(sel).allTextContents()).map(squash);
+/* Move the frozen time on by this many seconds and let the app's clock notice. */
+async function forward(page, seconds) {
+  page.__now += seconds * 1000;
+  await page.clock.setFixedTime(new Date(page.__now));
+  await page.evaluate(() => tick());
+}
 /* Makes every write to the shared log fail the way a server error does (shared mode only), and counts the tries. */
 const breakSaving = page => page.evaluate(() => {
   S.__doc = S.db.doc; window.__writes = 0;
@@ -153,4 +160,4 @@ const breakSaving = page => page.evaluate(() => {
 });
 const mendSaving = page => page.evaluate(() => { S.db.doc = S.__doc; });
 
-module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, breakSaving, mendSaving, PLANS, BASE_STYLE };
+module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward, breakSaving, mendSaving, PLANS, BASE_STYLE };

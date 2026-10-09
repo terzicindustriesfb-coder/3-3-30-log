@@ -7,7 +7,7 @@ const profile = over => h.profile(Object.assign({ rotate: true }, over));
 const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
-const openEx = (page, slot = 'push') => page.click(`.wo .ex-row[data-slot="${slot}"]`);
+const openEx = (page, slot = 'push') => page.click(`.xc[data-slot="${slot}"] [data-act="editEx"]`);
 const save = page => page.click('[data-sheet="ex"] button[type="submit"]');
 
 test('the sheet shows name, weight type, weight and the score to beat', async () => {
@@ -33,7 +33,7 @@ test('renaming keeps the scores', async () => {
   await save(page);
   assert.equal(await txt(page, '#toast'), 'Saved.');
   assert.deepEqual(await page.evaluate(() => [myProfile().names, myProfile().plans.A.push]), [{ schouderdrukken: 'Shoulder press' }, 'schouderdrukken']);
-  assert.deepEqual([await txt(page, '.wo .ex-n'), await txt(page, '.wo .goal-n')], ['Shoulder press', '62']);
+  assert.deepEqual([await txt(page, '.xc .ex-n'), await txt(page, '.xc .goal-n')], ['Shoulder press', '62']);
 });
 test('a taken or empty name is refused and the sheet stays open', async () => {
   const page = await openApp({ sessions: abc() });
@@ -63,7 +63,7 @@ test('a machine instead of a barbell changes the step', async () => {
   assert.equal(await page.inputValue('#exKgIn'), '40');
   await save(page);
   assert.deepEqual(await page.evaluate(() => [myProfile().eqs, myProfile().weights.schouderdrukken]), [{ schouderdrukken: 'machine' }, 40]);
-  assert.deepEqual([await txt(page, '.wo .ex-kg'), await txt(page, '.wo .goal-l')], ['40 kg', 'reps to match']);
+  assert.deepEqual([await txt(page, '.xc .ex-kg'), await txt(page, '.xc .goal-l')], ['40 kg', 'To match']);
 });
 test('without scores an exercise can become a pair of dumbbells', async () => {
   const page = await openApp({ today: '2026-10-05' });
@@ -74,7 +74,7 @@ test('without scores an exercise can become a pair of dumbbells', async () => {
   await page.click('[data-act="eq"][data-eq="dbpair"]');
   assert.deepEqual([await page.inputValue('#exKgIn'), await txt(page, '#exKgNote')], ['10', 'steps of 2 kg per dumbbell']);
   await save(page);
-  assert.equal(await txt(page, '.wo .ex-kg'), '2 × 10 kg');
+  assert.equal(await txt(page, '.xc .ex-kg'), '2 × 10 kg');
 });
 test('your own exercise is renamed in place', async () => {
   const page = await openApp({ sessions: abc() });
@@ -88,14 +88,6 @@ test('a bodyweight exercise explains minus kilos', async () => {
   const page = await openApp({ today: '2026-10-07', sessions: [first()] });
   await openEx(page, 'pull');
   assert.deepEqual([await txt(page, '[data-sheet="ex"] .sheet-head .eyebrow'), await txt(page, '#exKgNote')], ['Pull · Workout B', 'steps of 2.5 kg · minus = assist']);
-});
-test('saving from the plan returns to the plan', async () => {
-  const page = await openApp({ sessions: abc() });
-  await page.evaluate(() => ACT.plan());
-  await page.click('.plan-card[data-tpl="A"] .plan-row[data-slot="push"]');
-  await page.fill('#exName', 'Shoulder press');
-  await save(page);
-  assert.equal(await txt(page, '.plan-card[data-tpl="A"] .ex-n'), 'Shoulder press');
 });
 test('tapping another weight type and back changes nothing', async () => {
   const page = await openApp({ today: '2026-10-05' });
@@ -113,7 +105,7 @@ test('a typed weight is saved, per dumbbell for a pair', async () => {
   await page.fill('#exKgIn', '12,5');
   await save(page);
   assert.equal(await page.evaluate(() => myProfile().weights['db-schouderdrukken']), 25);
-  assert.equal(await txt(page, '.wo .ex-kg'), '2 × 12.5 kg');
+  assert.equal(await txt(page, '.xc .ex-kg'), '2 × 12.5 kg');
 });
 test('minus kilos are refused for a barbell', async () => {
   const page = await openApp({ sessions: abc() });

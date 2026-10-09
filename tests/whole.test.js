@@ -8,7 +8,7 @@ const path = require('node:path');
 const sam = () => ({ id: 'sam', profile: profile({ nick: 'Sam' }), sessions: threeWeeks() });
 const visit = async page => {
   for (const act of ['plan', 'week', 'swap', 'manual']) { await page.evaluate(a => ACT[a](), act); await page.keyboard.press('Escape'); }
-  await page.click('.wo .ex-row'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await page.keyboard.press('Escape');
+  await page.click('.xc [data-act="editEx"]'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await page.keyboard.press('Escape');
   await page.click('#view [data-act="screen"][data-screen="settings"]'); await page.click('#view [data-act="back"]');
   await page.click('#view [data-act="screen"][data-screen="results"]'); await page.click('.rt-row'); await page.keyboard.press('Escape');
 };
@@ -33,7 +33,7 @@ test('no function of the app hides the browser’s own history', async () => {
 test('nothing of the old screens is left in the source', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', '3-3-30', 'index.html'), 'utf8');
   for (const gone of ['templateFor', 'nextTrainingDay', 'beatPrev', 'logTable', 'logCell', 'viewLog', 'chartEx', 'exByName', 'resolveExercise',
-    'fillNameList', 'sheetHit', 'syncExSheet', 'equipOptions', 'exNames', '.lt-row', '.pg-card', 'Done for today', 'pick 3', 'next to Progress']) {
+    'fillNameList', 'sheetHit', 'syncExSheet', 'equipOptions', 'exNames', '.lt-row', '.pg-card', 'pick 3', 'next to Progress']) {
     assert.equal(src.includes(gone), false, gone + ' is still in the source');
   }
 });

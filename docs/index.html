@@ -91,21 +91,16 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 ::placeholder { color: var(--muted); opacity: 1; }
 
-.app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
+.app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(28px + env(safe-area-inset-bottom, 0px)); }
 
 /* Top bar */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; gap: 10px;
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding-block: 12px 8px; background: var(--bg); }
 .brand { font-family: var(--display); font-stretch: 112%; font-weight: 900; font-size: 21px; letter-spacing: -.01em; line-height: 1; }
 .brand i { font-style: normal; color: var(--push); }
 
-.sync { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
-.sync .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.sync[hidden] + .gear { margin-left: auto; }
-.gear { background: transparent; color: var(--ink-2); }
+.date { font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 @media (max-width: 359px) { .daypick { gap: 4px; } .daypick button { font-size: 14px; } }
-@media (max-width: 359px) { .sync .dot { width: 10px; height: 10px; } }
-.sync.on .dot { background: var(--good); }
 
 /* Type */
 .title { font-family: var(--display); font-stretch: 68%; font-weight: 800; font-size: clamp(36px, 10.5vw, 46px); line-height: .95; letter-spacing: -.01em; }
@@ -273,7 +268,7 @@ details.how[open] > summary .chev { transform: rotate(90deg); }
 .sheet-panel::before { content: ""; justify-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--surface-3); }
 @keyframes rise { from { transform: translateY(28px); } to { transform: none; } }
 .sheet-head { display: flex; align-items: center; gap: 12px; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 90;
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 90;
   background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-weight: 650; font-size: 14px;
   width: max-content; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgb(0 0 0 / .25); text-align: center; pointer-events: none; }
 
@@ -463,14 +458,12 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 .lg-reps { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
 .lg-sum { font-size: 13.5px; color: var(--ink-2); }
 @media (max-width: 359px) { .lg-row { grid-template-columns: 78px minmax(26px, auto) minmax(0, 1fr) auto; gap: 8px; } .lg-row.lg-notag { grid-template-columns: 78px minmax(0, 1fr) auto; } }
-/* Bottom switch: Today | Progress */
-.tabs { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  width: min(528px, calc(100% - 32px)); height: 60px; padding: 4px; background: var(--surface); border-radius: 999px;
-  box-shadow: 0 1px 2px rgb(40 30 10 / .08), 0 12px 28px -12px rgb(40 30 10 / .3); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
-.tabs button { border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font-weight: 750; font-size: 15px;
-  display: flex; align-items: center; justify-content: center; gap: 8px; }
-.tabs button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
 .pr-head { align-items: flex-end; flex-wrap: wrap; padding-block: 6px 4px; }
+/* Back on top of "My results" and "Settings", and the two buttons under the home screen that lead there */
+.scr-top { display: flex; padding-top: 2px; }
+.btn.back { min-height: 44px; padding: 0 18px 0 12px; font-size: 15px; gap: 6px; }
+.home-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-nav .btn { box-shadow: inset 0 0 0 1.5px var(--ring); font-size: 15.5px; padding-inline: 8px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -483,17 +476,12 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 <div class="app" id="app">
   <header class="top">
     <span class="brand" aria-label="3-3-30">3<i>·</i>3<i>·</i>30</span>
-    <span class="sync" id="sync" title="Saved on this device only" hidden><span class="dot"></span><span id="syncText">This device only</span></span>
-    <button class="iconbtn gear" id="gearBtn" data-act="settings" aria-label="Settings" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <span class="date" id="dateText"></span>
   </header>
   <div id="notice"></div>
   <main id="main">
     <section id="view" class="view stack"><div class="skeleton">Loading your log…</div></section>
   </main>
-  <nav class="tabs" id="tabs" aria-label="Main" hidden>
-    <button data-act="tab" data-tab="today" aria-pressed="true"></button>
-    <button data-act="tab" data-tab="progress" aria-pressed="false"></button>
-  </nav>
 </div>
 
 <div class="runner" id="runner" role="dialog" aria-modal="true" aria-label="Workout" hidden></div>
@@ -1453,9 +1441,9 @@ function newCustom(profile, name, slot, eq) {
 const blockName = (b, prof) => exName(b.ex, prof, b.name);
 
 /* ------------------------------------------------------------------ *
- * UI state + rendering. Two screens (Today, Progress) behind the bottom switch; the rest is a sheet.
+ * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
  * ------------------------------------------------------------------ */
-const UI = { tab: 'today', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', scoreTpl: null };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', scoreTpl: null };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1466,7 +1454,7 @@ document.addEventListener('focusout', e => { if (e.target.id === 'runKgIn') comm
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the page's HTML; put keyboard focus back on the same control. */
-const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'tab', 'date', 'from'];
+const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'screen', 'date', 'from'];
 function focusSel(a) {
   if (!a || a === document.body || !a.closest) return null;
   if (a.id) return '#' + CSS.escape(a.id);
@@ -1491,6 +1479,7 @@ function render() {
   const fsel = a && a.closest && (a.closest('#main') || a.closest('#notice')) ? focusSel(a) : null;
   renderHeader();
   const v = $('#view');
+  const howOpen = !!v.querySelector('details[data-how]')?.open;
   let html;
   try { html = viewHome(); } catch (e) {
     console.error(e);
@@ -1498,6 +1487,7 @@ function render() {
     html = `<div class="card"><b>This page couldn’t be shown.</b><p class="small">Reload the page to try again.</p></div>`;
   }
   v.innerHTML = html;
+  if (howOpen) { const how = v.querySelector('details[data-how]'); if (how) how.open = true; }
   drawCharts(v);
   restoreFocus(v, fsel);
   const pc = v.querySelector('.seg.scroll [aria-pressed="true"]');
@@ -1515,16 +1505,9 @@ function maybeReopen() {
 }
 
 function renderHeader() {
-  // Only worth a label when workouts are NOT going to the shared log.
-  $('#sync').hidden = !(S.mode === 'local' || (S.mode === 'shared' && S.ownLocal));
-  $('#gearBtn').hidden = !myProfile();
-  const tabs = $('#tabs');
-  tabs.hidden = !myProfile();
-  for (const b of tabs.querySelectorAll('button')) {
-    const t = b.dataset.tab;
-    if (!b.firstChild) b.innerHTML = `${ICON[t]}<span>${t === 'today' ? 'Today' : 'Progress'}</span>`;
-    b.setAttribute('aria-pressed', String(UI.tab === t));
-  }
+  // Today's date. A few words more only when workouts are NOT going to the shared log.
+  const local = S.mode === 'local' || (S.mode === 'shared' && S.ownLocal);
+  $('#dateText').textContent = dayShort(todayYmd()) + (local ? ' · this device only' : '');
   const nb = $('#notice');
   if (S.notice && S.notice === LS.get('d330.noticeSeen', '')) S.notice = '';
   if (nb.dataset.txt !== S.notice) {
@@ -1538,8 +1521,6 @@ const CHEV = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill=
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const svgIcon = d => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICON = {
-  today: svgIcon('<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>'),
-  progress: svgIcon('<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'),
   pencil: svgIcon('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
   check: svgIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   back: svgIcon('<path d="M15 6l-6 6 6 6"/>'),
@@ -1547,6 +1528,10 @@ const ICON = {
 const plateHtml = (slot, sm) => `<span class="plate ${slot}${sm ? ' sm' : ''}" aria-hidden="true"></span>`;
 const dayShort = d => `${WD[parseYmd(d).getDay()]} ${fmtDM(d)}`;
 const kgTotal = n => `${fmtNum(Math.round(n))} kg`;
+
+/* "Back" on top of "My results" and "Settings", and the two buttons under the home screen that lead there. */
+const backHtml = () => `<div class="scr-top"><button type="button" class="btn back" data-act="back">${ICON.back}Back</button></div>`;
+const homeNavHtml = () => `<div class="home-nav"><button type="button" class="btn ghost" data-act="screen" data-screen="results">My results</button><button type="button" class="btn ghost" data-act="screen" data-screen="settings">Settings</button></div>`;
 
 /* ---------- The page ---------- */
 function viewHome() {
@@ -1559,15 +1544,15 @@ function viewHome() {
     if (S.sessErr) return `<div class="card"><b>Your workouts couldn’t be loaded.</b><p class="small">Check your connection and try again. Nothing is lost.</p><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`;
     return S.sessSlow ? `<div class="skeleton">Still loading your workouts… check your connection.</div>` : SKELETON;
   }
-  return UI.tab === 'progress' ? viewProgressPage() : viewToday(p);
+  return UI.screen === 'results' ? viewResults() : UI.screen === 'settings' ? viewSettings() : viewToday(p) + homeNavHtml();
 }
-/* The Progress screen: whose it is, their progress, their log. */
-function viewProgressPage() {
+/* "My results": whose they are, their progress, their log. */
+function viewResults() {
   const { pid, seg } = personPick();
   const m = S.members.get(pid);
   const mine = pid === S.uid;
   const nm = esc(displayName(pid));
-  const head = `<div class="row pr-head"><h1 class="title grow">Progress</h1>${seg}</div>`;
+  const head = `${backHtml()}<div class="row pr-head"><h1 class="title grow">Progress</h1>${seg}</div>`;
   if (!mine && !m?.seen) {
     return head + (m?.err
       ? `<div class="card"><b>${nm}’s workouts couldn’t be loaded.</b><button class="btn primary" data-act="reload" style="justify-self:start">Try again</button></div>`
@@ -1637,7 +1622,7 @@ function weekStripHtml() {
     return `<span class="wk-d" aria-hidden="true"${d === today ? ' aria-current="date"' : ''}>${WD[parseYmd(d).getDay()][0]}</span>`;
   }).join('');
   const buddies = buddyIds();
-  const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="tab" data-tab="progress">+${buddies.length - 3} more</button>` : '';
+  const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="screen" data-screen="results">+${buddies.length - 3} more</button>` : '';
   return `<section class="card wk" aria-label="This week" data-act="week">
     <div class="wk-row wk-head"><span aria-hidden="true">Week</span>${dayLetters}<button type="button" class="iconbtn wk-edit" data-act="week" data-from="strip" aria-label="Move a workout this week">${ICON.pencil}</button></div>
     ${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}
@@ -1950,12 +1935,12 @@ function viewOnboarding() {
     <button class="btn link" data-act="importPick" style="justify-self:center">Restore a backup</button><input type="file" id="importFile" accept=".json,application/json" hidden>`;
 }
 
-/* ---------- Settings (⚙) ---------- */
-function settingsHtml() {
+/* ---------- Settings ---------- */
+function viewSettings() { return `${backHtml()}<h1 class="title">Settings</h1>${settingsBody()}`; }
+function settingsBody() {
   const p = myProfile();
   const shared = S.mode === 'shared' && !S.ownLocal;
-  return `<div class="sheet-head"><b class="h2 grow">Settings</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
-    <label class="f" for="nickIn">Your name
+  return `<label class="f" for="nickIn">Your name
       <input type="text" id="nickIn" data-field="nick" maxlength="30" value="${esc(p.nick || '')}" placeholder="${esc(S.meInfo?.name || 'First name')}"></label>
     <div class="f">Exercises
       <div class="seg full" role="group" aria-label="Exercises"><button type="button" data-act="mode" data-mode="abc" aria-pressed="${rotates(p)}">Workout A, B, C</button><button type="button" data-act="mode" data-mode="same" aria-pressed="${!rotates(p)}">Same every time</button></div>
@@ -1986,15 +1971,28 @@ function settingsHtml() {
       <p class="tiny">Source: <a href="https://www.menshealth.nl/nieuws/de-3-3-30-methode-trainen-voor-spiermassa-in-slechts-1-5-uur-per-week" target="_blank" rel="noopener">Men’s Health</a>.</p>
     </details>`;
 }
-function refreshSettings() {
-  if (!UI.sheet || UI.sheet.kind !== 'settings') return;
-  const panel = $('#sheet .sheet-panel'); if (!panel) return;
-  const f = focusSel(document.activeElement);
-  const open = panel.querySelector('details[data-how]')?.open;
-  panel.innerHTML = settingsHtml();
-  if (open) panel.querySelector('details[data-how]').open = true;
-  restoreFocus(panel, f);
+function refreshSettings() { if (UI.screen === 'settings') render(); }
+
+/* ---------- From screen to screen ---------- */
+const SCREENS = ['home', 'results', 'settings'];
+/* Show a screen: at the top, with focus on "Back", or on the home screen on the button that led to the screen just left.
+   Focus is taken off first, so that a name being typed is saved. While a card is open there is only the home screen. */
+function showScreen(screen, from) {
+  const a = document.activeElement;
+  if (a && a !== document.body) { try { a.blur(); } catch { /* ignore */ } }
+  UI.screen = SCREENS.includes(screen) && !R.session ? screen : 'home';
+  UI.logAll = false;
+  render();
+  window.scrollTo(0, 0);
+  const t = UI.screen === 'home' ? (from ? $(`#view [data-act="screen"][data-screen="${CSS.escape(from)}"]`) : null) : $('#view [data-act="back"]');
+  if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
+/* The back button of the phone or the browser: it closes a sheet that is open (nothing in it is saved) and shows the screen of that step. */
+window.addEventListener('popstate', e => {
+  const from = UI.screen;
+  if (!$('#sheet').hidden) { UI.sheetReturn = null; closeSheet(); }
+  showScreen(e.state && e.state.screen ? e.state.screen : 'home', from);
+});
 
 /* ------------------------------------------------------------------ *
  * Workout mode: live 10-minute AMRAP blocks
@@ -2400,7 +2398,7 @@ async function finishAndSave() {
   if (!ok) return;
   LS.del(DRAFT_KEY());
   closeRunner();
-  UI.tab = 'today'; UI.tpl = null; UI.person = null; UI.logAll = false;
+  UI.tpl = null; UI.person = null; UI.logAll = false;
   // On a rest day this workout took the place of a planned day.
   const saving = saveProfile(moveFor(p, S.uid, s.date) || p, { quiet: true });   // the profile in memory is up to date from here on
   const coming = upcoming(S.uid, 1)[0];
@@ -2951,11 +2949,20 @@ function stepKg(kg, info, dir) {
 }
 
 const ACT = {
-  settings() { UI.sheet = { kind: 'settings' }; openSheet(settingsHtml(), 'Settings'); },
+  /* "My results" and "Settings" each add one step to the browser's history, so that the back button of the phone leaves them. */
+  screen(el) {
+    const sc = el.dataset.screen;
+    if (R.session || !SCREENS.includes(sc) || sc === 'home' || sc === UI.screen) return;
+    try { history.pushState({ screen: sc }, ''); } catch { /* a host may forbid it: "Back" still works */ }
+    showScreen(sc);
+  },
+  back() {
+    if (history.state && history.state.screen) history.back();
+    else showScreen('home', UI.screen);
+  },
   dismissNotice() { LS.set('d330.noticeSeen', S.notice); S.notice = ''; render(); },
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
-  tab(el) { UI.tab = el.dataset.tab === 'progress' ? 'progress' : 'today'; UI.logAll = false; render(); window.scrollTo(0, 0); },
   plan() { showSheet({ kind: 'plan' }); },
   week() { showSheet({ kind: 'week' }); },
   // Switch a day of this week on or off: today and later, and only a day without a training.
@@ -3042,7 +3049,7 @@ const ACT = {
     clearDraftFor(id);
     if (await deleteSession(id)) {
       UI.sheetReturn = null; closeSheet(); toast('Workout deleted.');
-      const t = $('#view .lg-row') || $('#gearBtn'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
+      const t = $('#view .lg-row') || $('#view [data-act="back"]'); if (t) { try { t.focus({ preventScroll: true }); } catch { /* ignore */ } }
     }
   },
   closeSheet() { dismissSheet(); },
@@ -3371,6 +3378,8 @@ async function importData(file) {
 /* ------------------------------------------------------------------ *
  * Boot
  * ------------------------------------------------------------------ */
+/* A reload starts on the home screen: a step of "My results" or "Settings" becomes a step of the home screen. */
+try { if (history.state && history.state.screen) history.replaceState(null, ''); } catch { /* ignore */ }
 initStore().then(maybeReopen);
 render();
 </script>

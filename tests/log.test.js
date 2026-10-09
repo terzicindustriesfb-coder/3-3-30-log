@@ -7,7 +7,7 @@ const profile = over => h.profile(Object.assign({ rotate: true }, over));
 const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
-const toProgress = page => page.click('#tabs [data-tab="progress"]');
+const toProgress = page => page.click('#view [data-act="screen"][data-screen="results"]');
 const cells = async (page, i) => [await txt(page, `.lg-row >> nth=${i} >> .lg-date`), await txt(page, `.lg-row >> nth=${i} >> .lg-tpl`), await txt(page, `.lg-row >> nth=${i} >> .lg-reps`)];
 
 test('a row per workout: date, letter, reps and the short verdict', async () => {

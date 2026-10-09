@@ -32,9 +32,9 @@ test('the link is there in every situation but a workout in progress', async () 
 });
 test('Training days moved out of Settings, and the explanation moved in', async () => {
   const page = await openApp({ sessions: abc() });
-  await page.evaluate(() => ACT.settings());
-  assert.equal(await page.locator('#sheet .daypick').count(), 0);
-  assert.equal(await page.locator('#sheet details.how .legend p').count(), 3);
+  await page.click('#view [data-act="screen"][data-screen="settings"]');
+  assert.equal(await page.locator('#view .daypick').count(), 0);
+  assert.equal(await page.locator('#view details.how .legend p').count(), 3);
 });
 test('changing the usual days starts today', async () => {
   const page = await openApp({ sessions: [first()] });                                   // Monday 12 Oct was missed

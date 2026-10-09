@@ -7,9 +7,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const sam = () => ({ id: 'sam', profile: profile({ nick: 'Sam' }), sessions: threeWeeks() });
 const visit = async page => {
-  for (const act of ['plan', 'week', 'swap', 'settings', 'manual']) { await page.evaluate(a => ACT[a](), act); await page.keyboard.press('Escape'); }
+  for (const act of ['plan', 'week', 'swap', 'manual']) { await page.evaluate(a => ACT[a](), act); await page.keyboard.press('Escape'); }
   await page.click('.wo .ex-row'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await page.keyboard.press('Escape');
-  await page.click('#tabs [data-tab="progress"]'); await page.click('.sc-row'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="screen"][data-screen="settings"]'); await page.click('#view [data-act="back"]');
+  await page.click('#view [data-act="screen"][data-screen="results"]'); await page.click('.sc-row'); await page.keyboard.press('Escape');
 };
 
 for (const dark of [false, true]) for (const width of [390, 320]) {

@@ -7,7 +7,7 @@ const profile = over => h.profile(Object.assign({ rotate: true }, over));
 const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
-const open = async (page, key) => { await page.click('#tabs [data-tab="progress"]'); await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]'); await page.click(`.sc-row[data-ex="${key}"]`); };
+const open = async (page, key) => { await page.click('#view [data-act="screen"][data-screen="results"]'); await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]'); await page.click(`.sc-row[data-ex="${key}"]`); };
 
 test('charts and every score of one exercise', async () => {
   const page = await openApp({ today: '2026-10-21', sessions: threeWeeks() });
@@ -25,7 +25,7 @@ test('one score waits for a second, and a cut block is marked', async () => {
 });
 test('bodyweight counts reps only', async () => {
   const page = await openApp({ today: '2026-10-16', sessions: [session('2026-10-07', 'B', [30, 8, 40]), session('2026-10-14', 'B', [30, 10, 40])] });
-  await page.click('#tabs [data-tab="progress"]');
+  await page.click('#view [data-act="screen"][data-screen="results"]');
   await page.click('.sc [data-act="scoreTpl"][data-tpl="B"]');
   await page.click('.sc-row[data-ex="optrekken"]');
   assert.equal(await page.locator('[data-sheet="exHistory"] .pg-svg svg').count(), 1);
@@ -35,7 +35,7 @@ test('bodyweight counts reps only', async () => {
 test('a buddy’s exercise opens the same way', async () => {
   const sam = { id: 'sam', profile: profile({ nick: 'Sam' }), sessions: threeWeeks() };
   const page = await openApp({ today: '2026-10-21', sessions: [first()], crew: [sam] });
-  await page.click('#tabs [data-tab="progress"]');
+  await page.click('#view [data-act="screen"][data-screen="results"]');
   await page.click('[data-act="person"][data-id="sam"]');
   await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]');
   await page.click('.sc-row[data-ex="kabelroeien"]');
@@ -43,7 +43,7 @@ test('a buddy’s exercise opens the same way', async () => {
 });
 test('an exercise without a score says so', async () => {
   const page = await openApp({ today: '2026-10-07', sessions: [first()] });
-  await page.click('#tabs [data-tab="progress"]');
+  await page.click('#view [data-act="screen"][data-screen="results"]');
   await page.click('.sc-row[data-ex="optrekken"]');
   assert.deepEqual([await txt(page, '[data-sheet="exHistory"] .sheet-head .eyebrow'), await txt(page, '[data-sheet="exHistory"] .sheet-head .h2')], ['Pull', 'Pull-ups']);
   assert.equal(await txt(page, '[data-sheet="exHistory"] .empty'), 'No score yet.');
@@ -51,7 +51,7 @@ test('an exercise without a score says so', async () => {
 });
 test('a pair of dumbbells, one rep, and focus back on the row', async () => {
   const page = await openApp({ today: '2026-10-16', sessions: [session('2026-10-07', 'B', [30, 8, 40]), session('2026-10-14', 'B', [1, 10, 40], { kg: [24, 0, 32] })] });
-  await page.click('#tabs [data-tab="progress"]');
+  await page.click('#view [data-act="screen"][data-screen="results"]');
   await page.click('.sc [data-act="scoreTpl"][data-tpl="B"]');
   await page.click('.sc-row[data-ex="db-schouderdrukken"]');
   assert.equal(await page.locator('[data-sheet="exHistory"] .pg-svg svg').count(), 2);

@@ -7,7 +7,7 @@ const profile = over => h.profile(Object.assign({ rotate: true }, over));
 const openApp = opts => h.openApp(Object.assign({ profile: profile() }, opts));
 after(closeAll);
 
-const toProgress = page => page.click('#tabs [data-tab="progress"]');
+const toProgress = page => page.click('#view [data-act="screen"][data-screen="results"]');
 const pickA = page => page.click('.sc [data-act="scoreTpl"][data-tpl="A"]');
 
 test('the score row of an exercise', async () => {

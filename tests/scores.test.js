@@ -60,7 +60,7 @@ test('nothing planned, nothing lifted and before the start', async () => {
   await toProgress(empty);
   assert.equal(await txt(empty, '.pw-n'), 'Nothing planned this week.');
   assert.equal(await empty.locator('.pw-kg').count(), 0);
-  const pre = await openApp({ profile: profile({ start: '2026-10-19' }) });
+  const pre = await openApp({ profile: profile({ joined: at('2026-10-19'), start: '2026-10-19' }) });
   await toProgress(pre);
   assert.equal(await pre.locator('.pw').count(), 0);
   assert.equal(await pre.locator('.sc').count(), 1);

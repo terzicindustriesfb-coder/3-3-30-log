@@ -25,9 +25,6 @@ test('a date limits which workouts are looked at', async () => {
   const page = await openApp({ sessions: [first(), session('2026-10-09', 'B', [30, 8, 40])] });
   assert.deepEqual([await next(page, '2026-10-07'), await next(page, '2026-10-09')], ['B', 'C']);
 });
-test('a workout still in progress today does not move the letter', async () => {
-  assert.equal(await next(await openApp({ sessions: [first(), session('2026-10-14', 'B', [10, 0, 0], { status: 'active' })] })), 'B');
-});
 test('same every time has no order', async () => {
   assert.equal(await next(await openApp({ sessions: [first()], profile: profile({ rotate: false }) })), 'A');
 });
@@ -46,4 +43,16 @@ test('logging a past workout suggests the letter for its date', async () => {
   assert.equal(await txt(page, '#sheet [data-act="formTpl"][aria-pressed="true"]'), 'C');
   await page.fill('#sDate', '2026-10-07');
   assert.equal(await txt(page, '#sheet [data-act="formTpl"][aria-pressed="true"]'), 'B');
+});
+test('a workout that is being done today keeps its letter, and the next letter moves on', async () => {
+  const page = await openApp({ sessions: [first(), session('2026-10-14', 'B', [10, 0, 0], { status: 'active' })] });
+  assert.deepEqual(await page.evaluate(() => [turnTpl(), nextTpl(S.uid)]), ['B', 'C']);
+});
+test('without a workout today the turn is the next letter, or the one picked in Swap workout', async () => {
+  const page = await openApp({ sessions: [first()] });
+  assert.deepEqual(await page.evaluate(() => { const a = turnTpl(); UI.tpl = 'C'; return [a, turnTpl(), turnTpl('nobody')]; }), ['B', 'C', 'A']);
+});
+test('without turns it is always A, whatever today’s workout says', async () => {
+  const page = await openApp({ profile: profile({ rotate: false }), sessions: [first(), session('2026-10-14', 'B', [10, 0, 0])] });
+  assert.equal(await page.evaluate(() => turnTpl()), 'A');
 });

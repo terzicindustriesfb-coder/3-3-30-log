@@ -38,7 +38,7 @@ test('dumbbell pairs and assisted bodyweight work read as the person changed the
   assert.deepEqual(await verdicts(page, 's-2026-10-14-B'), ['+4 kg', '−10 kg', 'same as last time']);
 });
 test('a practice workout has no summary', async () => {
-  const page = await openApp({ sessions: [first()], profile: profile({ start: '2026-10-19' }) });
+  const page = await openApp({ sessions: [first()], profile: profile({ joined: at('2026-10-19'), start: '2026-10-19' }) });
   assert.equal(await summary(page, 's-2026-10-05-A'), '');
 });
 test('the finish screen shows reps first, with the verdict under them', async () => {
@@ -57,7 +57,7 @@ test('the finish screen shows reps first, with the verdict under them', async ()
   assert.deepEqual(await texts(page, '#runner .run > .btn'), ['Save workout', 'Back to the last exercise']);
 });
 test('the finish screen of a practice workout has no verdicts', async () => {
-  const page = await openApp({ today: '2026-10-05', profile: profile({ start: '2026-10-12' }) });
+  const page = await openApp({ today: '2026-10-05', profile: profile({ joined: at('2026-10-12'), start: '2026-10-12' }) });
   await page.evaluate(() => {
     openRunner(false, 'A');
     R.session.blocks.forEach(b => { b.sets = [{ r: 9, kg: b.kg, t: 300 }]; b.total = 9; b.done = true; b.dur = 600; });

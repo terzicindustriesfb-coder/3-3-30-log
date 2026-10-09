@@ -1063,7 +1063,16 @@ function displayName(id) {
   return nameless.length > 1 ? `Buddy ${others.indexOf(id) + 1}` : 'Training buddy';
 }
 
-const startOf = id => S.members.get(id)?.profile?.start || START;
+/* The start date: the Monday of the week a person joined, but never before the method's first Monday, or
+   their stored start date when that is earlier. Workouts before it are practice. Nothing is written back. */
+function startOf(id) {
+  const p = S.members.get(id)?.profile;
+  const stored = p?.start || START;
+  if (!p?.joined) return stored;
+  const mon = mondayOf(ymd(new Date(p.joined)));
+  const first = mon < START ? START : mon;
+  return first < stored ? first : stored;
+}
 function sessionsOf(id) {
   const m = S.members.get(id);
   if (!m) return [];
@@ -1071,18 +1080,16 @@ function sessionsOf(id) {
     .filter(Boolean)
     .sort((a, b) => (a.date === b.date ? (a.startedAt || 0) - (b.startedAt || 0) : a.date < b.date ? -1 : 1));
 }
-const doneBlocks = s => (s.blocks || []).filter(b => b.done && !b.skipped && b.total > 0);
+const isDone = b => !!b && !!b.done && !b.skipped && b.total > 0;
+const doneBlocks = s => (s.blocks || []).filter(isDone);
 const countsAsTraining = s => doneBlocks(s).length > 0;
 const isTrial = (s, id) => s.date < startOf(id);
-/* A workout that is over: at least one finished block, not the one open on this device,
-   and either saved as done or left behind on an earlier day. */
-function finished(id, today = todayYmd()) {
-  const draftId = id === S.uid ? loadDraft()?.session.id : null;
-  return s => countsAsTraining(s) && s.id !== draftId && (s.status === 'done' || s.date < today);
-}
-/* Trainings that count: finished, on or after the start date. */
-function trainings(id, today = todayYmd()) {
-  const over = finished(id, today);
+/* A workout counts from its first finished exercise, whatever its status and whether or not it is open
+   on this device (an exercise is only stored once its ten minutes are over). */
+function finished(id) { return countsAsTraining; }
+/* Trainings that count: at least one finished exercise, on or after the start date. */
+function trainings(id) {
+  const over = finished(id);
   return sessionsOf(id).filter(s => over(s) && !isTrial(s, id));
 }
 function scoresOf(id, exKey, beforeSessionId) {
@@ -1269,6 +1276,25 @@ function nextTpl(id, upTo) {
 }
 function planFor(profile, tpl) {
   return Object.assign({}, DEFAULT_PLANS.A, profile?.plans?.[tpl] || profile?.plans?.A || {});
+}
+/* Today's workout: the newest one dated today (the list is sorted by start time). */
+function todaySession(id = S.uid, today = todayYmd()) {
+  const mine = sessionsOf(id).filter(s => s.date === today);
+  return mine.length ? mine[mine.length - 1] : null;
+}
+/* The workout whose turn it is: always A without turns; the letter of today's workout once that counts;
+   otherwise the letter picked in Swap workout (your own only) or the next one in line. */
+function turnTpl(id = S.uid, today = todayYmd()) {
+  if (!rotates(S.members.get(id)?.profile)) return 'A';
+  const s = todaySession(id, today);
+  if (s && countsAsTraining(s)) return s.tpl;
+  return (id === S.uid && UI.tpl) || nextTpl(id);
+}
+/* The week counter: workouts that count in this Monday-to-Sunday week, against a goal of three. */
+function weekCount(id, today = todayYmd()) {
+  const mon = mondayOf(today);
+  const n = trainings(id).filter(s => mondayOf(s.date) === mon).length;
+  return n <= 3 ? { n, text: `${n} of 3 workouts`, short: `${n} of 3` } : { n, text: `${n} workouts this week`, short: `${n} workouts` };
 }
 /* Weekday numbers (0 = Sunday) planned in the week that starts on `mon`: this week's own list
    when it has one, otherwise the usual training days. */
@@ -3271,7 +3297,7 @@ async function exportData(fmt) {
     for (const s of sessions) for (const b of s.blocks || []) {
       if (!b.done || b.skipped) continue;
       const info = exInfo(b.ex, p);
-      rows.push([s.date, isTrial(s, S.uid) ? 'practice' : weekNo(s.date, p?.start || START), s.tpl || 'A', SLOT[b.slot]?.label, blockName(b, p),
+      rows.push([s.date, isTrial(s, S.uid) ? 'practice' : weekNo(s.date, startOf(S.uid)), s.tpl || 'A', SLOT[b.slot]?.label, blockName(b, p),
         dec(b.kg), b.total, dec(Math.round(blockVolume(b) * 10) / 10), setsText(b, info).replace(/ · /g, ' '), b.cut ? 'yes' : '', FEEL[(s.feel || 0) - 1] || '', s.note || '']);
     }
     data = '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\r\n');

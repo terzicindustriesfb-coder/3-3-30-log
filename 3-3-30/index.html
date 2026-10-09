@@ -1789,7 +1789,7 @@ function viewSettings() {
   const onoff = (key, title, sub) => `<div class="st-row"><span><b>${title}</b><span class="st-sub">${sub}</span></span>
       <button type="button" class="st-onoff" data-act="pref" data-pref="${key}" aria-pressed="${!!prefs[key]}" aria-label="${title}: ${prefs[key] ? 'on. Tap to turn off.' : 'off. Tap to turn on.'}">${prefs[key] ? ICON.check + 'On' : 'Off'}</button></div>`;
   const link = (attrs, title, sub) => `<button type="button" class="st-link" ${attrs}><span><b>${title}</b>${sub ? `<span class="st-sub">${sub}</span>` : ''}</span>${CHEV}</button>`;
-  const more = (key, title, body) => link(`data-act="more" data-more="${key}" aria-expanded="${!!UI.more[key]}"`, title, '') + (UI.more[key] ? `<div class="st-more">${body}</div>` : '');
+  const more = (key, title, sub, body) => link(`data-act="more" data-more="${key}" aria-expanded="${!!UI.more[key]}"`, title, sub) + (UI.more[key] ? `<div class="st-more">${body}</div>` : '');
   const seen = 'Then you see their week on the home screen and their scores under My results.';
   const buddy = WEB
     ? `<p>Send them the link to this page and your crew code. They sign in, type the code once and tap Let’s go. ${seen}</p>`
@@ -1825,8 +1825,8 @@ function viewSettings() {
       </section></div>
     <div class="st"><span class="st-h">More</span>
       <section class="card st-card" aria-label="More">
-        ${shared ? more('buddy', 'Train with a buddy', buddy) : ''}
-        ${more('how', 'How 3-3-30 works', how)}
+        ${shared ? more('buddy', 'Train with a buddy', 'How to let someone join your log', buddy) : ''}
+        ${more('how', 'How 3-3-30 works', 'The method in five lines', how)}
         ${WEB ? link('data-act="signOut"', 'Sign out', `Signed in as ${esc(WEB.who())}`) : ''}
       </section></div>
     ${shared ? '' : '<p class="tiny st-local">Your workouts are saved on this device only.</p>'}`;

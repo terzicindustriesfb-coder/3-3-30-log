@@ -20,7 +20,7 @@ test('every row says in words what it does', async () => {
   assert.deepEqual([await texts(page, '#view .st-onoff'), await pressed(page), await page.locator('#view .st-onoff svg').count()], [['On', 'On'], ['true', 'true'], 2]);
   assert.equal(await page.locator('#view .st-onoff[data-pref="sound"]').getAttribute('aria-label'), 'Beeps: on. Tap to turn off.');
   assert.deepEqual(await texts(page, '#view .st-link b'), ['Save a backup', 'Restore a backup', 'Open in Excel', 'How 3-3-30 works']);
-  assert.deepEqual(await texts(page, '#view .st-link .st-sub'), ['A file with all your workouts', 'Put back a file you saved before', 'All your workouts as a .csv file']);
+  assert.deepEqual(await texts(page, '#view .st-link .st-sub'), ['A file with all your workouts', 'Put back a file you saved before', 'All your workouts as a .csv file', 'The method in five lines']);
   assert.equal(await txt(page, '#view .st-local'), 'Your workouts are saved on this device only.');
 });
 test('the name is saved when you leave the field', async () => {
@@ -84,6 +84,7 @@ test('Train with a buddy and How 3-3-30 works open in place', async () => {
   const page = await openApp({ crew: [] });
   await toSettings(page);
   assert.deepEqual(await texts(page, '#view .st-link[data-act="more"] b'), ['Train with a buddy', 'How 3-3-30 works']);
+  assert.deepEqual(await texts(page, '#view .st-link[data-act="more"] .st-sub'), ['How to let someone join your log', 'The method in five lines']);
   assert.equal(await page.locator('#view .st-more, #view .st-local').count(), 0);
   await page.click('#view [data-act="more"][data-more="buddy"]');
   assert.equal(await page.locator('#view [data-act="more"][data-more="buddy"]').getAttribute('aria-expanded'), 'true');

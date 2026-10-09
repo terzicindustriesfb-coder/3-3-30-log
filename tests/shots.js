@@ -7,32 +7,45 @@
      npm install --no-save @fontsource-variable/archivo @fontsource-variable/instrument-sans */
 const fs = require('node:fs');
 const path = require('node:path');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks } = require('./helpers');
+const { openApp, closeAll, profile, session, first, abc, threeWeeks, forward } = require('./helpers');
 
 const OUT = path.join(__dirname, '..', 'shots');
 const WIDTH = 390, HEIGHT = 844;
 
+const QUIET = { sound: false, lead: false };
 const sam = () => ({ id: 'sam', profile: profile({ nick: 'Sam' }), sessions: threeWeeks() });
-const act = name => page => page.evaluate(n => ACT[n](), name);
-const pushRow = page => page.click('.wo .ex-row[data-slot="push"]');
-const progressA = async page => { await page.click('#tabs [data-tab="progress"]'); await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]'); };
+const to = screen => page => page.click(`#view [data-act="screen"][data-screen="${screen}"]`);
+const start = async (page, reps = [], after = 0) => {
+  await page.click('.xc[data-slot="push"] [data-act="start"]');
+  for (const n of reps) await page.click(`.xc .pad [data-act="set"][data-n="${n}"]`);
+  if (after) await forward(page, after);
+};
+const change = page => page.click('.xc[data-slot="push"] [data-act="editEx"]');
 
 /* name, what the app opens with, what to do before the picture */
 const SHOTS = [
-  ['today-train', { sessions: abc(), crew: [sam()] }],
-  ['today-rest', { today: '2026-10-13', sessions: abc() }],
-  ['today-done', { today: '2026-10-05', sessions: [first()] }],
-  ['sheet-plan', { sessions: abc() }, act('plan')],
-  ['sheet-week', { sessions: abc() }, act('week')],
-  ['sheet-swap', { sessions: abc() }, act('swap')],
-  ['sheet-exercise', { sessions: abc() }, pushRow],
-  ['sheet-pick', { sessions: abc() }, async page => { await pushRow(page); await page.click('[data-act="exPick"]'); }],
-  ['sheet-new', { sessions: abc() }, async page => { await pushRow(page); await page.click('[data-act="exPick"]'); await page.fill('#exSearch', 'Landmine press'); await page.click('[data-act="exNew"]'); }],
-  ['sheet-log', { sessions: abc() }, act('manual')],
-  ['progress', { today: '2026-10-21', sessions: threeWeeks() }, progressA],
-  ['progress-buddy', { today: '2026-10-21', sessions: [first(), session('2026-10-12', 'B', [30, 8, 40])], crew: [sam()] },
-    async page => { await page.click('#tabs [data-tab="progress"]'); await page.click('[data-act="person"][data-id="sam"]'); await page.click('.sc [data-act="scoreTpl"][data-tpl="A"]'); }],
-  ['sheet-history', { today: '2026-10-21', sessions: threeWeeks() }, async page => { await progressA(page); await page.click('.sc-row[data-ex="schouderdrukken"]'); }],
+  ['welcome', { profile: null }],
+  ['home', { today: '2026-10-09', sessions: [first()] }],
+  ['home-buddy', { sessions: abc(), crew: [sam()] }],
+  ['home-one-done', { sessions: [first(), session('2026-10-14', 'A', [68, 0, 0])] }],
+  ['home-done', { sessions: [first(), session('2026-10-14', 'A', [68, 80, 93])] }],
+  ['home-turns', { profile: profile({ rotate: true }), sessions: [first()] }],
+  ['card-countdown', { sessions: [first()], prefs: { sound: false, lead: true } }, page => start(page)],
+  ['card-running', { sessions: [first()], prefs: QUIET }, page => start(page, [8, 8, 7], 198)],
+  ['card-paused', { sessions: [first()], prefs: QUIET }, async page => { await start(page, [8, 8, 7], 198); await page.click('.clockbtn'); }],
+  ['card-time-up', { sessions: [first()], prefs: QUIET }, async page => { await start(page, [8, 8, 7, 7, 6, 6, 6, 5, 5, 5, 5], 600); await page.waitForFunction(() => R.saved === 'saved'); }],
+  ['card-stopped-early', { sessions: [first()], prefs: QUIET }, async page => { await start(page, [8, 8, 7], 198); await page.click('.clockbtn'); await page.click('.xc [data-act="stopSave"]'); await page.waitForFunction(() => R.saved === 'saved'); }],
+  ['results', { today: '2026-10-21', sessions: threeWeeks() }, to('results')],
+  ['results-buddy', { today: '2026-10-21', sessions: [first()], crew: [sam()] }, async page => { await to('results')(page); await page.click('[data-act="person"][data-id="sam"]'); }],
+  ['results-turns', { profile: profile({ rotate: true }), sessions: abc() }, to('results')],
+  ['settings', { sessions: [first()] }, to('settings')],
+  ['settings-open', { sessions: [first()], crew: [] }, async page => { await to('settings')(page); await page.click('[data-act="more"][data-more="buddy"]'); await page.click('[data-act="more"][data-more="how"]'); }],
+  ['sheet-exercise', { sessions: abc() }, change],
+  ['sheet-pick', { sessions: abc() }, async page => { await change(page); await page.click('[data-act="exPick"]'); }],
+  ['sheet-new', { sessions: abc() }, async page => { await change(page); await page.click('[data-act="exPick"]'); await page.fill('#exSearch', 'Landmine press'); await page.click('[data-act="exNew"]'); }],
+  ['sheet-add', { sessions: abc() }, page => page.evaluate(() => ACT.manual())],
+  ['sheet-edit', { sessions: [first(), session('2026-10-14', 'A', [68, 0, 0])] }, page => page.click('.xc[data-form="done"]')],
+  ['sheet-swap', { profile: profile({ rotate: true }), sessions: [first()] }, page => page.click('#view [data-act="swap"]')],
 ];
 
 /* The two typefaces as @font-face rules with the files inlined, or '' when the packages are not installed. */
@@ -55,7 +68,7 @@ function fontCss() {
       const page = await openApp(Object.assign({ width: WIDTH, height: HEIGHT, dark }, opts));
       if (fonts) { await page.addStyleTag({ content: fonts }); await page.evaluate(() => document.fonts.ready); }
       if (prepare) await prepare(page);
-      // Make the window as tall as what has to be seen, so the bottom switch and a sheet sit where they belong.
+      // Make the window as tall as what has to be seen, so the page and a sheet sit where they belong.
       const need = await page.evaluate(() => {
         const panel = document.querySelector('#sheet:not([hidden]) .sheet-panel');
         return Math.ceil(panel ? panel.scrollHeight / 0.92 + 24 : document.documentElement.scrollHeight);

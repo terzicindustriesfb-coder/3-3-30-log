@@ -1,24 +1,42 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at } = require('./helpers');
+const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward } = require('./helpers');
 after(closeAll);
 
 const fs = require('node:fs');
 const path = require('node:path');
 const sam = () => ({ id: 'sam', profile: profile({ nick: 'Sam' }), sessions: threeWeeks() });
-const visit = async page => {
-  for (const act of ['swap', 'manual']) { await page.evaluate(a => ACT[a](), act); await page.keyboard.press('Escape'); }
-  await page.click('.xc [data-act="editEx"]'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await page.keyboard.press('Escape');
-  await page.click('#view [data-act="screen"][data-screen="settings"]'); await page.click('#view [data-act="back"]');
-  await page.click('#view [data-act="screen"][data-screen="results"]'); await page.click('.rt-row'); await page.keyboard.press('Escape');
+const visit = async (page, width) => {
+  const ok = async where => {
+    assert.deepEqual(page.__errors, [], where);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width, where);
+  };
+  const home = () => page.waitForFunction(() => UI.screen === 'home' && document.querySelector('#view .home-nav'));
+  await ok('home');
+  await page.click('.xc [data-act="editEx"]'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await ok('exercise sheet'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="swap"]'); await ok('swap sheet'); await page.keyboard.press('Escape');
+  await page.click('.xc[data-slot="push"] [data-act="start"]'); await ok('countdown');
+  await forward(page, 10); await page.click('.xc .pad [data-act="set"][data-n="8"]'); await ok('clock running');
+  await forward(page, 60); await page.click('.clockbtn'); await ok('paused');
+  await forward(page, 5); await page.click('.clockbtn'); await forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'saved'); await ok('time is up');
+  await page.click('.xc [data-act="cardDone"]'); await ok('one done');
+  await page.click('.xc[data-form="done"]'); await ok('edit sheet'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="screen"][data-screen="results"]'); await ok('results');
+  await page.click('#view [data-act="manual"]'); await ok('add sheet'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="resTpl"][data-tpl="B"]'); await page.click('.rt-row'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="person"][data-id="sam"]'); await ok('a buddy’s results');
+  await page.click('.rt-row'); await ok('a buddy’s workout'); await page.keyboard.press('Escape');
+  await page.click('#view [data-act="back"]'); await home();
+  await page.click('#view [data-act="screen"][data-screen="settings"]');
+  await page.click('#view [data-act="more"][data-more="buddy"]'); await page.click('#view [data-act="more"][data-more="how"]'); await ok('settings');
+  await page.click('#view [data-act="back"]'); await home(); await ok('home again');
 };
 
 for (const dark of [false, true]) for (const width of [390, 320]) {
-  test(`every screen and sheet opens cleanly (${dark ? 'dark' : 'light'}, ${width} px)`, async () => {
-    const page = await openApp({ dark, width, sessions: abc(), crew: [sam()] });
-    await visit(page);
-    assert.deepEqual(page.__errors, []);
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
+  test(`every screen, sheet and state of the clock opens cleanly (${dark ? 'dark' : 'light'}, ${width} px)`, async () => {
+    const page = await openApp({ dark, width, profile: profile({ rotate: true }), sessions: abc(), crew: [sam()], prefs: { sound: false, lead: true } });
+    await visit(page, width);
   });
 }
 test('the dark theme has its own ring colour', async () => {

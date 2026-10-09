@@ -1,7 +1,7 @@
 # 3-3-30 Log: drie kaarten
 
 Datum: 9 oktober 2026
-Status: ontwerp, ter controle
+Status: akkoord op 9 oktober 2026. Bouwplan: `superpowers/plans/2026-10-09-drie-kaarten.md`
 
 De schermontwerpen staan op de eerste pagina van het canvas "3-3-30 Log
 eenvoudiger: 3 opties". Dit document legt vast wat er gebouwd wordt en volgens
@@ -178,9 +178,10 @@ De knop zelf verandert zo:
 | De klok loopt | De tijd die over is, bijvoorbeeld "06:42", rood; de laatste tien seconden oranje. Een dunne balk loopt vol. Eronder "Tap to pause or stop" | Het totaal ("23 reps so far"), de zin "After each set, tap how many reps you did.", de toetsen en je sets |
 | Pauze | Dezelfde tijd, oranje, staat stil. Eronder "Paused · tap to go on" | De knoppen "Stop and save" en "Throw away", het totaal, de toetsen en je sets |
 
-De knop is in alle stappen even breed als "Start 10 minutes" en staat op dezelfde
-plek. Hij is hoger, zodat de cijfers van een afstand te lezen zijn. De cijfers
-zijn de bestaande ledcijfers van de klok.
+De knop staat in alle stappen op de plek van "Start 10 minutes" en is zo breed als
+de kaart, zoals getekend; "Change" staat er dan niet. Hij is hoger, zodat de
+cijfers van een afstand te lezen zijn. De cijfers zijn de bestaande ledcijfers
+van de klok.
 
 **Aftellen**
 
@@ -297,7 +298,8 @@ Van boven naar beneden:
 6. De kop "Charts" met de zin "Your reps per workout, one chart for each
    exercise."
 7. De kaart met drie grafieken.
-8. De hint "Tap a point in a chart to see that day."
+8. De hint "Tap a point in a chart to see that day.", alleen als er een lijn
+   getekend is.
 9. De knop "Add a workout by hand" (2.10).
 
 **De tabel**
@@ -343,8 +345,10 @@ Van boven naar beneden:
 
 **Bij een maatje** zie je hetzelfde scherm met zijn gegevens. De titel is dan
 "Sam’s results" en de uitleg "▲ means Sam beat the last score. Tap a day to see
-that workout." De knop "Add a workout by hand" ontbreekt. Heeft hij nog niets
-gelogd, dan staat er "Sam hasn’t logged a workout yet."
+that workout." De zin onder de titel is "Sam’s workouts, newest first. The
+numbers are the reps in 10 minutes." en die boven de grafieken "Sam’s reps per
+workout, one chart for each exercise." De knop "Add a workout by hand" ontbreekt.
+Heeft hij nog niets gelogd, dan staat er "Sam hasn’t logged a workout yet."
 
 ### 2.9 Settings
 
@@ -407,7 +411,8 @@ Kies je in "Settings" voor "3 workouts that take turns", dan:
 - loopt de volgorde door zoals nu: na A komt B, na B komt C;
 - staan in "My results" boven de tabel de knoppen "Workout A", "Workout B" en
   "Workout C". De tabel en de grafieken tonen die training. Standaard staat de
-  training die aan de beurt is.
+  training die aan de beurt is. Heb je een training nog nooit gedaan, dan staat
+  er in de tabel "No Workout B yet."
 
 De oefeningen van B en C pas je aan op het beginscherm, op een dag dat die
 training aan de beurt is of na "Do another workout".

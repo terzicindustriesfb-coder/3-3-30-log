@@ -10,13 +10,13 @@ const ID = 's-2026-10-12-A';
 
 test('same weight: up, level and down', async () => {
   const page = await openApp({ sessions: [first(), second([66, 77, 80])] });
-  assert.deepEqual(await verdicts(page, ID), ['▲ +4', 'same as last time', '▼ −5']);
+  assert.deepEqual(await verdicts(page, ID), ['▲ 4 more', 'same as last time', '▼ 5 fewer']);
   assert.equal(await page.evaluate(i => verdict(me().sessions.get(i).blocks[0], S.uid, i).tone, ID), 'pos');
   assert.equal(await summary(page, ID), '1 of 3 beaten');
 });
 test('another weight is named, not judged', async () => {
   const page = await openApp({ sessions: [first(), second([66, 80, 79], { kg: [35, 65, 80] })] });
-  assert.deepEqual(await verdicts(page, ID), ['▲ +4', '▲ +3', '+5 kg']);
+  assert.deepEqual(await verdicts(page, ID), ['▲ 4 more', '▲ 3 more', '+5 kg']);
   assert.equal(await summary(page, ID), '2 of 2 beaten · 1 heavier');
   const light = await openApp({ sessions: [first(), second([70, 77, 85], { kg: [30, 65, 75] })] });
   assert.deepEqual([await verdicts(light, ID), await summary(light, ID)], [['−5 kg', 'same as last time', 'same as last time'], '0 of 2 beaten · 1 lighter']);
@@ -40,6 +40,20 @@ test('dumbbell pairs and assisted bodyweight work read as the person changed the
 test('a practice workout has no summary', async () => {
   const page = await openApp({ sessions: [first()], profile: profile({ joined: at('2026-10-19'), start: '2026-10-19' }) });
   assert.equal(await summary(page, 's-2026-10-05-A'), '');
+});
+const longs = (page, id) => page.evaluate(i => { const s = me().sessions.get(i); return s.blocks.map(b => verdict(b, S.uid, s.id).long); }, id);
+test('the verdict as a sentence, for the result after ten minutes', async () => {
+  const page = await openApp({ sessions: [first(), second([66, 77, 80])] });
+  assert.deepEqual(await longs(page, ID), ['▲ 4 more than last time', 'Same as last time', '▼ 5 fewer than last time']);
+  const kg = await openApp({ sessions: [first(), second([60, 80, 79], { kg: [32.5, 65, 80] })] });
+  assert.deepEqual(await longs(kg, ID), ['Lighter than last time: −2.5 kg', '▲ 3 more than last time', 'Heavier than last time: +5 kg']);
+  const one = await openApp({ sessions: [session('2026-10-05', 'A', [62, 0, 85], { cut: [false, false, true] })] });
+  assert.deepEqual(await longs(one, 's-2026-10-05-A'), ['First score. Next time, beat this.', '', 'It counts, but it is not your next score to beat.']);
+});
+test('stopped early comes before every other verdict', async () => {
+  const page = await openApp({ sessions: [first(), second([70, 77, 85], { cut: [true, false, false] })] });
+  const v = await page.evaluate(i => { const s = me().sessions.get(i); const x = verdict(s.blocks[0], S.uid, s.id); return [x.kind, x.text, x.tone]; }, ID);
+  assert.deepEqual(v, ['cut', 'stopped early', '']);
 });
 test('the finish screen shows reps first, with the verdict under them', async () => {
   const page = await openApp({ today: '2026-10-05' });

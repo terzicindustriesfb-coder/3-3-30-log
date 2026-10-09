@@ -1174,19 +1174,21 @@ const VERDICT_TEXT = {
   lichter: 'Lighter weight, more reps.',
 };
 /* How one finished exercise did against the score to beat from before that workout.
-   Another weight is named, not judged; a block that stopped early is not compared. */
+   Another weight is named, not judged; a block that stopped early is not compared.
+   `text` is the short form for a card or a row, `long` the sentence for the result after the ten minutes. */
 function verdict(b, pid, sid) {
-  if (!b || !b.done || b.skipped || !(b.total > 0)) return { kind: 'skipped', text: 'skipped', tone: '' };
-  if (b.cut) return { kind: 'cut', text: 'stopped early', tone: '' };
+  const say = (kind, text, long, tone = '') => ({ kind, text, long, tone });
+  if (!b || !b.done || b.skipped || !(b.total > 0)) return say('skipped', 'skipped', '');
+  if (b.cut) return say('cut', 'stopped early', 'It counts, but it is not your next score to beat.');
   const prev = refBlock(scoresOf(pid, b.ex, sid));
-  if (!prev) return { kind: 'first', text: 'first score', tone: '' };
+  if (!prev) return say('first', 'first score', 'First score. Next time, beat this.');
   const dk = Math.round(((Number(b.kg) || 0) - (Number(prev.kg) || 0)) * 10) / 10;
-  if (dk > 0) return { kind: 'heavier', text: `+${fmtNum(dk)} kg`, tone: '' };
-  if (dk < 0) return { kind: 'lighter', text: `−${fmtNum(-dk)} kg`, tone: '' };
+  if (dk > 0) return say('heavier', `+${fmtNum(dk)} kg`, `Heavier than last time: +${fmtNum(dk)} kg`);
+  if (dk < 0) return say('lighter', `−${fmtNum(-dk)} kg`, `Lighter than last time: −${fmtNum(-dk)} kg`);
   const dr = b.total - (prev.total || 0);
-  if (dr > 0) return { kind: 'up', text: `▲ +${dr}`, tone: 'pos' };
-  if (dr < 0) return { kind: 'down', text: `▼ −${-dr}`, tone: '' };
-  return { kind: 'same', text: 'same as last time', tone: '' };
+  if (dr > 0) return say('up', `▲ ${dr} more`, `▲ ${dr} more than last time`, 'pos');
+  if (dr < 0) return say('down', `▼ ${-dr} fewer`, `▼ ${-dr} fewer than last time`);
+  return say('same', 'same as last time', 'Same as last time');
 }
 /* A whole workout in a few words, for the log: "2 of 2 beaten · 1 heavier". Nothing for a practice workout. */
 function sessionSummary(s, pid) {

@@ -916,7 +916,7 @@ Spec 2.9.
 - Produces:
   - `viewSettings()`: `backHtml()`, `h1.title` "Settings", then five groups, each a `div.st` that starts with its heading (`.st-h`), and under them, when the log is not shared, `p.tiny.st-local`. The groups:
     1. `label.st-h[for="nickIn"]` "Your name" and the existing `#nickIn` field.
-    2. "Your exercises": a `div[role="radiogroup"]` with two `button.st-opt[role="radio"][data-act="rotate"]`, `data-on="0"` and `data-on="1"`, `aria-checked` on the chosen one. Each holds `b` and `span.st-sub`.
+    2. "Your exercises": a `div.st-opts[role="radiogroup"]` with two `button.st-opt[role="radio"][data-act="rotate"]`, `data-on="0"` and `data-on="1"`, `aria-checked` on the chosen one. Each holds `b` and `span.st-sub`.
     3. "Sound and countdown": a card with two `div.st-row`, each `b`, `span.st-sub` and `button.st-onoff[data-act="pref"]` with `data-pref="sound"` or `data-pref="lead"`, `aria-pressed`, and the text `On` after a tick (`ICON.check`) or `Off`. Its `aria-label` is `Beeps: on. Tap to turn off.` / `Beeps: off. Tap to turn on.` (and the same with `Countdown`).
     4. "Backup": a card with three `button.st-link`: `data-act="export" data-fmt="json"`, `data-act="importPick"`, `data-act="export" data-fmt="csv"`; and the hidden `#importFile`.
     5. "More": a card with `button.st-link[data-act="more"][data-more="buddy"]` (only when the log is shared), `button.st-link[data-act="more"][data-more="how"]`, each with `aria-expanded` and, when open, a `div.st-more` right under it; on the website also `button.st-link[data-act="signOut"]`.
@@ -2549,10 +2549,10 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
 .xc-sets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 15px; color: var(--ink-2); }
 .xc-sets .setlist { min-height: 0; font-size: 15px; }
 .xc-setrow .btn.link { min-height: 44px; font-size: 15px; color: var(--ink); }
-.xc-result { border-radius: var(--r-lg); padding: 12px 16px 14px; background: var(--surface-2); display: grid; gap: 6px; }
+.xc-result { border-radius: var(--r-lg); padding: 12px 16px 14px; background: var(--surface-2); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 6px 10px; }
+.xc-result .eyebrow { grid-column: 1 / -1; }
 .xc-result.good { background: var(--good-wash); }
 .xc-result.good .eyebrow, .xc-result.good .xc-verdict { color: var(--good-ink); }
-.xc-rrow { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; }
 .xc-big .total { font-size: 48px; }
 .xc-result .xc-verdict { font-size: 15px; white-space: normal; text-align: right; }
 .xc-saved { font-size: 15px; }

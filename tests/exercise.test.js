@@ -78,7 +78,7 @@ test('your own exercise is renamed in place', async () => {
   await page.fill('#exName', 'Leg press machine');
   await save(page);
   assert.deepEqual(await page.evaluate(() => myProfile().custom.map(c => [c.k, c.n])), [['c-seated-leg-press', 'Leg press machine']]);
-  assert.equal(await page.evaluate(() => history(S.uid, 'c-seated-leg-press').length), 1);
+  assert.equal(await page.evaluate(() => scoresOf(S.uid, 'c-seated-leg-press').length), 1);
 });
 test('a bodyweight exercise explains minus kilos', async () => {
   const page = await openApp({ today: '2026-10-07', sessions: [first()] });

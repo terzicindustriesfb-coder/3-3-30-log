@@ -25,6 +25,10 @@ test('the dark theme has its own ring colour', async () => {
   const dark = await (await openApp({ dark: true })).evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ring').trim());
   assert.deepEqual([light, dark], ['#C9C4B8', '#4B515A']);
 });
+test('no function of the app hides the browser’s own history', async () => {
+  const page = await openApp({ sessions: [first()] });
+  assert.deepEqual(await page.evaluate(() => [typeof history.pushState, scoresOf(S.uid, 'schouderdrukken').length]), ['function', 1]);
+});
 test('nothing of the old screens is left in the source', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', '3-3-30', 'index.html'), 'utf8');
   for (const gone of ['templateFor', 'nextTrainingDay', 'beatPrev', 'logTable', 'logCell', 'viewLog', 'chartEx', 'exByName', 'resolveExercise',

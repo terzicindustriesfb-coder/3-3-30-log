@@ -1082,7 +1082,7 @@ function trainings(id, today = todayYmd()) {
   const over = finished(id, today);
   return sessionsOf(id).filter(s => over(s) && !isTrial(s, id));
 }
-function history(id, exKey, beforeSessionId) {
+function scoresOf(id, exKey, beforeSessionId) {
   const over = finished(id);
   const out = [];
   for (const s of sessionsOf(id)) {
@@ -1149,7 +1149,7 @@ const VERDICT_TEXT = {
 function verdict(b, pid, sid) {
   if (!b || !b.done || b.skipped || !(b.total > 0)) return { kind: 'skipped', text: 'skipped', tone: '' };
   if (b.cut) return { kind: 'cut', text: 'stopped early', tone: '' };
-  const prev = refBlock(history(pid, b.ex, sid));
+  const prev = refBlock(scoresOf(pid, b.ex, sid));
   if (!prev) return { kind: 'first', text: 'first score', tone: '' };
   const dk = Math.round(((Number(b.kg) || 0) - (Number(prev.kg) || 0)) * 10) / 10;
   if (dk > 0) return { kind: 'heavier', text: `+${fmtNum(dk)} kg`, tone: '' };
@@ -1177,7 +1177,7 @@ function sessionSummary(s, pid) {
    that ran the ten minutes), or at all scores when none is full. state: 'none' | 'one' | 'same' (the last
    two at the same weight) | 'changed'. */
 function scoreRow(pid, key) {
-  const hist = history(pid, key);
+  const hist = scoresOf(pid, key);
   const full = hist.filter(h => !h.cut);
   const list = full.length ? full : hist;
   if (!list.length) return { state: 'none', series: [] };
@@ -1250,7 +1250,7 @@ function plannedKg(profile, key) {
   const info = exInfo(key, profile);
   const w = profile?.weights && Object.hasOwn(profile.weights, key) ? profile.weights[key] : null;
   if (w != null) return { kg: w, suggested: false };
-  const hist = history(S.uid, key);
+  const hist = scoresOf(S.uid, key);
   if (hist.length) return { kg: hist[hist.length - 1].kg, suggested: false };
   return { kg: info.start ?? 0, suggested: true };
 }
@@ -1371,7 +1371,7 @@ function nameProblem(profile, name, key) {
    same way, so they always swap. A pair of dumbbells and bodyweight do not, so those only while
    the exercise has no scores. */
 function allowedEqs(id, key) {
-  if (!history(id, key).length) return EQUIP_ORDER.slice();
+  if (!scoresOf(id, key).length) return EQUIP_ORDER.slice();
   const cur = eqOf(exInfo(key, S.members.get(id)?.profile));
   const plain = ['barbell', 'db', 'machine'];
   return plain.includes(cur) ? plain : [cur];
@@ -1669,7 +1669,7 @@ function viewToday(p) {
 function exRow(p, tpl, slot, key) {
   const info = exInfo(key, p);
   const pk = plannedKg(p, key);
-  const ref = refBlock(history(S.uid, key));
+  const ref = refBlock(scoresOf(S.uid, key));
   const goal = ref
     ? `<span class="goal-n">${ref.total}</span><span class="goal-l">${Number(pk.kg) > Number(ref.kg) ? 'reps to match' : 'reps to beat'}</span>`
     : '<span class="goal-l">First time</span>';
@@ -1687,7 +1687,7 @@ function draftRow(b, p) {
 /* The go-heavier tip, as one tap (or a "not now" that this device remembers). */
 function upHint(p, key, exclude) {
   const info = exInfo(key, p);
-  const adv = advice(history(S.uid, key).filter(h => h.sid !== exclude), info);
+  const adv = advice(scoresOf(S.uid, key).filter(h => h.sid !== exclude), info);
   if (adv.first || adv.up == null || Number(plannedKg(p, key).kg) >= adv.up) return '';
   if ((prefs.noUp || {})[key] === adv.up) return '';
   return `<div class="up"><span class="grow">${esc(info.n)} went well. Go up to ${esc(kgLabel(adv.up, info))}?</span><button class="btn sm good" data-act="applyUp" data-ex="${esc(key)}" data-kg="${adv.up}">Yes</button><button class="btn sm link" data-act="skipUp" data-ex="${esc(key)}" data-kg="${adv.up}">Not now</button></div>`;
@@ -2149,7 +2149,7 @@ function updateClock(rem, lead) {
 
 function prevBlock() {
   const b = blk();
-  return refBlock(history(S.uid, b.ex, R.session.id));
+  return refBlock(scoresOf(S.uid, b.ex, R.session.id));
 }
 
 function renderRunner() {
@@ -2224,7 +2224,7 @@ function renderRunner() {
   let middle;
   if (R.phase === 'over') {
     const c = compare(liveB, prev);
-    const rk = tot > 0 ? recordKind(liveB, history(S.uid, b.ex, R.session.id)) : null;
+    const rk = tot > 0 ? recordKind(liveB, scoresOf(S.uid, b.ex, R.session.id)) : null;
     const title = rk === 'reps' ? 'New PR! 🎉' : rk === 'kg' ? 'New PR — heavier, same reps!' : !tot ? 'No reps logged.' : c ? (bigDrop(c, prev) ? (c.verdict === 'zwaarder' ? 'Heavier weight, fewer reps — it still counts.' : c.verdict === 'minder' ? 'Fewer reps than last time — it still counts.' : VERDICT_TEXT[c.verdict]) : VERDICT_TEXT[c.verdict]) : trial ? 'Practice block done.' : 'First score set.';
     middle = `<div class="result${rk ? ' pr' : ''}">
       <div class="row"><b class="v grow">${title}</b><b class="num" style="font-size:26px">${tot}<span class="tiny"> reps</span></b></div>
@@ -2521,7 +2521,7 @@ function exEditHtml(st) {
   const step = exStep(st);
   const stepNote = q.dbl ? `steps of ${fmtKg2(step / 2)}\u00a0kg per dumbbell` : `steps of ${fmtNum(step)}\u00a0kg${q.bw ? ' · minus = assist' : ''}`;
   const types = EQUIP_ORDER.map(k => `<button type="button" data-act="eq" data-eq="${k}" aria-pressed="${k === st.eq}"${allowed.includes(k) ? '' : ' disabled'}>${EQUIP[k].label}</button>`).join('');
-  const ref = refBlock(history(S.uid, st.key));
+  const ref = refBlock(scoresOf(S.uid, st.key));
   return `<form data-form="ex" data-view="edit" style="display:grid;gap:16px">
     <div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}${p.mode === 'abc' ? ' · Workout ' + esc(st.tpl) : ''}</div><b class="h2">Exercise</b></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
@@ -2548,7 +2548,7 @@ SHEETS.ex = { label: 'Exercise', html: exSheet };
 function exHistorySheet(st) {
   const prof = S.members.get(st.pid)?.profile;
   const info = exInfo(st.key, prof);
-  const hist = history(st.pid, st.key);
+  const hist = scoresOf(st.pid, st.key);
   const head = `<div class="sheet-head">${plateHtml(st.slot)}<div class="grow"><div class="eyebrow">${SLOT[st.slot].label}</div><b class="h2">${esc(info.n)}</b></div>
       <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>`;
   if (!hist.length) return `${head}<p class="small empty">No score yet.</p>`;
@@ -2841,7 +2841,7 @@ async function submitSessionForm(form) {
   let changed = false;
   for (const b of base.blocks) {
     if (!b.done) continue;
-    const later = history(S.uid, b.ex).some(h => h.sid !== base.id && h.date > base.date);
+    const later = scoresOf(S.uid, b.ex).some(h => h.sid !== base.id && h.date > base.date);
     const o = orig && orig.blocks.find(x => x.slot === b.slot);
     const touched = !o || !o.done || o.ex !== b.ex || o.kg !== b.kg;
     if (!later && touched && pp.weights[b.ex] !== b.kg) { pp.weights[b.ex] = b.kg; changed = true; }

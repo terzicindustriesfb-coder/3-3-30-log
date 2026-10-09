@@ -14,7 +14,7 @@ test('opens in shared mode with a buddy', async () => {
 test('a workout started today and not finished does not count', async () => {
   const page = await openApp({ sessions: [first(), session('2026-10-14', 'B', [10, 0, 0], { status: 'active' })] });
   assert.deepEqual(await page.evaluate(() => trainings(S.uid).map(s => s.id)), ['s-2026-10-05-A']);
-  assert.equal(await page.evaluate(() => history(S.uid, 'db-schouderdrukken').length), 0);
+  assert.equal(await page.evaluate(() => scoresOf(S.uid, 'db-schouderdrukken').length), 0);
 });
 test('an unfinished workout from an earlier day counts', async () => {
   const page = await openApp({ sessions: [first(), session('2026-10-12', 'B', [10, 0, 0], { status: 'active' })] });

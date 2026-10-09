@@ -96,3 +96,34 @@ test('with the same workout every time the list has one plan, and the form fits 
   assert.deepEqual(await opts(page, 'ex0', 'In your plan'), ['Overhead press']);
   assert.equal(await page.evaluate(() => { const el = document.querySelector('.sheet-panel'); return el.scrollWidth <= el.clientWidth; }), true);
 });
+test('the sheet is called Add a workout and offers Today and Yesterday', async () => {
+  const page = await openApp({ sessions: abc() });
+  await openLog(page);
+  assert.equal(await txt(page, '#sheet .h2'), 'Add a workout');
+  assert.equal(await page.locator('#sheet .sheet-panel').getAttribute('aria-label'), 'Add a workout');
+  assert.deepEqual(await texts(page, '#dateChips [data-act="pickDate"]'), ['Today', 'Yesterday']);
+  assert.equal(await page.locator('#sheet [data-act="formTpl"]').count(), 3);
+  const plain = await openApp({ sessions: abc(), profile: profile({ rotate: false }) });
+  await openLog(plain);
+  assert.equal(await plain.locator('#sheet [data-act="formTpl"]').count(), 0);
+});
+test('after saving nothing moves: the profile keeps its days and gets no week list', async () => {
+  const page = await openApp({ today: '2026-10-15', sessions: abc() });
+  await openLog(page);
+  await page.fill('#sDate', '2026-10-13');
+  await page.fill('[name="tot0"]', '30');
+  await page.click('#sheet button[type="submit"]');
+  await page.waitForSelector('#sheet', { state: 'hidden' });
+  assert.deepEqual(await page.evaluate(() => ['week' in myProfile(), myProfile().days]), [false, [1, 3, 5]]);
+  assert.equal(await page.evaluate(() => new Date(sessionsOf(S.uid).find(s => s.date === '2026-10-13').startedAt).getHours()), 12);
+});
+test('a workout added for today becomes today’s workout, and the cards follow it', async () => {
+  const card = session('2026-10-14', 'A', [68, 0, 0], { id: 'card', hm: '13:00' });
+  const page = await openApp({ time: '15:00', sessions: [first(), card], profile: profile({ rotate: false }) });
+  await openLog(page);
+  await page.fill('[name="tot1"]', '70');
+  await page.click('#sheet button[type="submit"]');
+  await page.waitForSelector('#sheet', { state: 'hidden' });
+  assert.deepEqual(await page.evaluate(() => { const t = todaySession(); return [t.id !== 'card', t.manual, t.blocks.map(b => b.total)]; }), [true, true, [0, 70, 0]]);
+  assert.deepEqual(await page.locator('#view .xc').evaluateAll(els => els.map(e => e.dataset.slot + ':' + e.dataset.form)), ['push:todo', 'pull:done', 'legs:todo']);
+});

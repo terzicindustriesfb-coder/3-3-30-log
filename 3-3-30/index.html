@@ -1043,16 +1043,11 @@ async function deleteSession(id) {
 /* ------------------------------------------------------------------ *
  * Domain logic
  * ------------------------------------------------------------------ */
-/* A late joiner starts this week, or next Monday when no training day is left this week. */
-function lateStart(today, days = [1, 3, 5]) {
-  if (today <= START) return START;
-  const mon = mondayOf(today);
-  return days.some(d => addDays(mon, (d + 6) % 7) >= today) ? mon : addDays(mon, 7);
-}
-function defaultProfile(nick, days = [1, 3, 5]) {
-  const today = todayYmd();
-  return { v: 1, nick: nick || '', joined: Date.now(), start: lateStart(today, days), days: days.slice(), mode: 'same',
-    plans: clone(DEFAULT_PLANS), custom: [], weights: {} };
+/* A new profile starts in the week it is made: its start date is that Monday, never before the method's first
+   Monday. It does the same three exercises every time. `days` is still written, for a page of the old version. */
+function defaultProfile(nick) {
+  const mon = mondayOf(todayYmd());
+  return { v: 1, nick: nick || '', joined: Date.now(), start: mon < START ? START : mon, days: [1, 3, 5], mode: 'same', plans: clone(DEFAULT_PLANS), custom: [], weights: {} };
 }
 /* An exercise as this person has it: the list entry with their own name and weight type laid over it,
    or one of their own exercises. */
@@ -1952,20 +1947,17 @@ function hasCrew() { return [...S.members.keys()].some(id => id !== S.uid && S.m
 function viewOnboarding() {
   const hint = S.meInfo?.name || '';
   const shared = S.mode === 'shared' && !S.ownLocal;
-  const today = todayYmd();
-  const ls = lateStart(today);
-  const when = today <= START ? `You start ${fmtLong(START)}.` : ls <= today ? 'You start this week.' : `You start ${fmtLong(ls)}.`;
   return `
     <div class="head">
       <div class="eyebrow">Welcome</div>
       <h1 class="title">3 workouts.<br>3 exercises.<br>30 minutes.</h1>
-      <p class="lead">Each workout is three 10-minute blocks: push, pull, legs. Do as many clean reps as you can, and beat it next time. ${esc(when)}</p>
+      <p class="lead">Each workout is three 10-minute blocks: push, pull, legs. Do as many clean reps as you can, and beat it next time.</p>
     </div>
     <form class="card" data-form="join">
       <label class="f" for="joinNick">Your name${shared && hasCrew() ? ' (your training buddy sees it)' : ''}
         <input type="text" id="joinNick" maxlength="30" value="${esc(UI.joinNick)}" placeholder="${esc(hint || 'First name')}" autocomplete="nickname" enterkeyhint="go"></label>
       <button class="btn primary xl" type="submit">Let’s go</button>
-      <p class="tiny">You train on Mon, Wed and Fri — change it any time in Your plan.${shared ? '' : ' Your workouts are saved on this device.'}</p>
+      <p class="tiny">You start with three standard exercises. Tap Change on a card to pick your own.${shared ? '' : ' Your workouts are saved on this device.'}</p>
     </form>
     <button class="btn link" data-act="importPick" style="justify-self:center">Restore a backup</button><input type="file" id="importFile" accept=".json,application/json" hidden>`;
 }
@@ -2729,7 +2721,7 @@ function sessionForm(s, isNew) {
     </div>`;
   }).join('');
   return `<form data-form="session" data-id="${esc(s.id)}" data-new="${isNew ? 1 : 0}" style="display:grid;gap:14px">
-    <div class="sheet-head"><b class="h2 grow">${isNew ? 'Log a past workout' : 'Edit workout'}</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
+    <div class="sheet-head"><b class="h2 grow">${isNew ? 'Add a workout' : 'Edit workout'}</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
     <label class="f" for="sDate">Date<input type="date" id="sDate" name="date" min="2020-01-01" max="${todayYmd()}" value="${esc(s.date)}" required></label>
     ${isNew ? `<div class="choices" id="dateChips" role="group" aria-label="Quick date" style="margin-top:-6px">${dateChips(s.date)}</div>` : ''}
     ${isNew && rotates(p) ? `<div class="row"><span class="small grow">Workout</span><div class="seg" role="group" aria-label="Which workout">${['A', 'B', 'C'].map(t => `<button type="button" data-act="formTpl" data-tpl="${t}" aria-pressed="${t === s.tpl}">${t}</button>`).join('')}</div></div>` : ''}
@@ -2739,18 +2731,10 @@ function sessionForm(s, isNew) {
     ${isNew ? '' : `<button type="button" class="btn danger" data-act="del" data-id="${esc(s.id)}">Delete this workout</button>`}
   </form>`;
 }
-/* Quick picks for the date of a logged workout: today, yesterday and recent unlogged training days. */
+/* Quick picks for the date of a workout added by hand: today and yesterday. */
 function dateChips(cur) {
-  const p = myProfile();
-  const today = todayYmd(), yday = addDays(today, -1);
-  const logged = new Set(sessionsOf(S.uid).map(s => s.date));
-  const out = [today, yday];
-  for (let i = 2; i <= 13 && out.length < 4; i++) {
-    const d = addDays(today, -i);
-    if (d < (p.start || START)) break;
-    if ((p.days || [1, 3, 5]).includes(parseYmd(d).getDay()) && !logged.has(d)) out.push(d);
-  }
-  return out.map(d => `<button type="button" data-act="pickDate" data-d="${d}" aria-pressed="${d === cur}">${d === today ? 'Today' : d === yday ? 'Yesterday' : esc(WD[parseYmd(d).getDay()] + ' ' + fmtDM(d))}</button>`).join('');
+  const today = todayYmd();
+  return [[today, 'Today'], [addDays(today, -1), 'Yesterday']].map(([d, word]) => `<button type="button" data-act="pickDate" data-d="${d}" aria-pressed="${d === cur}">${word}</button>`).join('');
 }
 /* After another exercise is chosen in the form, show the weight the way that exercise counts it.
    A new log takes the exercise's planned weight unless a weight was typed; an edit keeps the kilos. */
@@ -2819,12 +2803,13 @@ async function submitSessionForm(form) {
   });
   if (!base.blocks.some(b => b.done)) { toast('Enter the reps for at least one exercise.'); return; }
   base.status = 'done'; base.paused = false; base.updatedAt = Date.now();
-  if (isNew) { base.startedAt = parseYmd(base.date).getTime() + 12 * 3600e3; base.manual = true; }
+  // A workout added for today is today's newest one, so the cards follow it; on another day it stands at noon.
+  if (isNew) { base.startedAt = base.date === todayYmd() ? Date.now() : parseYmd(base.date).getTime() + 12 * 3600e3; base.manual = true; }
   clearDraftFor(base.id);
   const ok = await saveSession(base);
   if (!ok) return;
   // Only the newest workout of an exercise sets its planned weight.
-  let pp = clone(myProfile()); pp.weights = pp.weights || {};
+  const pp = clone(myProfile()); pp.weights = pp.weights || {};
   let changed = false;
   for (const b of base.blocks) {
     if (!b.done) continue;
@@ -2832,11 +2817,6 @@ async function submitSessionForm(form) {
     const o = orig && orig.blocks.find(x => x.slot === b.slot);
     const touched = !o || !o.done || o.ex !== b.ex || o.kg !== b.kg;
     if (!later && touched && pp.weights[b.ex] !== b.kg) { pp.weights[b.ex] = b.kg; changed = true; }
-  }
-  // A workout that lands on a rest day (new, or moved to another date) takes the place of a planned day.
-  if (isNew || (orig && orig.date !== base.date)) {
-    const moved = moveFor(pp, S.uid, base.date);
-    if (moved) { pp = moved; changed = true; }
   }
   if (changed) saveProfile(pp, { quiet: true }).then(ok2 => { if (!ok2) toast('Workout saved. The next weights weren’t updated — try again later.'); });
   // Logged other exercises than the plan? Offer to make them the plan.
@@ -3014,7 +2994,7 @@ const ACT = {
     UI.person = null; UI.logAll = false;
     const s = newSession(UI.tpl || nextTpl(S.uid)); s.status = 'done';
     UI.sheet = { kind: 'session', session: s };
-    openSheet(sessionForm(s, true), 'Log a past workout');
+    openSheet(sessionForm(s, true), 'Add a workout');
   },
   edit(el) { const s = me().sessions.get(el.dataset.id); if (!s) return; UI.sheet = { kind: 'session', id: s.id }; openSheet(sessionForm(clone(s), false), 'Edit workout'); },
   async del(el) {

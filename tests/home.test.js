@@ -160,3 +160,23 @@ test('the home screen fits a 390 × 844 phone without scrolling, and its buttons
   const low = await page.evaluate(() => [...document.querySelectorAll('#view button')].filter(e => e.getBoundingClientRect().height < 44).length);
   assert.equal(low, 0);
 });
+test('the welcome screen says how it works and where to change the exercises', async () => {
+  const page = await openApp({ profile: null });
+  assert.equal(await txt(page, '#view .lead'), 'Each workout is three 10-minute blocks: push, pull, legs. Do as many clean reps as you can, and beat it next time.');
+  assert.equal(await txt(page, '#view form .tiny'), 'You start with three standard exercises. Tap Change on a card to pick your own. Your workouts are saved on this device.');
+  assert.equal(await txt(page, '#view [data-act="importPick"]'), 'Restore a backup');
+  const shared = await openApp({ profile: null, crew: [] });
+  assert.equal(await txt(shared, '#view form .tiny'), 'You start with three standard exercises. Tap Change on a card to pick your own.');
+});
+test('Let’s go makes a profile that starts this week and does the same three every time', async () => {
+  const page = await openApp({ profile: null, today: '2026-10-17' });          // a Saturday
+  await page.fill('#joinNick', 'Kim');
+  await page.click('#view form button[type="submit"]');
+  await page.waitForFunction(() => myProfile() && document.querySelector('#view .xc'));
+  assert.deepEqual(await page.evaluate(() => { const p = myProfile(); return [p.nick, p.start, startOf(S.uid), 'rotate' in p, p.mode, p.days]; }), ['Kim', '2026-10-12', '2026-10-12', false, 'same', [1, 3, 5]]);
+  assert.equal(await txt(page, '#view .title'), 'Today: 3 exercises');
+  assert.deepEqual(await texts(page, '.xc .ex-n'), ['Dumbbell bench press', 'Chest-supported dumbbell row', 'Goblet squat']);
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.act), 'start');
+  const early = await openApp({ profile: null, today: '2026-10-01' });
+  assert.equal(await early.evaluate(() => defaultProfile('x').start), '2026-10-05');
+});

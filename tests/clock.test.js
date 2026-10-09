@@ -356,6 +356,52 @@ test('after throwing away, the weight can be changed and the exercise started ag
   await page.click('.xc [data-act="throwAway"]');
   await page.evaluate(async () => { const p = clone(myProfile()); p.weights.kabelroeien = 70; await saveProfile(p); });
   await page.waitForFunction(() => /70/.test(document.querySelector('.xc[data-slot="pull"] .ex-kg').textContent));
+  await forward(page, 1);                                                   // a tap within half a second of a card closing is ignored
   await start(page, 'pull');
   assert.deepEqual([await txt(page, open + '.ex-kg'), await txt(page, open + '.goal-l')], ['70 kg', 'To match']);
+});
+
+/* Found by the review of the whole branch. */
+test('a set tapped while Done waits for a slow save is stored too, and only then the card closes', async () => {
+  const page = await openApp({ crew: [], sessions: [first()], prefs: QUIET });
+  await start(page);
+  await tap(page, 20);
+  await page.evaluate(() => { window.__q = []; const real = S.db.doc.bind(S.db); S.db.doc = p => { const d = real(p); return Object.assign({}, d, { set: v => new Promise(res => { window.__q.push(() => d.set(v).then(res)); }) }); }; });
+  await forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'saving' && window.__q.length === 1);
+  await page.click('.xc [data-act="cardDone"]');
+  await tap(page, 5);                                                      // remembered a last set while Done was waiting
+  await page.evaluate(() => window.__q.shift()());                         // the first write lands
+  await page.waitForFunction(() => window.__q.length === 1);               // the newer one is on its way: the card is still open
+  assert.deepEqual(await forms(page), ['push:open', 'pull:wait', 'legs:wait']);
+  await page.evaluate(() => window.__q.shift()());
+  await page.waitForFunction(() => !R.session);
+  assert.equal(await page.evaluate(() => todaySession().blocks[0].total), 25);
+});
+test('after a save that failed, taking back the only set leaves nothing to save and Done closes the card', async () => {
+  const page = await openApp({ crew: [], sessions: [first()], prefs: QUIET });
+  await start(page);
+  await tap(page, 5);
+  await breakSaving(page);
+  await forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'failed');
+  await page.click('.xc [data-act="undo"]');
+  await page.waitForFunction(() => R.saved === null);
+  assert.equal(await page.locator('.xc-saved').count(), 0);
+  await page.click('.xc [data-act="cardDone"]');
+  await page.waitForFunction(() => !R.session);
+  assert.deepEqual(await forms(page), ['push:todo', 'pull:todo', 'legs:todo']);
+});
+test('the second tap of a double tap on Done does not start the next exercise', async () => {
+  const page = await openApp({ sessions: [first()], prefs: QUIET });
+  await start(page, 'pull');
+  await tap(page, 20);
+  await forward(page, 600);
+  await saved(page);
+  await page.click('.xc [data-act="cardDone"]');
+  await page.click('.xc[data-slot="push"] [data-act="start"]');           // lands on the home screen that has just come back
+  assert.deepEqual(await forms(page), ['push:todo', 'pull:done', 'legs:todo']);
+  await forward(page, 0.6);
+  await page.click('.xc[data-slot="push"] [data-act="start"]');
+  assert.deepEqual(await forms(page), ['push:open', 'pull:done', 'legs:wait']);
 });

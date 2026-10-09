@@ -21,7 +21,7 @@ const visit = async (page, width) => {
   await forward(page, 5); await page.click('.clockbtn'); await forward(page, 600);
   await page.waitForFunction(() => R.saved === 'saved'); await ok('time is up');
   await page.click('.xc [data-act="cardDone"]'); await ok('one done');
-  await page.click('.xc[data-form="done"]'); await ok('edit sheet'); await page.keyboard.press('Escape');
+  await forward(page, 1); await page.click('.xc[data-form="done"]'); await ok('edit sheet'); await page.keyboard.press('Escape');
   await page.click('#view [data-act="screen"][data-screen="results"]'); await ok('results');
   await page.click('#view [data-act="manual"]'); await ok('add sheet'); await page.keyboard.press('Escape');
   await page.click('#view [data-act="resTpl"][data-tpl="B"]'); await page.click('.rt-row'); await page.keyboard.press('Escape');

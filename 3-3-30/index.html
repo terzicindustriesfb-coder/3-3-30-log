@@ -1861,16 +1861,18 @@ window.addEventListener('popstate', e => {
  * ------------------------------------------------------------------ */
 /* While a card is open R.session is the working copy of today's workout (null otherwise) and R.idx the open
    group in it. phase: 'lead' (the countdown), 'run', 'paused' or 'over' (the bell has gone). saved tells how
-   storing the score went: null, 'saving', 'saved' or 'failed'. since is when the phase last changed. */
-const R = { session: null, idx: 0, phase: 'run', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, timer: null, lastRem: null, wake: null, confirm: null, lastSet: null, saved: null, since: 0, storeN: 0, storing: null };
+   storing the score went: null, 'saving', 'saved' or 'failed'. since is when the phase last changed, closedAt
+   when the last card closed. */
+const R = { session: null, idx: 0, phase: 'run', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0, timer: null, lastRem: null, wake: null, confirm: null, lastSet: null, saved: null, since: 0, storeN: 0, storing: null, closedAt: 0 };
 const DRAFT_KEY = () => 'd330.draft.' + (S.uid || 'local');
-function loadDraft() {
-  const d = LS.get(DRAFT_KEY(), null);
+/* What this device kept of a card, checked: null when it cannot be read. */
+function readDraft(d) {
   if (!d || !d.session) return null;
   const s = normSession(d.session);
   if (!s || s.blocks.length !== 3) return null;
   return Object.assign({}, d, { session: s, idx: Math.min(2, Math.max(0, d.idx | 0)) });
 }
+function loadDraft() { return readDraft(LS.get(DRAFT_KEY(), null)); }
 function saveDraft() {
   if (!R.session) { LS.del(DRAFT_KEY()); return; }
   LS.set(DRAFT_KEY(), { session: R.session, idx: R.idx, phase: R.phase, t0: R.t0, leadEnd: R.leadEnd, pausedAt: R.pausedAt, pausedMs: R.pausedMs, saved: R.saved });
@@ -1929,13 +1931,14 @@ async function storeOpen() {
   return true;
 }
 /* Store the open exercise now and say on the card how that went: "Saving…", then saved or not. One store runs
-   at a time, in the order of the taps, and only the newest call has the last word. Without reps and without a
-   stored score of this exercise there is nothing to store. */
+   at a time, in the order of the taps, and only the newest call has the last word. A card that has stored
+   nothing yet, has no reps and no stored score of this exercise, has nothing to store; after a first store
+   every call goes through storeOpen, so that the card always says how the newest one went. */
 function storeNow() {
   const n = ++R.storeN, sid = R.session.id, slot = blk().slot;
   const reps = () => blk().sets.reduce((a, x) => a + x.r, 0);
   const stored = me().sessions.get(sid);
-  const nothing = !reps() && !(stored && (stored.blocks || []).some(x => x.slot === slot && isDone(x)));
+  const nothing = !R.storing && !reps() && !(stored && (stored.blocks || []).some(x => x.slot === slot && isDone(x)));
   R.saved = nothing ? null : 'saving';
   saveDraft(); render();
   if (nothing) return Promise.resolve(true);
@@ -1982,26 +1985,49 @@ async function settleDraft(d) {
   const now = Date.now();
   return saveSession(Object.assign(out, { status: 'done', paused: false, updatedAt: now, endedAt: out.endedAt || now }), { quiet: true });
 }
+/* Attempts that are closed but not stored yet wait in a list of their own on this device, apart from the open
+   card: a card started later cannot overwrite them. They are stored with settleDraft, now and again on every
+   visit and every time the app comes back into view, until that works. */
+const KEPT_KEY = () => 'd330.kept.' + (S.uid || 'local');
+function keepForLater(d) {
+  const list = LS.get(KEPT_KEY(), []);
+  LS.set(KEPT_KEY(), (Array.isArray(list) ? list : []).concat([{ session: d.session, idx: d.idx, phase: d.phase, t0: d.t0, pausedAt: d.pausedAt, pausedMs: d.pausedMs }]));
+}
+let keptBusy = false;
+async function retryKept() {
+  const list = LS.get(KEPT_KEY(), []);
+  if (keptBusy || !Array.isArray(list) || !list.length) return;
+  keptBusy = true;
+  try {
+    const left = [];
+    for (const raw of list) {
+      const d = readDraft(raw);
+      if (!d) continue;                                   // unreadable: nothing in it to keep
+      let ok = false;
+      try { ok = await settleDraft(d); } catch (e) { console.error(e); }
+      if (!ok) left.push(raw);
+    }
+    const now = LS.get(KEPT_KEY(), []);                   // one that was added meanwhile stays in the list
+    const all = left.concat(Array.isArray(now) ? now.slice(list.length) : []);
+    if (all.length) LS.set(KEPT_KEY(), all); else LS.del(KEPT_KEY());
+    scheduleRender();
+  } finally { keptBusy = false; }
+}
 /* What this device kept of an open card, looked at once the profile and your own workouts are there:
    - the clock still runs (also when it began yesterday), or it is today's and on pause or after the bell:
      the same card opens again in the same state. A clock whose time ran out meanwhile rings at once;
-   - anything else (a countdown, an earlier day, a workout left open by the old version): it is closed with
-     settleDraft and the home screen shows today. When that save fails the draft stays for the next visit. */
+   - anything else (a countdown, an earlier day, a workout left open by the old version): it is closed. It
+     moves to the attempts that wait to be stored, and the home screen shows today. */
 let draftChecked = false;
 function resumeDraft() {
   if (draftChecked || R.session || S.mode === 'loading' || !myProfile() || (S.mode === 'shared' && !S.ownLocal && !S.ownSeen)) return;
   draftChecked = true;
   const d = loadDraft();
-  if (!d) return;
-  const running = d.phase === 'run' && (Date.now() - d.t0 - (d.pausedMs || 0)) / 1000 < BLOCK_SEC;
-  if (!running && !(d.session.date === todayYmd() && ['run', 'paused', 'over'].includes(d.phase))) {
-    settleDraft(d).then(ok => {
-      const cur = LS.get(DRAFT_KEY(), null);
-      if (ok && !R.session && cur && cur.session && cur.session.id === d.session.id) LS.del(DRAFT_KEY());
-      scheduleRender();
-    });
-    return;
-  }
+  const running = !!d && d.phase === 'run' && (Date.now() - d.t0 - (d.pausedMs || 0)) / 1000 < BLOCK_SEC;
+  const goesOn = !!d && (running || (d.session.date === todayYmd() && ['run', 'paused', 'over'].includes(d.phase)));
+  if (d && !goesOn) { keepForLater(d); LS.del(DRAFT_KEY()); }
+  retryKept();
+  if (!goesOn) return;
   // The other groups are read again from the stored workout: an old copy never overwrites what was stored since.
   const s = d.session, stored = me().sessions.get(s.id);
   if (stored) s.blocks = s.blocks.map((x, i) => { const did = i === d.idx ? null : (stored.blocks || []).find(y => y.slot === x.slot && isDone(y)); return did ? clone(did) : x; });
@@ -2032,7 +2058,7 @@ async function dayCheck(visible) {
    Start of that card when it is to do again, else to the first Start, else to the title. */
 function closeCard(slot) {
   stopTick(); wakeOff();
-  Object.assign(R, { session: null, saved: null, confirm: null, lastSet: null, storing: null });
+  Object.assign(R, { session: null, saved: null, confirm: null, lastSet: null, storing: null, closedAt: Date.now() });
   LS.del(DRAFT_KEY());
   render();
   window.scrollTo(0, 0);
@@ -2132,6 +2158,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   if (R.session && (R.phase === 'run' || R.phase === 'lead')) { wakeOn(); tick(); }     // the clock catches up
   dayCheck(true);
+  retryKept();
 });
 setInterval(() => dayCheck(false), 60000);
 
@@ -2826,15 +2853,20 @@ const ACT = {
     if (R.phase === 'over') storeNow(); else { saveDraft(); render(); }
     focusCard();
   },
-  /* Done, after the bell: the card closes once the score is stored. A save that failed is tried again first,
-     one on its way is waited for; when that does not work the card stays open. */
+  /* Done, after the bell: the card closes once the score is stored. A save that failed is tried again first.
+     Then Done waits until no store is on its way any more: a set tapped while it waits starts a newer one, and
+     that one counts. When the newest store did not work the card stays open. */
   async cardDone() {
     if (!R.session || R.phase !== 'over') return;
     const sid = R.session.id, slot = blk().slot;
+    const mine = () => !!R.session && R.session.id === sid;
     if (R.saved === 'failed') storeNow();
-    const ok = R.storing ? await R.storing : true;
-    if (!R.session || R.session.id !== sid) return;      // closed meanwhile by a second tap
-    if (ok && R.saved !== 'failed') closeCard(slot);
+    for (let p = R.storing; p; p = R.storing) {
+      await p;
+      if (!mine()) return;                               // closed meanwhile by a second tap
+      if (R.storing === p) break;
+    }
+    if (R.saved === 'saved' || R.saved === null) closeCard(slot);
   },
 };
 function syncDateChips() {
@@ -2850,6 +2882,8 @@ function syncDateChips() {
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
+  // A card has just closed and the home screen came back under the finger: the second tap of a double tap does nothing.
+  if (Date.now() - R.closedAt < 500) return;
   const fn = ACT[el.dataset.act];
   if (fn) { e.preventDefault(); fn(el, e); }
 });

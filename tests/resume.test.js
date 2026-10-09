@@ -1,6 +1,7 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward, jumpTo } = require('./helpers');
+const h = require('./helpers');
+const { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, forward, jumpTo } = h;
 after(closeAll);
 
 const QUIET = { sound: false, lead: false };
@@ -157,4 +158,24 @@ test('a clock that runs past midnight finishes, and the score belongs to the day
   await page.click('.xc [data-act="cardDone"]');
   assert.deepEqual(await forms(page), ['push:todo', 'pull:todo', 'legs:todo']);                   // a new day
   assert.equal(await page.evaluate(() => sessionsOf(S.uid).find(x => x.date === '2026-10-14').blocks[1].total), 16);
+});
+
+/* Found by the review of the whole branch. */
+test('reps of an earlier day whose save failed wait apart from the open card, and are stored on a later visit', async () => {
+  const page = await openApp({ crew: [], sessions: [first()], prefs: QUIET });
+  await h.breakSaving(page);
+  const d = draftOf(working('2026-10-13', 1, [8, 8, 7]), 1, { phase: 'paused', t0: at('2026-10-13', '18:00'), pausedAt: at('2026-10-13', '18:04') });
+  await page.evaluate(x => { localStorage.setItem(DRAFT_KEY(), JSON.stringify(x)); draftChecked = false; resumeDraft(); }, d);
+  await page.waitForFunction(() => window.__writes >= 1 && localStorage.getItem(DRAFT_KEY()) === null);      // closed, not stored, out of the way
+  await h.mendSaving(page);
+  await start(page, 'legs');                                               // a new card today takes the place of the draft
+  await tap(page, 10);
+  await forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'saved');
+  await page.click('.xc [data-act="cardDone"]');
+  assert.equal(await page.evaluate(() => me().sessions.has('w1')), false);
+  await jumpTo(page, '2026-10-14', '12:00');                               // the app comes back into view
+  await page.waitForFunction(() => me().sessions.has('w1'));
+  assert.deepEqual(await page.evaluate(() => { const s = me().sessions.get('w1'); const x = s.blocks[1]; return [s.date, x.total, x.dur, x.cut]; }), ['2026-10-13', 23, 240, true]);
+  await page.waitForFunction(() => localStorage.getItem(KEPT_KEY()) === null);
 });

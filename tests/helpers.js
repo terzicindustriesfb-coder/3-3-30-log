@@ -110,10 +110,12 @@ function fakeClaude(seed) {
 /* Open the app with a fixed date and seeded data.
    today 'YYYY-MM-DD' ('2026-10-14'), time ('10:00'), profile (object, or null for a first visit), sessions ([]),
    crew (null = this-device mode; an array of { id, profile, sessions } = shared mode, own id 'me'),
-   draft (a session left open on this device), dark (false), width (390), height (844). */
+   draft (a session left open on this device), dark (false), width (390), height (844),
+   prefs (this device's settings, e.g. { sound: false, lead: false }; stored before the page loads),
+   web ({ who }: the page runs as the website, signed in as `who`; Sign out sets window.__signedOut). */
 async function openApp(opts = {}) {
   await boot();
-  const o = Object.assign({ today: '2026-10-14', time: '10:00', profile: profile(), sessions: [], crew: null, draft: null, dark: false, width: 390, height: 844 }, opts);
+  const o = Object.assign({ today: '2026-10-14', time: '10:00', profile: profile(), sessions: [], crew: null, draft: null, dark: false, width: 390, height: 844, prefs: null, web: null }, opts);
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, timezoneId: 'Europe/Amsterdam', locale: 'en-GB', colorScheme: o.dark ? 'dark' : 'light' });
   const page = await ctx.newPage();
   page.setDefaultTimeout(4000);                 // everything in this app is there at once; a missing element should fail fast
@@ -133,6 +135,8 @@ async function openApp(opts = {}) {
     await page.addInitScript(seedLS, ['d330.own.local', { profile: o.profile, sessions: Object.fromEntries(o.sessions.map(s => [s.id, s])), hidden: [], dirty: [], profileDirty: false }]);
   }
   if (o.draft) await page.addInitScript(seedLS, ['d330.draft.' + uid, { session: o.draft, idx: 0, phase: 'ready', t0: 0, leadEnd: 0, pausedAt: 0, pausedMs: 0 }]);
+  if (o.prefs) await page.addInitScript(seedLS, ['d330.prefs', o.prefs]);
+  if (o.web) await page.addInitScript(w => { window.__333web = { who: () => w.who, signOut: () => { window.__signedOut = true; } }; }, o.web);
   await page.goto(base + '/app.html');
   await page.waitForFunction(() => !document.querySelector('#view .skeleton'));
   await page.waitForFunction(() => S.mode !== 'shared' || [...S.members.values()].every(m => !m.profile || m.seen));
@@ -141,5 +145,12 @@ async function openApp(opts = {}) {
 const squash = t => t.replace(/\s+/g, ' ').trim();
 const txt = async (page, sel) => squash(await page.locator(sel).first().textContent());
 const texts = async (page, sel) => (await page.locator(sel).allTextContents()).map(squash);
+/* Makes every write to the shared log fail the way a server error does (shared mode only), and counts the tries. */
+const breakSaving = page => page.evaluate(() => {
+  S.__doc = S.db.doc; window.__writes = 0;
+  const fail = async () => { window.__writes++; throw Object.assign(new Error('refused'), { code: 'internal' }); };
+  S.db.doc = () => ({ get: async () => ({ exists: false }), set: fail, delete: fail });
+});
+const mendSaving = page => page.evaluate(() => { S.db.doc = S.__doc; });
 
-module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, PLANS, BASE_STYLE };
+module.exports = { openApp, closeAll, profile, session, first, abc, threeWeeks, txt, texts, at, breakSaving, mendSaving, PLANS, BASE_STYLE };

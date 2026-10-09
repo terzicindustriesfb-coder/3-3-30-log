@@ -30,12 +30,6 @@ test('the link is there in every situation but a workout in progress', async () 
   const open = session('2026-10-14', 'A', [10, 0, 0], { status: 'active', id: 'd1' });
   assert.equal(await (await openApp({ sessions: [open], draft: open })).locator('#view [data-act="plan"]').count(), 0);
 });
-test('Training days moved out of Settings, and the explanation moved in', async () => {
-  const page = await openApp({ sessions: abc() });
-  await page.click('#view [data-act="screen"][data-screen="settings"]');
-  assert.equal(await page.locator('#view .daypick').count(), 0);
-  assert.equal(await page.locator('#view details.how .legend p').count(), 3);
-});
 test('changing the usual days starts today', async () => {
   const page = await openApp({ sessions: [first()] });                                   // Monday 12 Oct was missed
   await page.evaluate(() => ACT.plan());

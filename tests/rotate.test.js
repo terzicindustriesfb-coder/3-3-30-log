@@ -32,15 +32,6 @@ test('a new profile starts without it', async () => {
   const page = await openApp({ profile: null });
   assert.deepEqual(await page.evaluate(() => { const p = defaultProfile('Kim'); return ['rotate' in p, p.mode]; }), [false, 'same']);
 });
-test('the switch in Settings sets the field', async () => {
-  const page = await openApp();
-  await page.click('#view [data-act="screen"][data-screen="settings"]');
-  assert.equal(await txt(page, '#view [data-act="mode"][aria-pressed="true"]'), 'Same every time');
-  await page.click('#view [data-act="mode"][data-mode="abc"]');
-  await page.waitForFunction(() => myProfile().rotate === true);
-  await page.click('#view [data-act="mode"][data-mode="same"]');
-  await page.waitForFunction(() => !('rotate' in myProfile()));
-});
 test('a backup carries the field, and an old backup restores without it', async () => {
   const src = await openApp({ crew: [], profile: profile({ rotate: true }), sessions: [first()] });
   await src.evaluate(() => exportData('json'));

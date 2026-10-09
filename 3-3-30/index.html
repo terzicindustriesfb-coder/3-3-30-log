@@ -28,6 +28,8 @@
   --good: #177A41;
   --good-wash: #E1F2E7;
   --on-good: #FFFFFF;
+  --good-ink: #125F33;
+  --dot: #8F8A7E;
   --warn: #8F5400;
   --warn-wash: #F6E8CF;
   --bad: #B3261E;
@@ -52,7 +54,7 @@
   :root:not([data-theme="light"]) {
     --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
     --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
-    --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
+    --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D; --dot: #7C828C; --good-ink: #8FE0B0;
     --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
     --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
     --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -61,7 +63,7 @@
 :root[data-theme="dark"] {
   --bg: #121417; --surface: #1B1E22; --surface-2: #25292E; --surface-3: #30353C; --ink: #ECEAE4; --ink-2: #B9B6AE;
   --muted: #97948D; --line: #30353C; --push: #FF5A47; --pull: #5B8DF0; --legs: #F5C531; --legs-mark: #C99A12;
-  --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D;
+  --on-push: #1A0705; --on-pull: #0A1020; --on-legs: #1F1700; --ring: #4B515A; --good: #45C07A; --good-wash: #16301F; --on-good: #08140D; --dot: #7C828C; --good-ink: #8FE0B0;
   --warn: #E2A646; --warn-wash: #33260F; --bad: #F2675C; --primary: #ECEAE4; --on-primary: #121417; --seg-on: #3A3F47;
     --c-push: #F2483A; --c-pull: #5B8DF0; --c-legs: #B88A0A;
   --shadow: inset 0 1px 0 rgb(255 255 255 / .05); --clock-bg: #08090A; color-scheme: dark;
@@ -183,13 +185,6 @@ textarea { min-height: 76px; resize: vertical; }
 .stepper { display: inline-flex; align-items: center; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
 .stepper button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); font-size: 22px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
 .stepper .val { min-width: 104px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; padding-inline: 6px; font-size: 16px; }
-.toggle-row { display: flex; align-items: center; gap: 12px; min-height: 44px; }
-.toggle-row input { width: 22px; height: 22px; accent-color: var(--ink); }
-details.how > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; font-weight: 750; }
-details.how > summary::-webkit-details-marker { display: none; }
-details.how[open] > summary .chev { transform: rotate(90deg); }
-.how ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
-.how h3 { font-size: 15px; font-weight: 800; margin-top: 4px; }
 
 /* Workout mode: one screen, rep pad in the thumb zone */
 .runner { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
@@ -449,6 +444,28 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 .rc-now b { margin-right: 2px; font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 24px; line-height: 1; color: var(--ink); }
 .pg-svg .kgmark line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
 .pg-svg .kgmark text { fill: var(--ink-2); font-weight: 700; }
+/* Settings: groups of rows that say in words what they do */
+.st { display: grid; gap: 6px; }
+.st-h { padding: 0 4px; font-family: var(--display); font-stretch: 125%; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.st-opts { display: grid; gap: 8px; }
+.st-opt { width: 100%; min-height: 56px; border: 0; border-radius: var(--r); background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ring); text-align: left; padding: 12px 14px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.st-opt i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--dot); display: grid; place-items: center; }
+.st-opt[aria-checked="true"], .st-opt[aria-checked="true"] i { box-shadow: inset 0 0 0 2px var(--ink); }
+.st-opt[aria-checked="true"] i::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.st-opt b, .st-row b, .st-link b { display: block; font-family: var(--display); font-stretch: 75%; font-weight: 750; font-size: 17px; line-height: 1.15; }
+.st-sub { display: block; font-size: 13.5px; font-weight: 400; color: var(--ink-2); overflow-wrap: anywhere; }
+.st-card { padding: 4px 14px; gap: 0; }
+.st-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 0; }
+.st-onoff { min-height: 44px; min-width: 72px; padding: 0 14px 0 10px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-weight: 700; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.st-onoff[aria-pressed="true"] { background: var(--good-wash); color: var(--good-ink); }
+.st-link { width: 100%; min-height: 54px; border: 0; background: transparent; text-align: left; padding: 8px 2px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.st-link[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.st-more { padding: 12px 2px 14px; display: grid; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.st-more ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.st-card > * + * { border-top: 1px solid var(--surface-2); }   /* after .st-link, whose own rule takes every border away */
+.st-local { padding: 0 4px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -968,7 +985,7 @@ async function saveProfile(p, opts = {}) {
   try { await dbWrite('members/' + S.uid, clean); S.profileStored = clean; dropPending(null); return true; }
   catch (e) {
     if (handleWriteError(e, opts.quiet)) { me().profile = clean; S.profileDirty = true; saveOwnLocal(); return true; }
-    if (me().profile === clean) { me().profile = prev; scheduleRender(); if (typeof refreshSettings === 'function') refreshSettings(); }   // not saved: show what is really stored
+    if (me().profile === clean) { me().profile = prev; scheduleRender(); }   // not saved: show what is really stored
     return false;
   }
 }
@@ -1440,7 +1457,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 /* ------------------------------------------------------------------ *
  * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
  * ------------------------------------------------------------------ */
-const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', resTpl: null };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, runReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false } };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1451,11 +1468,10 @@ document.addEventListener('focusout', e => { if (e.target.id === 'runKgIn') comm
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the page's HTML; put keyboard focus back on the same control. */
-const FOCUS_KEYS = ['id', 'd', 'mode', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'screen', 'date', 'from'];
+const FOCUS_KEYS = ['id', 'd', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'screen', 'pref', 'on', 'more', 'date', 'from'];
 function focusSel(a) {
   if (!a || a === document.body || !a.closest) return null;
   if (a.id) return '#' + CSS.escape(a.id);
-  if (a.tagName === 'SUMMARY') { const h = a.closest('details[data-how]'); if (h) return 'details[data-how] > summary'; }
   if (a.tagName === 'A' && a.getAttribute('href')) return `a[href="${CSS.escape(a.getAttribute('href'))}"]`;
   if (a.dataset && a.dataset.act) return `[data-act="${CSS.escape(a.dataset.act)}"]` + FOCUS_KEYS.filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('');
   const ch = a.closest('[data-chart]');
@@ -1476,7 +1492,6 @@ function render() {
   const fsel = a && a.closest && (a.closest('#main') || a.closest('#notice')) ? focusSel(a) : null;
   renderHeader();
   const v = $('#view');
-  const howOpen = !!v.querySelector('details[data-how]')?.open;
   let html;
   try { html = viewHome(); } catch (e) {
     console.error(e);
@@ -1484,7 +1499,6 @@ function render() {
     html = `<div class="card"><b>This page couldn’t be shown.</b><p class="small">Reload the page to try again.</p></div>`;
   }
   v.innerHTML = html;
-  if (howOpen) { const how = v.querySelector('details[data-how]'); if (how) how.open = true; }
   drawCharts(v);
   restoreFocus(v, fsel);
   const pc = v.querySelector('.seg.scroll [aria-pressed="true"]');
@@ -1902,43 +1916,57 @@ function viewOnboarding() {
     <button class="btn link" data-act="importPick" style="justify-self:center">Restore a backup</button><input type="file" id="importFile" accept=".json,application/json" hidden>`;
 }
 
-/* ---------- Settings ---------- */
-function viewSettings() { return `${backHtml()}<h1 class="title">Settings</h1>${settingsBody()}`; }
-function settingsBody() {
+/* ---------- Settings: groups of rows that say in words what they do ---------- */
+function viewSettings() {
   const p = myProfile();
   const shared = S.mode === 'shared' && !S.ownLocal;
-  return `<label class="f" for="nickIn">Your name
-      <input type="text" id="nickIn" data-field="nick" maxlength="30" value="${esc(p.nick || '')}" placeholder="${esc(S.meInfo?.name || 'First name')}"></label>
-    <div class="f">Exercises
-      <div class="seg full" role="group" aria-label="Exercises"><button type="button" data-act="mode" data-mode="abc" aria-pressed="${rotates(p)}">Workout A, B, C</button><button type="button" data-act="mode" data-mode="same" aria-pressed="${!rotates(p)}">Same every time</button></div>
-      <span class="tiny">${rotates(p) ? 'Three different workouts that take turns.' : 'The same three exercises every workout.'} Tap an exercise on the main screen to change it.</span></div>
-    <label class="toggle-row" for="prefSound"><input type="checkbox" id="prefSound" data-field="sound" ${prefs.sound ? 'checked' : ''}> <span>Beeps during a block</span></label>
-    <label class="toggle-row" for="prefLead"><input type="checkbox" id="prefLead" data-field="lead" ${prefs.lead ? 'checked' : ''}> <span>10-second countdown before a block</span></label>
-    <div class="f">Backup
-      <div class="row wrap">
-        <button type="button" class="btn sm ghost" data-act="export" data-fmt="json">Save backup</button>
-        <button type="button" class="btn sm ghost" data-act="export" data-fmt="csv">Excel (.csv)</button>
-        <button type="button" class="btn sm ghost" data-act="importPick">Restore</button>
-        <input type="file" id="importFile" accept=".json,application/json" hidden>
+  const turns = rotates(p);
+  const opt = (on, title, sub) => `<button type="button" class="st-opt" role="radio" data-act="rotate" data-on="${on ? 1 : 0}" aria-checked="${turns === on}"><i aria-hidden="true"></i><span><b>${title}</b><span class="st-sub">${sub}</span></span></button>`;
+  const onoff = (key, title, sub) => `<div class="st-row"><span><b>${title}</b><span class="st-sub">${sub}</span></span>
+      <button type="button" class="st-onoff" data-act="pref" data-pref="${key}" aria-pressed="${!!prefs[key]}" aria-label="${title}: ${prefs[key] ? 'on. Tap to turn off.' : 'off. Tap to turn on.'}">${prefs[key] ? ICON.check + 'On' : 'Off'}</button></div>`;
+  const link = (attrs, title, sub) => `<button type="button" class="st-link" ${attrs}><span><b>${title}</b>${sub ? `<span class="st-sub">${sub}</span>` : ''}</span>${CHEV}</button>`;
+  const more = (key, title, body) => link(`data-act="more" data-more="${key}" aria-expanded="${!!UI.more[key]}"`, title, '') + (UI.more[key] ? `<div class="st-more">${body}</div>` : '');
+  const seen = 'Then you see their week on the home screen and their scores under My results.';
+  const buddy = WEB
+    ? `<p>Send them the link to this page and your crew code. They sign in, type the code once and tap Let’s go. ${seen}</p>`
+    : `<p>Share this page with Claude’s share button and invite them as a <b>Contributor</b> or <b>Editor</b>. ${seen}</p>`;
+  const how = `<ol>
+      <li>Three workouts a week. Each has one push, one pull and one legs exercise.</li>
+      <li>Each exercise gets a 10-minute block: as many clean reps as you can, in small sets with rest when you need it.</li>
+      <li>Pick a weight you can lift 5–10 times when fresh. Warm up before you start the clock.</li>
+      <li>Next time, beat it: more reps, or the same reps with a bit more weight.</li>
+      <li>After four weeks, keep what works or swap exercises.</li>
+    </ol>
+    ${legendHtml()}
+    <p class="tiny">Source: <a href="https://www.menshealth.nl/nieuws/de-3-3-30-methode-trainen-voor-spiermassa-in-slechts-1-5-uur-per-week" target="_blank" rel="noopener">Men’s Health</a>.</p>`;
+  return `${backHtml()}<h1 class="title">Settings</h1>
+    <div class="st"><label class="st-h" for="nickIn">Your name</label>
+      <input type="text" id="nickIn" data-field="nick" maxlength="30" value="${esc(p.nick || '')}" placeholder="${esc(S.meInfo?.name || 'First name')}"></div>
+    <div class="st"><span class="st-h" id="stExercises">Your exercises</span>
+      <div class="st-opts" role="radiogroup" aria-labelledby="stExercises">
+        ${opt(false, 'The same 3 exercises every workout', 'You do your own three every time.')}
+        ${opt(true, '3 workouts that take turns', 'Workout A, B and C, each with its own three exercises.')}
       </div></div>
-    ${shared ? (WEB
-      ? '<p class="tiny">Train with a buddy: send them the link to this page and your crew code. They sign in, type the code once and tap Let’s go. Then you see their week on Today and their scores under Progress.</p>'
-      : '<p class="tiny">Train with a buddy: share this page with Claude’s share button and invite them as a <b>Contributor</b> or <b>Editor</b>. Then you see their week on Today and their scores under Progress.</p>') : ''}
-    ${WEB ? `<div class="row"><span class="tiny grow">Signed in as ${esc(WEB.who())}</span><button type="button" class="btn sm ghost" data-act="signOut">Sign out</button></div>` : ''}
-    <details class="how" data-how>
-      <summary><span class="grow">How 3-3-30 works</span>${CHEV}</summary>
-      <ol class="small">
-        <li>Three workouts a week. Each has one push, one pull and one legs exercise.</li>
-        <li>Each exercise gets a 10-minute block: as many clean reps as you can, in small sets with rest when you need it.</li>
-        <li>Pick a weight you can lift 5–10 times when fresh. Warm up before you start the clock.</li>
-        <li>Next time, beat it: more reps, or the same reps with a bit more weight.</li>
-        <li>After four weeks, keep what works or swap exercises.</li>
-      </ol>
-      ${legendHtml()}
-      <p class="tiny">Source: <a href="https://www.menshealth.nl/nieuws/de-3-3-30-methode-trainen-voor-spiermassa-in-slechts-1-5-uur-per-week" target="_blank" rel="noopener">Men’s Health</a>.</p>
-    </details>`;
+    <div class="st"><span class="st-h">Sound and countdown</span>
+      <section class="card st-card" aria-label="Sound and countdown">
+        ${onoff('sound', 'Beeps', 'At the start, with 5 and 1 minute to go, and at the end.')}
+        ${onoff('lead', 'Countdown', '10 seconds to get ready before the clock starts.')}
+      </section></div>
+    <div class="st"><span class="st-h">Backup</span>
+      <section class="card st-card" aria-label="Backup">
+        ${link('data-act="export" data-fmt="json"', 'Save a backup', 'A file with all your workouts')}
+        ${link('data-act="importPick"', 'Restore a backup', 'Put back a file you saved before')}
+        ${link('data-act="export" data-fmt="csv"', 'Open in Excel', 'All your workouts as a .csv file')}
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </section></div>
+    <div class="st"><span class="st-h">More</span>
+      <section class="card st-card" aria-label="More">
+        ${shared ? more('buddy', 'Train with a buddy', buddy) : ''}
+        ${more('how', 'How 3-3-30 works', how)}
+        ${WEB ? link('data-act="signOut"', 'Sign out', `Signed in as ${esc(WEB.who())}`) : ''}
+      </section></div>
+    ${shared ? '' : '<p class="tiny st-local">Your workouts are saved on this device only.</p>'}`;
 }
-function refreshSettings() { if (UI.screen === 'settings') render(); }
 
 /* ---------- From screen to screen ---------- */
 const SCREENS = ['home', 'results', 'settings'];
@@ -3041,7 +3069,26 @@ const ACT = {
     saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today)).then(redrawUnsaved);
     refreshSheet();
   },
-  mode(el) { const p = clone(myProfile()); if (el.dataset.mode === 'abc') p.rotate = true; else delete p.rotate; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); saveProfile(p); UI.tpl = null; refreshSettings(); },
+  /* "Your exercises": the same three every time, or Workout A, B and C in turns. Going back keeps the plans of B and C. */
+  rotate(el) {
+    const on = el.dataset.on === '1';
+    const p = clone(myProfile());
+    if (!p || rotates(p) === on) return;
+    if (on) { p.rotate = true; p.plans = Object.assign(clone(DEFAULT_PLANS), p.plans || {}); } else delete p.rotate;
+    UI.tpl = null; UI.resTpl = null;
+    saveProfile(p);
+    render();   // the choice shows at once; when storing it fails, saveProfile puts back what is stored
+  },
+  /* Beeps and the countdown belong to this device. */
+  pref(el) {
+    const key = el.dataset.pref;
+    if (key !== 'sound' && key !== 'lead') return;
+    prefs[key] = !prefs[key];
+    savePrefs();
+    if (key === 'sound' && prefs.sound) { audio(); beep(880, 0.08); }
+    render();
+  },
+  more(el) { const key = el.dataset.more; if (Object.hasOwn(UI.more, key)) { UI.more[key] = !UI.more[key]; render(); } },
   export(el) { exportData(el.dataset.fmt); },
   importPick() { const f = $('#importFile'); if (f) f.click(); },
 
@@ -3246,7 +3293,6 @@ document.addEventListener('change', e => {
   if (el.form && el.form.dataset.form === 'session' && /^ex\d$/.test(el.name || '')) { syncFormExercise(el); return; }
   const field = el.dataset.field;
   if (!field) return;
-  if (field === 'sound' || field === 'lead') { prefs[field] = el.checked; savePrefs(); return; }
   const p = clone(myProfile());
   if (!p) return;
   if (field === 'nick') { p.nick = el.value.trim().slice(0, 30); saveProfile(p); }

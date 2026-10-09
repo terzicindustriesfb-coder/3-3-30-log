@@ -38,11 +38,11 @@ test('exInfo lays your name and weight type over the list', async () => {
   });
   assert.deepEqual(out, [['Shoulder press', 'machine', 5, 25, false, false], ['Overhead press', 4, 20, true], 5, 'Shoulder press', 'Shoulder press']);
 });
-test('saving drops a week list that belongs to another week', async () => {
-  const stale = await openApp({ profile: profile({ week: { mon: '2026-10-05', days: [1, 2] } }) });
-  assert.equal(await stale.evaluate(async () => { await saveProfile(clone(myProfile())); return 'week' in myProfile(); }), false);
-  const fresh = await openApp({ profile: profile({ week: { mon: '2026-10-12', days: [1, 2] } }) });
-  assert.deepEqual(await fresh.evaluate(async () => { await saveProfile(clone(myProfile())); return myProfile().week; }), { mon: '2026-10-12', days: [1, 2] });
+test('the old week list and training days stay in a stored profile, untouched', async () => {
+  const page = await openApp({ profile: profile({ days: [2, 4], week: { mon: '2026-10-05', days: [1, 2] } }) });
+  await page.evaluate(async () => { const p = clone(myProfile()); p.nick = 'Stevan'; await saveProfile(p); });
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('d330.own.local')).profile);
+  assert.deepEqual([stored.nick, stored.days, stored.week], ['Stevan', [2, 4], { mon: '2026-10-05', days: [1, 2] }]);
 });
 test('a renamed exercise shows under its new name', async () => {
   const page = await openApp({ profile: profile({ names: { schouderdrukken: 'Shoulder press' } }) });

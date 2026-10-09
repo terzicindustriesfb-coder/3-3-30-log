@@ -16,8 +16,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap">
 <style>
-/* Layout: phone-first single column (max 560px). Two screens, Today and Progress, behind a switch at the
-   bottom; bottom sheets for everything else; a full-screen workout mode that fits one screen.
+/* Layout: phone-first single column (max 560px). Three screens: the home screen with a card for each exercise,
+   "My results" and "Settings"; bottom sheets for what is done seldom. An open card fits one screen.
    Direction "Platform": chalk (light) and rubber floor (dark); the only saturated colours are the
    bumper plates (red = push, blue = pull, yellow = legs, green = success) and the red LED clock.
    Archivo condensed for titles and numbers, Archivo expanded for stamped labels, Instrument Sans for text. */
@@ -102,7 +102,6 @@ p { margin: 0; }
 .brand i { font-style: normal; color: var(--push); }
 
 .date { font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
-@media (max-width: 359px) { .daypick { gap: 4px; } .daypick button { font-size: 14px; } }
 
 /* Type */
 .title { font-family: var(--display); font-stretch: 68%; font-weight: 800; font-size: clamp(36px, 10.5vw, 46px); line-height: .95; letter-spacing: -.01em; }
@@ -191,9 +190,6 @@ textarea { min-height: 76px; resize: vertical; }
 .choices button { border: 0; border-radius: 999px; padding: 8px 13px; min-height: 40px; font-weight: 700; font-size: 14px; background: var(--surface-2); color: var(--ink-2); }
 .choices button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
 .choices button:disabled { opacity: .5; }
-.daypick { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.daypick button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
-.daypick button { height: 44px; border-radius: var(--r-sm); border: 0; padding: 0; background: var(--surface-2); font-weight: 750; min-width: 0; }
 
 .stepper { display: inline-flex; align-items: center; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
 .stepper button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); font-size: 22px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
@@ -263,81 +259,29 @@ textarea { min-height: 76px; resize: vertical; }
 .lf-block:first-child { border-top: 0; }
 .lf-nums { align-items: end; }
 .lf-block select { flex: 1; min-width: 0; }
-/* The week strip on Today */
-.wk { padding: 14px 14px 12px; gap: 8px; }
-.wk-row { display: grid; grid-template-columns: 66px repeat(7, minmax(0, 1fr)) 32px; align-items: center; column-gap: 2px; min-height: 28px; }
-.wk-head > :first-child { font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.wk-d { justify-self: center; font-family: var(--display); font-stretch: 125%; font-size: 10.5px; font-weight: 800; color: var(--muted); }
-.wk-d[aria-current="date"] { padding: 0 4px 2px; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); }
-.wk-who { font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wk-n { justify-self: end; font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
-.wk-row:not(.me) .wk-who, .wk-row:not(.me) .wk-n { color: var(--ink-2); }
-.wk-more { justify-self: start; min-height: 44px; font-size: 14px; }
-.wd { justify-self: center; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 13px; }
-.wd svg { width: 14px; height: 14px; stroke-width: 3.2; }
-.wd[data-state="rest"] { width: 5px; height: 5px; background: var(--line); }
-.wd[data-state="done"] { background: var(--ink); color: var(--bg); }
-.wk-row:not(.me) .wd[data-state="done"] { background: var(--ink-2); }
-.wd[data-state="today"] { box-shadow: inset 0 0 0 2.5px var(--ink); }
-.wd[data-state="planned"] { box-shadow: inset 0 0 0 1.5px var(--ring); color: var(--muted); }
-.wd[data-state="todayRest"] { border: 2px dashed var(--ink-2); }
-.wd[data-state="missed"] { border: 1.5px dashed var(--ring); }
-/* A big number with a small label under it: the target on Today, the result after a workout */
+/* A big number with a small label: the score to beat on a card, the reps of a finished exercise */
 .goal { display: grid; justify-items: end; gap: 3px; }
 .goal-n { font-family: var(--display); font-stretch: 75%; font-weight: 900; font-size: 42px; line-height: .86; font-variant-numeric: tabular-nums; }
 .goal-l { font-family: var(--display); font-stretch: 125%; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .goal-l.pos { color: var(--good); }
 .ex-sub .ex-kg { font-size: 15px; color: var(--ink-2); }
-/* The workout card on Today */
+/* A workout as a list of its exercises: the sheet that shows a buddy’s workout */
 .wo { padding: 12px 14px 8px; gap: 4px; }
 .wo .ex-list { gap: 0; }
 .wo .ex-list li + li { border-top: 1px solid var(--surface-2); }
 .wo .ex-row { padding: 8px 4px; min-height: 64px; }
-.wo > .btn.xl { margin-top: 8px; }
-.wo-next { display: grid; gap: 4px; padding: 2px 4px; }
-.wo-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 2px; }
-.wo-links { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0 12px; }
-.wo-links .btn.link, .after .btn.link { min-height: 44px; font-size: 15px; }
-.after { display: grid; gap: 2px; padding: 0 4px; }
-.next-line { font-size: 15px; color: var(--ink-2); }
-.next-line b { color: var(--ink); }
 /* Sheets */
-.sheet-sub { font-size: 14px; color: var(--muted); }
 .swap-opt { width: 100%; border: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); padding: 14px 16px; min-height: 64px;
   text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
 .swap-opt[aria-pressed="true"] { box-shadow: var(--shadow), inset 0 0 0 2px var(--ink); }
 .swap-t { font-family: var(--display); font-stretch: 72%; font-weight: 800; font-size: 22px; line-height: 1.05; }
 .swap-opt .small { grid-column: 1 / -1; }
 .swap-next { border-radius: 999px; padding: 3px 10px; background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 650; white-space: nowrap; }
-.plan-card { padding: 12px 14px 8px; gap: 2px; }
-.plan-card .h2 { font-size: 22px; }
-.plan-when { border-radius: 999px; padding: 3px 10px; background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 650; white-space: nowrap; }
-.plan-when.now { background: var(--primary); color: var(--on-primary); }
-.plan-row { width: 100%; border: 0; background: transparent; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center; gap: 10px; padding: 6px 4px; min-height: 48px; }
-.plan-row + .plan-row { border-top: 1px solid var(--surface-2); }
-.plan-row .ex-n { font-size: 17px; }
 .legend { display: grid; gap: 8px; padding: 4px 4px 0; }
 .legend p { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; color: var(--ink-2); }
 .legend i { margin-top: 4px; width: 14px; height: 14px; border-radius: 50%; }
 .legend i.push { background: var(--push); } .legend i.pull { background: var(--pull); } .legend i.legs { background: var(--legs); }
 .legend b { color: var(--ink); }
-.wk { cursor: pointer; }
-.wk-edit { justify-self: end; width: 44px; height: 44px; margin: -8px -10px -8px 0; background: transparent; color: var(--ink-2); }
-.wk-edit svg { width: 16px; height: 16px; }
-.wkd-list { padding: 4px 14px; gap: 0; }
-.wkd { display: grid; grid-template-columns: 64px 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 4px; min-height: 54px; }
-.wkd + .wkd { border-top: 1px solid var(--surface-2); }
-.wkd-d { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 16px; }
-.wkd-st { font-size: 14px; color: var(--ink-2); }
-.wkd-ok { width: 54px; height: 44px; display: grid; place-items: center; color: var(--good); }
-.wkd-ok svg { width: 20px; height: 20px; stroke-width: 2.8; }
-.switch { width: 54px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
-.switch i { width: 46px; height: 28px; border-radius: 999px; background: var(--ring); padding: 3px; display: flex; justify-content: flex-start; }
-.switch i::after { content: ""; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); }
-.switch[aria-checked="true"] i { background: var(--primary); justify-content: flex-end; }
-.wk-foot { padding: 0 4px; font-size: 14px; color: var(--ink-2); }
-.wk-foot .btn.link { min-height: 44px; font-size: 14px; }
 .sheet .choices button { min-height: 44px; padding: 8px 14px; }
 form[data-form="ex"] .f .small, form[data-form="ex"] .f .tiny { font-weight: 400; }
 .to-beat { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
@@ -653,8 +597,6 @@ const mondayOf = s => { const d = parseYmd(s); d.setDate(d.getDate() - ((d.getDa
 const daysBetween = (a, b) => Math.round((parseYmd(b) - parseYmd(a)) / 864e5);
 const weekNo = (s, start) => Math.floor(daysBetween(mondayOf(start), mondayOf(s)) / 7) + 1;
 const LOC = 'en-GB';
-const fmtLong = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
-const fmtWeekday = s => parseYmd(s).toLocaleDateString(LOC, { weekday: 'long' });
 const fmtDM = s => parseYmd(s).toLocaleDateString(LOC, { day: 'numeric', month: 'short' });
 const fmtNum = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 1 });
 const fmtKg2 = n => Number(n || 0).toLocaleString(LOC, { maximumFractionDigits: 2 });   // per-dumbbell halves, e.g. 8.75
@@ -1018,8 +960,6 @@ function handleWriteError(e, quiet) {
 
 async function saveProfile(p, opts = {}) {
   const clean = normProfile(p);
-  // The week list only means something in its own week.
-  if (clean && clean.week && clean.week.mon !== mondayOf(todayYmd())) delete clean.week;
   const prev = S.profileStored !== undefined && !S.ownLocal ? S.profileStored : me().profile;
   me().profile = clean;
   scheduleRender();
@@ -1380,89 +1320,6 @@ function chartSeries(pid, key) {
   pts.forEach((p, i) => { p.kgChange = i > 0 && p.kgText !== pts[i - 1].kgText; });
   return pts;
 }
-/* Weekday numbers (0 = Sunday) planned in the week that starts on `mon`: this week's own list
-   when it has one, otherwise the usual training days. */
-function plannedDows(profile, mon, today = todayYmd()) {
-  const w = profile?.week;
-  if (w && w.mon === mon && mon === mondayOf(today)) return w.days;
-  return profile?.days?.length ? profile.days : [1, 3, 5];
-}
-/* One person's current week, Monday first: what each day is, and the two numbers of the counter.
-   A day is planned when it is in the week's list and not before the start date; in a first week,
-   days before joining only count when trained. */
-function weekModel(id, today = todayYmd()) {
-  const p = S.members.get(id)?.profile;
-  const mon = mondayOf(today);
-  const start = p?.start || START;
-  const joined = p?.joined ? ymd(new Date(p.joined)) : '';
-  const dows = plannedDows(p, mon, today);
-  const mine = trainings(id, today).filter(s => mondayOf(s.date) === mon);
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const date = addDays(mon, i);
-    const dow = parseYmd(date).getDay();
-    const here = mine.filter(s => s.date === date);
-    const n = here.length;
-    const planned = dows.includes(dow) && date >= start && (date >= joined || n > 0);
-    const state = n ? 'done'
-      : date === today ? (planned ? 'today' : 'todayRest')
-      : date > today ? (planned ? 'planned' : 'rest')
-      : planned ? 'missed' : 'rest';
-    days.push({ date, dow, planned, n, tpl: n ? here[n - 1].tpl : null, state });
-  }
-  return { mon, done: mine.length, planned: days.filter(d => d.planned).length, days };
-}
-/* The coming training days and the workout each gets: planned days without a training, from today on
-   (from the start date when that is later). Looks four weeks ahead at most. */
-function upcoming(id, n = 3, today = todayYmd()) {
-  const p = S.members.get(id)?.profile;
-  if (!p) return [];
-  const start = p.start || START;
-  const trained = new Set(trainings(id, today).map(s => s.date));
-  const abc = rotates(p);
-  let tpl = (id === S.uid && UI.tpl) || nextTpl(id);
-  const out = [];
-  let d = today < start ? start : today;
-  for (let i = 0; i < 28 && out.length < n; i++, d = addDays(d, 1)) {
-    if (trained.has(d) || !plannedDows(p, mondayOf(d), today).includes(parseYmd(d).getDay())) continue;
-    out.push({ date: d, tpl: abc ? tpl : 'A' });
-    tpl = TPLS[(TPLS.indexOf(tpl) + 1) % 3];
-  }
-  return out;
-}
-/* Training on a day of this week that was not planned takes the place of one planned day:
-   the earliest missed day before it, else the next planned day after it. Returns that day, or null
-   when nothing moves (the date is planned, in another week, before the start date, or nothing is left). */
-function movedDay(id, date, today = todayYmd()) {
-  const p = S.members.get(id)?.profile;
-  if (!p || date < (p.start || START) || mondayOf(date) !== mondayOf(today)) return null;
-  const w = weekModel(id, today);
-  const day = w.days.find(d => d.date === date);
-  if (!day || day.planned) return null;
-  const free = w.days.filter(d => d.planned && d.n === 0);
-  const from = free.find(d => d.date < date) || free.find(d => d.date > date);
-  return from ? from.date : null;
-}
-/* A copy of the profile with this week's own list of training days. The list is dropped when it
-   holds exactly the usual days. */
-function withWeekDays(profile, dows, today = todayYmd()) {
-  const p = clone(profile);
-  const sorted = list => [...new Set(list)].sort((a, b) => a - b);
-  const days = sorted(dows);
-  if (days.join() === sorted(p.days || [1, 3, 5]).join()) delete p.week;
-  else p.week = { mon: mondayOf(today), days };
-  return p;
-}
-/* The profile after a training on `date`: the day that gives way leaves this week's list and the
-   trained day enters it. Null when nothing moves. */
-function moveFor(profile, id, date, today = todayYmd()) {
-  const from = movedDay(id, date, today);
-  if (!from) return null;
-  const out = parseYmd(from).getDay();
-  return withWeekDays(profile, plannedDows(profile, mondayOf(today), today).filter(d => d !== out).concat(parseYmd(date).getDay()), today);
-}
-
-
 /* ------------------------------------------------------------------ *
  * Exercises: names, weight types and search
  * ------------------------------------------------------------------ */
@@ -1516,9 +1373,10 @@ function newCustom(profile, name, slot, eq) {
 const blockName = (b, prof) => exName(b.ex, prof, b.name);
 
 /* ------------------------------------------------------------------ *
- * UI state + rendering. Three screens (home, My results, Settings); the rest is a sheet.
+ * UI state + rendering. Three screens: home, My results and Settings. A sheet for what is done seldom:
+ * Exercise, a workout to add or fix, a buddy's workout to read, Swap workout, and the question after adding.
  * ------------------------------------------------------------------ */
-const UI = { screen: 'home', logAll: false, person: null, tpl: null, confirm: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false }, day: null };
+const UI = { screen: 'home', logAll: false, person: null, tpl: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false }, day: null };
 let renderQueued = false, renderDeferred = false;
 function scheduleRender() {
   if (renderQueued) return;
@@ -1528,7 +1386,7 @@ function scheduleRender() {
 document.addEventListener('focusout', () => { if (renderDeferred) { renderDeferred = false; setTimeout(scheduleRender, 0); } });
 
 /* A re-render replaces the page's HTML; put keyboard focus back on the same control. */
-const FOCUS_KEYS = ['id', 'd', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'screen', 'pref', 'on', 'more', 'date', 'from'];
+const FOCUS_KEYS = ['id', 'd', 'tpl', 'slot', 'ex', 'dir', 'fmt', 'n', 'eq', 'screen', 'pref', 'on', 'more'];
 function focusSel(a) {
   if (!a || a === document.body || !a.closest) return null;
   if (a.id) return '#' + CSS.escape(a.id);
@@ -1584,7 +1442,6 @@ const CHEV = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill=
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const svgIcon = d => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICON = {
-  pencil: svgIcon('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
   check: svgIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   back: svgIcon('<path d="M15 6l-6 6 6 6"/>'),
 };
@@ -1668,50 +1525,11 @@ function resultRowsHtml(s, pid, judged = true) {
   }).join('');
   return `<ul class="ex-list">${rows}</ul>`;
 }
-/* One day in the week strip: a filled disc (trained), a ring (planned), a dashed ring (missed, or
-   today when it is a rest day) or a small dot (rest). `text` is a letter, the tick, or nothing. */
-const dayDotHtml = (state, text) => `<span class="wd" data-state="${state}" aria-hidden="true">${text || ''}</span>`;
 /* Buddies with a profile, in the order they joined. */
 function buddyIds() {
   return [...S.members.keys()].filter(id => id !== S.uid && S.members.get(id)?.profile)
     .sort((a, c) => (S.members.get(a).profile.joined || 0) - (S.members.get(c).profile.joined || 0) || (a < c ? -1 : 1));
 }
-/* The week on Today: a row for you and for up to three buddies. Nothing before your start date. */
-function weekStripHtml() {
-  const p = myProfile();
-  const today = todayYmd();
-  if (!p || today < (p.start || START)) return '';
-  const abc = rotates(p);
-  const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
-  const row = (id, mine) => {
-    const w = weekModel(id, today);
-    const who = mine ? 'You' : displayName(id);
-    const dots = w.days.map(d => {
-      if (!mine) {
-        // A buddy's row has no letters and does not mark today.
-        const state = d.state === 'today' ? 'planned' : d.state === 'todayRest' ? 'rest' : d.state;
-        return dayDotHtml(state, state === 'done' ? ICON.check : '');
-      }
-      if (d.state === 'done') return dayDotHtml('done', abc ? esc(d.tpl) : ICON.check);
-      const coming = d.state === 'today' || d.state === 'planned';
-      return dayDotHtml(d.state, coming && abc ? esc(letters.get(d.date) || '') : '');
-    }).join('');
-    const count = w.done || w.planned ? `${w.done}/${w.planned}` : '';
-    return `<div class="wk-row${mine ? ' me' : ''}" data-id="${esc(id)}" role="img" aria-label="${esc(who)}: ${w.done} of ${w.planned} workouts this week"><span class="wk-who">${esc(who)}</span>${dots}<span class="wk-n">${count}</span></div>`;
-  };
-  const mon = mondayOf(today);
-  const dayLetters = [0, 1, 2, 3, 4, 5, 6].map(i => {
-    const d = addDays(mon, i);
-    return `<span class="wk-d" aria-hidden="true"${d === today ? ' aria-current="date"' : ''}>${WD[parseYmd(d).getDay()][0]}</span>`;
-  }).join('');
-  const buddies = buddyIds();
-  const more = buddies.length > 3 ? `<button class="btn link wk-more" data-act="screen" data-screen="results">+${buddies.length - 3} more</button>` : '';
-  return `<section class="card wk" aria-label="This week" data-act="week">
-    <div class="wk-row wk-head"><span aria-hidden="true">Week</span>${dayLetters}<button type="button" class="iconbtn wk-edit" data-act="week" data-from="strip" aria-label="Move a workout this week">${ICON.pencil}</button></div>
-    ${row(S.uid, true)}${buddies.slice(0, 3).map(id => row(id, false)).join('')}${more}
-  </section>`;
-}
-
 /* The home screen: a title that follows how much of today is done, a card for each exercise, the week counter. */
 function viewCards(p) {
   const m = cardModel();
@@ -2422,15 +2240,8 @@ function refreshSheet() {
   drawCharts(panel);
   restoreFocus(panel, f);
 }
-/* For a change that is shown before it is stored (a switch, a training day): when storing it failed,
-   the sheet goes back to what is stored. */
-const redrawUnsaved = saved => { if (!saved) refreshSheet(); };
-/* The close button, the backdrop and Escape: back to the sheet this one was opened from, else close. */
-function dismissSheet() {
-  const back = UI.sheet && UI.sheet.back;
-  if (back && SHEETS[back]) showSheet({ kind: back });
-  else closeSheet();
-}
+/* The close button, the backdrop and Escape. */
+function dismissSheet() { closeSheet(); }
 
 /* "Mon, Wed and Fri". */
 const andList = list => (list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`);
@@ -2442,68 +2253,6 @@ const SLOT_HELP = {
 };
 const slotHelpHtml = slot => `<p><i class="${slot}" aria-hidden="true"></i><span><b>${SLOT[slot].label}:</b> ${SLOT_HELP[slot][0].toLowerCase()}${SLOT_HELP[slot].slice(1)}</span></p>`;
 const legendHtml = () => `<div class="legend" role="group" aria-label="What push, pull and legs mean">${SLOT_ORDER.map(slotHelpHtml).join('')}</div>`;
-
-/* Your plan: the usual training days, the workouts with their exercises, and when each comes up. */
-function planSheet() {
-  const p = myProfile();
-  const abc = rotates(p);
-  const today = todayYmd();
-  const coming = upcoming(S.uid, 3);
-  const days = [1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-act="day" data-d="${d}" aria-pressed="${p.days.includes(d)}">${WD[d]}</button>`).join('');
-  const card = t => {
-    const plan = planFor(p, t);
-    const name = abc ? 'Workout ' + t : 'Every workout';
-    const hit = abc ? coming.find(u => u.tpl === t) : coming[0];
-    const when = !hit ? '' : hit.date === today ? '<span class="plan-when now">Today</span>' : `<span class="plan-when">${esc(dayShort(hit.date))}</span>`;
-    const rows = SLOT_ORDER.map(slot => {
-      const info = exInfo(plan[slot], p);
-      return `<button type="button" class="plan-row" data-act="editEx" data-tpl="${t}" data-slot="${slot}" data-from="plan">${plateHtml(slot, true)}<span class="sr-only">${SLOT[slot].label}: </span><span class="ex-n">${esc(info.n)}</span><span class="ex-kg">${esc(kgLabel(plannedKg(p, plan[slot]).kg, info))}</span>${CHEV}</button>`;
-    }).join('');
-    return `<section class="card plan-card" data-tpl="${t}" aria-label="${name}"><div class="row"><b class="h2 grow">${name}</b>${when}</div>${rows}</section>`;
-  };
-  return `<div class="sheet-head"><b class="h2 grow">Your plan</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
-    <div class="f">Training days<div class="daypick" role="group" aria-label="Training days">${days}</div></div>
-    ${(abc ? TPLS : ['A']).map(card).join('')}
-    ${legendHtml()}`;
-}
-SHEETS.plan = { label: 'Your plan', html: planSheet };
-
-/* This week: the seven days, with a switch for today and the days to come. Only this week changes. */
-function weekSheet() {
-  const p = myProfile();
-  const today = todayYmd();
-  const w = weekModel(S.uid, today);
-  const abc = rotates(p);
-  const letters = new Map(upcoming(S.uid, 7).map(u => [u.date, u.tpl]));
-  const monFirst = (a, c) => ((a + 6) % 7) - ((c + 6) % 7);
-  const usual = (p.days || [1, 3, 5]).slice().sort(monFirst);
-  const planned = plannedDows(p, w.mon, today);
-  // A day that was added pairs with a usual day that was switched off: "moved from Wed".
-  const added = planned.filter(d => !usual.includes(d)).sort(monFirst);
-  const dropped = usual.filter(d => !planned.includes(d));
-  const rows = w.days.map(d => {
-    const dayNo = parseYmd(d.date).getDate();
-    const coming = d.state === 'today' || d.state === 'planned';
-    const dot = d.state === 'done' ? dayDotHtml('done', abc ? esc(d.tpl) : ICON.check)
-      : dayDotHtml(d.state, coming && abc ? esc(letters.get(d.date) || '') : '');
-    let status = { done: 'Done', missed: 'Missed', today: 'Today', planned: 'Planned' }[d.state] || 'Rest';
-    const from = coming ? dropped[added.indexOf(d.dow)] : undefined;
-    if (from != null) status += ` · moved from ${WD[from]}`;
-    const control = d.state === 'done' ? `<span class="wkd-ok" aria-hidden="true">${ICON.check}</span>`
-      : d.date >= today ? `<button type="button" class="switch" role="switch" data-act="weekDay" data-date="${d.date}" aria-checked="${d.planned}" aria-label="Train on ${esc(fmtWeekday(d.date))} ${dayNo}"><i></i></button>`
-      : '<span></span>';
-    return `<div class="wkd" data-date="${d.date}"><span class="wkd-d">${WD[d.dow]} ${dayNo}</span>${dot}<span class="wkd-st">${esc(status)}</span>${control}</div>`;
-  }).join('');
-  const sun = addDays(w.mon, 6);
-  const range = `Mon ${w.mon.slice(0, 7) === sun.slice(0, 7) ? parseYmd(w.mon).getDate() : fmtDM(w.mon)} – Sun ${fmtDM(sun)}`;
-  const names = usual.map(d => WD[d]);
-  return `<div class="sheet-head"><div class="grow" style="display:grid;gap:2px"><b class="h2">This week</b><span class="sheet-sub">${esc(range)} · tap a day to train or rest</span></div>
-      <button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
-    <section class="card wkd-list" aria-label="Days of this week">${rows}</section>
-    <p class="wk-foot">Only this week changes. Your usual days stay ${esc(andList(names))}. <button type="button" class="btn link" data-act="plan">Change usual days</button></p>
-    <button type="button" class="btn primary xl" data-act="closeSheet">Done</button>`;
-}
-SHEETS.week = { label: 'This week', html: weekSheet };
 
 /* Swap workout: another letter for the workout you are about to start. */
 function swapSheet() {
@@ -2523,11 +2272,11 @@ SHEETS.swap = { label: 'Swap workout', html: swapSheet };
 
 /* Exercise: the name, the weight type and the next weight of one exercise in your plan.
    The sheet keeps what you change in its own state; nothing is stored until Save. */
-function exState(tpl, slot, back) {
+function exState(tpl, slot) {
   const p = myProfile();
   const key = planFor(p, tpl)[slot];
   const info = exInfo(key, p);
-  return { kind: 'ex', view: 'edit', tpl, slot, back: back || null, key, name: info.n, eq: eqOf(info), kg: Number(plannedKg(p, key).kg) || 0, kgTouched: false };
+  return { kind: 'ex', view: 'edit', tpl, slot, key, name: info.n, eq: eqOf(info), kg: Number(plannedKg(p, key).kg) || 0, kgTouched: false };
 }
 /* The step of plus and minus: the exercise's own while its weight type is unchanged, else the type's. */
 function exStep(st) {
@@ -2659,7 +2408,7 @@ async function exSwitchTo(st, p, key) {
   if (!ok) return;
   toast(`${exName(key, p)} is in ${abc ? 'Workout ' + st.tpl : 'your plan'}.`);
   if (UI.sheet !== st) return;
-  UI.sheet = exState(st.tpl, st.slot, st.back);
+  UI.sheet = exState(st.tpl, st.slot);
   exView('edit');
 }
 async function submitExNew() {
@@ -2865,7 +2614,7 @@ function planAskHtml(p, t, plan, diff) {
  * Actions
  * ------------------------------------------------------------------ */
 let confirmTimer = null;
-function armConfirm(key, holder = UI) {
+function armConfirm(key, holder) {
   holder.confirm = key;
   clearTimeout(confirmTimer);
   confirmTimer = setTimeout(() => {
@@ -2899,23 +2648,10 @@ const ACT = {
   dismissNotice() { LS.set('d330.noticeSeen', S.notice); S.notice = ''; render(); },
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
-  plan() { showSheet({ kind: 'plan' }); },
-  week() { showSheet({ kind: 'week' }); },
-  // Switch a day of this week on or off: today and later, and only a day without a training.
-  weekDay(el) {
-    const today = todayYmd();
-    const w = weekModel(S.uid, today);
-    const day = w.days.find(d => d.date === el.dataset.date);
-    if (!day || day.date < today || day.n > 0) return;
-    const p = myProfile();
-    const dows = plannedDows(p, w.mon, today);
-    saveProfile(withWeekDays(p, dows.includes(day.dow) ? dows.filter(d => d !== day.dow) : dows.concat(day.dow), today)).then(redrawUnsaved);
-    refreshSheet();
-  },
   swap() { showSheet({ kind: 'swap' }); },
   pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; dismissSheet(); },
-  // Opened from Your plan, closing or saving returns there.
-  editEx(el) { showSheet(exState(el.dataset.tpl, el.dataset.slot, el.dataset.from === 'plan' ? 'plan' : null)); },
+  /* "Change" on a card: the sheet for that exercise. */
+  editEx(el) { showSheet(exState(el.dataset.tpl, el.dataset.slot)); },
   // Another weight type for the exercise in the sheet: only one it may switch to.
   eq(el) {
     const st = UI.sheet, eq = el.dataset.eq;
@@ -3061,20 +2797,6 @@ const ACT = {
   viewSession(el) { const pid = personPick().pid; if (S.members.get(pid)?.sessions.get(el.dataset.id)) showSheet({ kind: 'sessionView', pid, id: el.dataset.id }); },
   logAll() { UI.logAll = true; render(); },
   skipUp(el) { prefs.noUp = Object.assign({}, prefs.noUp, { [el.dataset.ex]: Number(el.dataset.kg) }); savePrefs(); render(); },
-  day(el) {
-    const before = myProfile();
-    const p = clone(before); const d = Number(el.dataset.d);
-    if (p.days.includes(d) && p.days.length === 1) { toast('Keep at least one training day.'); return; }
-    if (p.days.includes(d)) p.days = p.days.filter(x => x !== d);
-    else if (p.days.length < 3) p.days.push(d);
-    else { toast('You already picked 3 days. Turn one off first.'); return; }
-    // New usual days start today: the days of this week that already passed stay as they were.
-    const today = todayYmd(), mon = mondayOf(today);
-    const dateOf = dow => addDays(mon, (dow + 6) % 7);
-    const passed = plannedDows(before, mon, today).filter(dow => dateOf(dow) < today);
-    saveProfile(withWeekDays(p, passed.concat(p.days.filter(dow => dateOf(dow) >= today)), today)).then(redrawUnsaved);
-    refreshSheet();
-  },
   /* "Your exercises": the same three every time, or Workout A, B and C in turns. Going back keeps the plans of B and C. */
   rotate(el) {
     const on = el.dataset.on === '1';

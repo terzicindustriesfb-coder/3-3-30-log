@@ -237,7 +237,7 @@ test('while a card is open nothing else can be started or opened', async () => {
   const page = await openApp({ sessions: [first(), session('2026-10-14', 'A', [68, 0, 0])], prefs: QUIET });
   await start(page, 'pull');
   assert.deepEqual(await forms(page), ['push:done', 'pull:open', 'legs:wait']);
-  assert.equal(await page.locator('#view [data-act="start"], #view [data-act="editEx"], #view [data-act="screen"], #view [data-act="fixToday"], #view [data-act="swap"]').count(), 0);
+  assert.equal(await page.locator('#view [data-act="start"], #view [data-act="editEx"], #view [data-act="screen"], #view [data-act="fixToday"]').count(), 0);
   await page.evaluate(() => { ACT.screen({ dataset: { screen: 'results' } }); ACT.start({ dataset: { slot: 'legs' } }); ACT.fixToday(); });
   assert.deepEqual([await page.evaluate(() => UI.screen), await forms(page), await page.locator('#sheet').isHidden()], ['home', ['push:done', 'pull:open', 'legs:wait'], true]);
 });

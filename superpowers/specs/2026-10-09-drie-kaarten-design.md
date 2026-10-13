@@ -81,9 +81,9 @@ Uitgangspunten:
   doet hetzelfde.
 - De schakelaar onderin ("Today" en "Progress") verdwijnt.
 - Bladen van onderaf blijven voor wat je zelden doet: "Exercise" (via "Change"),
-  een training toevoegen of verbeteren, een training van je maatje bekijken en
-  "Swap workout" (alleen met A, B en C aan). Er ligt nooit meer dan één blad
-  open.
+  een training toevoegen of verbeteren en een training van je maatje bekijken.
+  Er ligt nooit meer dan één blad open. (Tot 13 oktober was er ook het blad
+  "Swap workout"; zie 2.12.)
 - Na opnieuw laden sta je op het beginscherm.
 
 ### 2.2 Beginscherm
@@ -405,17 +405,22 @@ Kies je in "Settings" voor "3 workouts that take turns", dan:
 
 - is de titel van het beginscherm "Today: Workout B" in plaats van
   "Today: 3 exercises". De zin eronder blijft gelijk;
-- staat onder die zin de tekstknop "Do another workout". Die opent het bestaande
-  blad "Swap workout". De knop is weg zodra er vandaag een oefening klaar is of
-  een kaart open is;
+- staan onder die zin drie knoppen naast elkaar: A, B en C. Op elke knop staat
+  de dag dat je die workout het laatst deed ("Mon 5 Oct"), met een groen vinkje
+  als dat deze week was, of "First time" als je hem nooit deed. De workout die
+  aan de beurt is heeft een rand. Tik op een andere en de kaarten tonen meteen
+  die workout. De knoppen zijn weg zodra er vandaag een oefening klaar is of een
+  kaart open is. (Gevraagd door Steef op 13 oktober: "mijn workout van vorige
+  week A, B, C opnieuw doen door er simpelweg op te klikken". Dit vervangt de
+  tekstknop "Do another workout" en het blad "Swap workout".);
 - loopt de volgorde door zoals nu: na A komt B, na B komt C;
 - staan in "My results" boven de tabel de knoppen "Workout A", "Workout B" en
   "Workout C". De tabel en de grafieken tonen die training. Standaard staat de
   training die aan de beurt is. Heb je een training nog nooit gedaan, dan staat
   er in de tabel "No Workout B yet."
 
-De oefeningen van B en C pas je aan op het beginscherm, op een dag dat die
-training aan de beurt is of na "Do another workout".
+De oefeningen van B en C pas je aan op het beginscherm: tik op B of C en dan op
+"Change" op een kaart.
 
 ## 3. Begrippen
 

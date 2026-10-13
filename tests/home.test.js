@@ -20,7 +20,7 @@ test('three cards, each with its exercise, its weight, what to beat and its own 
   assert.deepEqual(await texts(page, '.xc [data-act="editEx"]'), ['Change', 'Change', 'Change']);
   assert.deepEqual(await primary(page), [true, false, false]);
   assert.equal(await page.locator('.xc[data-slot="pull"] [data-act="editEx"]').getAttribute('aria-label'), 'Change Seated cable row');
-  assert.equal(await page.locator('#view .hint, #view [data-act="swap"]').count(), 0);
+  assert.equal(await page.locator('#view .hint, #view .tp').count(), 0);
   assert.deepEqual(await texts(page, '#view .home-nav .btn'), ['My results', 'Settings']);
 });
 test('a heavier set weight asks to match, and no score says First time', async () => {
@@ -129,23 +129,20 @@ test('a buddy with thin data never breaks the week counter', async () => {
   assert.deepEqual(await texts(page, '.wkc-row .wkc-n'), ['1 of 3', '0 of 3']);
   assert.deepEqual(page.__errors, []);
 });
-test('with turns on the title names the workout and there is a way to do another', async () => {
+test('with turns on the title names the workout, and a tap on another workout shows its exercises', async () => {
   const page = await openApp({ profile: profile({ rotate: true, weights: { optrekken: -10 } }), sessions: [first()] });
   assert.deepEqual(await titles(page), ['Today: Workout B', 'Each one takes 10 minutes. Do them in any order and beat your last score.']);
-  assert.equal(await txt(page, '#view [data-act="swap"]'), 'Do another workout');
   assert.deepEqual(await texts(page, '.xc .ex-n'), ['Seated dumbbell shoulder press', 'Pull-ups', 'Dumbbell Romanian deadlift']);
   assert.deepEqual(await texts(page, '.xc .ex-kg'), ['2 × 10 kg', '10 kg assist', '2 × 16 kg']);
-  await page.click('#view [data-act="swap"]');
-  await page.click('[data-sheet="swap"] [data-tpl="C"]');
+  await page.click('#view .tp[data-tpl="C"]');
   assert.equal(await txt(page, '#view .title'), 'Today: Workout C');
   assert.deepEqual(await texts(page, '.xc .ex-n'), ['Incline dumbbell press', 'Pendlay row', 'Dumbbell reverse lunge']);
 });
 test('once an exercise is done today the workout is fixed', async () => {
   const page = await openApp({ profile: profile({ rotate: true }), sessions: [first(), session('2026-10-14', 'B', [30, 0, 0])] });
   assert.equal(await txt(page, '#view .title'), 'Two to go');
-  assert.equal(await page.locator('#view [data-act="swap"]').count(), 0);
+  assert.equal(await page.locator('#view .tp').count(), 0);
   assert.deepEqual(await texts(page, '.xc .ex-n'), ['Seated dumbbell shoulder press', 'Pull-ups', 'Dumbbell Romanian deadlift']);
-  assert.equal(await (await openApp({ sessions: [first()] })).locator('#view [data-act="swap"]').count(), 0);          // no turns: nothing to swap
 });
 test('a 40-character name and three-digit reps do not widen a 320 px screen', async () => {
   const long = profile({ names: { schouderdrukken: 'Standing barbell overhead press strict x' } });

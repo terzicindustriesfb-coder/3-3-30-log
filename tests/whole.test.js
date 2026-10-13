@@ -14,7 +14,7 @@ const visit = async (page, width) => {
   const home = () => page.waitForFunction(() => UI.screen === 'home' && document.querySelector('#view .home-nav'));
   await ok('home');
   await page.click('.xc [data-act="editEx"]'); await page.click('[data-act="exPick"]'); await page.click('[data-act="exNew"]'); await ok('exercise sheet'); await page.keyboard.press('Escape');
-  await page.click('#view [data-act="swap"]'); await ok('swap sheet'); await page.keyboard.press('Escape');
+  await page.click('#view .tp[data-tpl="C"]'); await ok('workout C picked');
   await page.click('.xc[data-slot="push"] [data-act="start"]'); await ok('countdown');
   await forward(page, 10); await page.click('.xc .pad [data-act="set"][data-n="8"]'); await ok('clock running');
   await forward(page, 60); await page.click('.clockbtn'); await ok('paused');

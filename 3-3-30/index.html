@@ -258,12 +258,6 @@ textarea { min-height: 76px; resize: vertical; }
 .wo .ex-list li + li { border-top: 1px solid var(--surface-2); }
 .wo .ex-row { padding: 8px 4px; min-height: 64px; }
 /* Sheets */
-.swap-opt { width: 100%; border: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); padding: 14px 16px; min-height: 64px;
-  text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
-.swap-opt[aria-pressed="true"] { box-shadow: var(--shadow), inset 0 0 0 2px var(--ink); }
-.swap-t { font-family: var(--display); font-stretch: 72%; font-weight: 800; font-size: 22px; line-height: 1.05; }
-.swap-opt .small { grid-column: 1 / -1; }
-.swap-next { border-radius: 999px; padding: 3px 10px; background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 650; white-space: nowrap; }
 .legend { display: grid; gap: 8px; padding: 4px 4px 0; }
 .legend p { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; color: var(--ink-2); }
 .legend i { margin-top: 4px; width: 14px; height: 14px; border-radius: 50%; }
@@ -380,7 +374,15 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
 .xc-verdict.pos { color: var(--good); }
 .xc[data-form="done"] .goal { grid-template-columns: auto auto; column-gap: 5px; align-items: baseline; justify-content: end; }
 .xc[data-form="done"] .xc-verdict { grid-column: 1 / -1; justify-self: end; }
-.head .btn.link { justify-self: start; min-height: 44px; }
+/* Workout A, B and C under the title: the letter, a tick when it was done this week, and the day it was last
+   done. The one whose turn it is has a ring. */
+.tp-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+.tp { border: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); color: var(--ink); min-height: 64px; padding: 8px 4px;
+  display: grid; justify-items: center; align-content: center; gap: 3px; min-width: 0; }
+.tp[aria-pressed="true"] { box-shadow: var(--shadow), inset 0 0 0 2px var(--ink); }
+.tp-l { display: inline-flex; align-items: center; gap: 3px; font-family: var(--display); font-stretch: 72%; font-weight: 800; font-size: 26px; line-height: 1; }
+.tp-l svg { width: 18px; height: 18px; stroke-width: 3; color: var(--good); }
+.tp-d { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
 .hint { padding: 0 4px; text-align: center; }
 .wkc { padding: 13px 16px; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; }
 .wkc .eyebrow { font-size: 11px; }
@@ -1212,12 +1214,21 @@ function todaySession(id = S.uid, today = todayYmd()) {
   return mine.length ? mine[mine.length - 1] : null;
 }
 /* The workout whose turn it is: always A without turns; the letter of today's workout once that counts;
-   otherwise the letter picked in Swap workout (your own only) or the next one in line. */
+   otherwise the letter picked on the home screen (your own only) or the next one in line. */
 function turnTpl(id = S.uid, today = todayYmd()) {
   if (!rotates(S.members.get(id)?.profile)) return 'A';
   const s = todaySession(id, today);
   if (s && countsAsTraining(s)) return s.tpl;
   return (id === S.uid && UI.tpl) || nextTpl(id);
+}
+/* Workout A, B and C to pick from on the home screen: the day each was last done in a training that counts
+   (null when never), and whether that day is in this Monday-to-Sunday week. */
+function tplChoices(id = S.uid, today = todayYmd()) {
+  const done = trainings(id), mon = mondayOf(today);
+  return TPLS.map(tpl => {
+    const last = done.filter(s => s.tpl === tpl).pop();
+    return { tpl, last: last ? last.date : null, week: !!last && mondayOf(last.date) === mon };
+  });
 }
 /* What the three cards show, in push, pull, legs order. A group is done when today's workout has a done block
    for it: the card then shows what you did. Otherwise it is to do: the exercise of the workout whose turn it
@@ -1355,7 +1366,7 @@ const blockName = (b, prof) => exName(b.ex, prof, b.name);
 
 /* ------------------------------------------------------------------ *
  * UI state + rendering. Three screens: home, My results and Settings. A sheet for what is done seldom:
- * Exercise, a workout to add or fix, a buddy's workout to read, Swap workout, and the question after adding.
+ * Exercise, a workout to add or fix, a buddy's workout to read, and the question after adding.
  * ------------------------------------------------------------------ */
 const UI = { screen: 'home', logAll: false, person: null, tpl: null, sheet: null, sheetReturn: null, joinNick: '', resTpl: null, more: { buddy: false, how: false }, day: null };
 let renderQueued = false, renderDeferred = false;
@@ -1523,12 +1534,19 @@ function viewCards(p) {
   else if (m.done === 2) { title = 'One to go'; lead = 'Two done. Start the last one when you are ready.'; }
   else { title = 'Done for today'; const sum = sessionSummary(todaySession(), S.uid); lead = sum ? sum + '.' : ''; }
   // Another workout can be picked until the first exercise of today is done.
-  const swap = turns && m.done === 0 ? '<button type="button" class="btn link" data-act="swap">Do another workout</button>' : '';
+  const pick = turns && m.done === 0 ? tplPickHtml(m.tpl) : '';
   const first = m.cards.find(c => c.form === 'todo');
-  return `<div class="head"><h1 class="title" tabindex="-1">${title}</h1>${lead ? `<p class="lead-s">${esc(lead)}</p>` : ''}${swap}</div>
+  return `<div class="head"><h1 class="title" tabindex="-1">${title}</h1>${lead ? `<p class="lead-s">${esc(lead)}</p>` : ''}${pick}</div>
     ${m.cards.map(c => (c.form === 'done' ? cardDoneHtml(c) : cardTodoHtml(c, m.tpl, c === first, p))).join('')}
     ${m.done ? '<p class="tiny hint">Something wrong? Tap an exercise to fix its reps.</p>' : ''}
     ${weekCountHtml()}`;
+}
+/* Workout A, B and C as three buttons: the letter, a tick when it was done this week, and the day it was last
+   done ("First time" when never). The workout whose turn it is (`cur`) is pressed. */
+function tplPickHtml(cur) {
+  const day = c => (c.last ? `<span class="sr-only">${c.week ? 'done this week, ' : 'last done '}</span>${dayShort(c.last)}` : 'First time');
+  return `<div class="tp-row" role="group" aria-label="Pick a workout">${tplChoices().map(c => `<button type="button" class="tp" data-act="pickTpl" data-tpl="${c.tpl}" aria-pressed="${c.tpl === cur}">
+      <span class="tp-l"><span class="sr-only">Workout </span>${c.tpl}${c.week ? ICON.check : ''}</span> <span class="tp-d">${day(c)}</span></button>`).join('')}</div>`;
 }
 /* A card that is still to do: the exercise and the weight of the plan, what to beat, and its own two buttons.
    The first one that is to do has the black button; the others do the same with an outlined one. */
@@ -2262,22 +2280,6 @@ const SLOT_HELP = {
 const slotHelpHtml = slot => `<p><i class="${slot}" aria-hidden="true"></i><span><b>${SLOT[slot].label}:</b> ${SLOT_HELP[slot][0].toLowerCase()}${SLOT_HELP[slot].slice(1)}</span></p>`;
 const legendHtml = () => `<div class="legend" role="group" aria-label="What push, pull and legs mean">${SLOT_ORDER.map(slotHelpHtml).join('')}</div>`;
 
-/* Swap workout: another letter for the workout you are about to start. */
-function swapSheet() {
-  const p = myProfile();
-  const next = nextTpl(S.uid);
-  const option = t => {
-    const plan = planFor(p, t);
-    return `<button class="swap-opt" data-act="pickTpl" data-tpl="${t}" aria-pressed="${(UI.tpl || next) === t}">
-      <b class="swap-t">Workout ${t}</b>${t === next ? '<span class="swap-next">Next in line</span>' : ''}
-      <span class="small">${SLOT_ORDER.map(slot => esc(exName(plan[slot], p))).join(' · ')}</span>
-    </button>`;
-  };
-  return `<div class="sheet-head"><b class="h2 grow">Swap workout</b><button type="button" class="iconbtn" data-act="closeSheet" aria-label="Close">${CLOSE_ICON}</button></div>
-    ${TPLS.map(option).join('')}`;
-}
-SHEETS.swap = { label: 'Swap workout', html: swapSheet };
-
 /* Exercise: the name, the weight type and the next weight of one exercise in your plan.
    The sheet keeps what you change in its own state; nothing is stored until Save. */
 function exState(tpl, slot) {
@@ -2656,8 +2658,8 @@ const ACT = {
   dismissNotice() { LS.set('d330.noticeSeen', S.notice); S.notice = ''; render(); },
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
-  swap() { showSheet({ kind: 'swap' }); },
-  pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; dismissSheet(); },
+  /* A tap on Workout A, B or C on the home screen: the cards show that workout. */
+  pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; render(); },
   /* "Change" on a card: the sheet for that exercise. */
   editEx(el) { showSheet(exState(el.dataset.tpl, el.dataset.slot)); },
   // Another weight type for the exercise in the sheet: only one it may switch to.

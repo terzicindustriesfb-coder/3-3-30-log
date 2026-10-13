@@ -45,7 +45,6 @@ const SHOTS = [
   ['sheet-new', { sessions: abc() }, async page => { await change(page); await page.click('[data-act="exPick"]'); await page.fill('#exSearch', 'Landmine press'); await page.click('[data-act="exNew"]'); }],
   ['sheet-add', { sessions: abc() }, page => page.evaluate(() => ACT.manual())],
   ['sheet-edit', { sessions: [first(), session('2026-10-14', 'A', [68, 0, 0])] }, page => page.click('.xc[data-form="done"]')],
-  ['sheet-swap', { profile: profile({ rotate: true }), sessions: [first()] }, page => page.click('#view [data-act="swap"]')],
 ];
 
 /* The two typefaces as @font-face rules with the files inlined, or '' when the packages are not installed. */

@@ -65,3 +65,44 @@ test('on a 320 px screen the three buttons share one row and show the whole day'
   assert.deepEqual(await page.locator('#view .tp-d').evaluateAll(els => els.map(e => e.scrollWidth <= e.clientWidth)), [true, true, true]);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 320);
 });
+
+/* After today's workout is done, the next one can be picked and started the same day. */
+const doneToday = () => [...abc(), session('2026-10-14', 'A', [70, 80, 90], { hm: '08:00' })];   // A, B, C as before, and A done this morning
+const forms = page => page.locator('#view .xc').evaluateAll(els => els.map(e => e.dataset.slot + ':' + e.dataset.form));
+
+test('after today’s workout is done the three workouts show again, with today’s pressed', async () => {
+  const page = await openApp({ sessions: doneToday() });
+  assert.equal(await txt(page, '#view .title'), 'Done for today');
+  assert.deepEqual(await forms(page), ['push:done', 'pull:done', 'legs:done']);
+  assert.deepEqual(await texts(page, '#view .head .tp'), ['Workout A done this week, Wed 14 Oct', 'Workout B last done Wed 7 Oct', 'Workout C done this week, Mon 12 Oct']);
+  assert.deepEqual(await pressed(page), ['A']);
+  const same = await openApp({ sessions: doneToday(), profile: profile({ rotate: false }) });
+  assert.equal(await same.locator('#view .tp').count(), 0);
+});
+test('a tap on the next workout shows it to start, and a tap on today’s shows today again', async () => {
+  const page = await openApp({ sessions: doneToday() });
+  await page.click('#view .tp[data-tpl="B"]');                    // B is also next in line after A
+  assert.equal(await txt(page, '#view .title'), 'Today: Workout B');
+  assert.deepEqual(await pressed(page), ['B']);
+  assert.deepEqual(await forms(page), ['push:todo', 'pull:todo', 'legs:todo']);
+  assert.deepEqual(await texts(page, '.xc .ex-n'), ['Seated dumbbell shoulder press', 'Pull-ups', 'Dumbbell Romanian deadlift']);
+  assert.equal(await txt(page, '.wkc-row.me .wkc-n'), '2 of 3 workouts');
+  await page.click('#view .tp[data-tpl="A"]');
+  assert.equal(await txt(page, '#view .title'), 'Done for today');
+  assert.deepEqual(await forms(page), ['push:done', 'pull:done', 'legs:done']);
+  assert.deepEqual(await pressed(page), ['A']);
+});
+test('the next workout of the day is stored as a second workout and counts in the week', async () => {
+  const page = await openApp({ sessions: doneToday(), prefs: { sound: false, lead: false } });
+  await page.click('#view .tp[data-tpl="C"]');
+  await page.click('.xc[data-slot="push"] [data-act="start"]');
+  await page.click('.xc .pad [data-act="set"][data-n="10"]');
+  await h.forward(page, 600);
+  await page.waitForFunction(() => R.saved === 'saved');
+  await page.click('.xc [data-act="cardDone"]');
+  assert.deepEqual(await page.evaluate(() => sessionsOf(S.uid).filter(s => s.date === '2026-10-14').map(s => [s.tpl, s.blocks.map(b => b.total)])), [['A', [70, 80, 90]], ['C', [10, 0, 0]]]);
+  assert.equal(await txt(page, '#view .title'), 'Two to go');
+  assert.deepEqual(await texts(page, '.xc .ex-n'), ['Incline dumbbell press', 'Pendlay row', 'Dumbbell reverse lunge']);
+  assert.equal(await page.locator('#view .tp').count(), 0);
+  assert.equal(await txt(page, '.wkc-row.me .wkc-n'), '3 of 3 workouts');
+});

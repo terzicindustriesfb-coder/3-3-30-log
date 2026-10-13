@@ -1213,10 +1213,22 @@ function todaySession(id = S.uid, today = todayYmd()) {
   const mine = sessionsOf(id).filter(s => s.date === today);
   return mine.length ? mine[mine.length - 1] : null;
 }
-/* The workout whose turn it is: always A without turns; the letter of today's workout once that counts;
-   otherwise the letter picked on the home screen (your own only) or the next one in line. */
+/* A workout in which all three groups are done. */
+const isComplete = s => SLOT_ORDER.every(slot => (s.blocks || []).some(b => b.slot === slot && isDone(b)));
+/* Once today's workout is complete, another one can be picked on the home screen and done the same day: its
+   letter while it is picked and not started, else null. With turns on only, and your own only. */
+function nextToday(today = todayYmd()) {
+  if (!UI.tpl || !rotates(myProfile())) return null;
+  const t = todaySession(S.uid, today);
+  return t && isComplete(t) && UI.tpl !== t.tpl ? UI.tpl : null;
+}
+/* The workout whose turn it is: always A without turns; another one picked after today's is complete; the
+   letter of today's workout once that counts; otherwise the letter picked on the home screen (your own only)
+   or the next one in line. */
 function turnTpl(id = S.uid, today = todayYmd()) {
   if (!rotates(S.members.get(id)?.profile)) return 'A';
+  const fresh = id === S.uid && nextToday(today);
+  if (fresh) return fresh;
   const s = todaySession(id, today);
   if (s && countsAsTraining(s)) return s.tpl;
   return (id === S.uid && UI.tpl) || nextTpl(id);
@@ -1234,11 +1246,12 @@ function tplChoices(id = S.uid, today = todayYmd()) {
    for it: the card then shows what you did. Otherwise it is to do: the exercise of the workout whose turn it
    is, the weight it is set to, and the score to beat (to match, when the set weight is heavier).
    While a card is open the cards follow the working copy (R.session) instead of the stored workout: the open
-   group has the form 'open', and a group that is still to do waits (form 'wait', the fields of a card to do). */
+   group has the form 'open', and a group that is still to do waits (form 'wait', the fields of a card to do).
+   When another workout is picked after today's is complete, all three are to do. */
 function cardModel(today = todayYmd()) {
   const p = myProfile();
   const open = R.session ? { slot: blk().slot, phase: R.phase } : null;
-  const s = R.session || todaySession(S.uid, today);
+  const s = R.session || (nextToday(today) ? null : todaySession(S.uid, today));
   const tpl = R.session ? R.session.tpl : turnTpl(S.uid, today);
   const plan = planFor(p, tpl);
   const cards = SLOT_ORDER.map(slot => {
@@ -1533,8 +1546,8 @@ function viewCards(p) {
   else if (m.done === 1) { title = 'Two to go'; lead = 'One done. Start the next one when you are ready.'; }
   else if (m.done === 2) { title = 'One to go'; lead = 'Two done. Start the last one when you are ready.'; }
   else { title = 'Done for today'; const sum = sessionSummary(todaySession(), S.uid); lead = sum ? sum + '.' : ''; }
-  // Another workout can be picked until the first exercise of today is done.
-  const pick = turns && m.done === 0 ? tplPickHtml(m.tpl) : '';
+  // Another workout can be picked until the first exercise of today is done, and again once all three are done.
+  const pick = turns && (m.done === 0 || m.done === 3) ? tplPickHtml(m.tpl) : '';
   const first = m.cards.find(c => c.form === 'todo');
   return `<div class="head"><h1 class="title" tabindex="-1">${title}</h1>${lead ? `<p class="lead-s">${esc(lead)}</p>` : ''}${pick}</div>
     ${m.cards.map(c => (c.form === 'done' ? cardDoneHtml(c) : cardTodoHtml(c, m.tpl, c === first, p))).join('')}
@@ -1917,10 +1930,11 @@ function setBackgroundInert(on) {
 }
 /* The working copy for one exercise: a workout of today with the three exercises of the workout whose turn it
    is, none of them done. When there is a workout today the copy is that workout: its id, its start, its feel
-   and note, and what is done in the other two groups. So the exercise and its weight are fixed from here on. */
+   and note, and what is done in the other two groups. So the exercise and its weight are fixed from here on.
+   Another workout picked after today's is complete is a new workout of its own. */
 function openCard(slot) {
   const s = newSession(turnTpl());
-  const t = todaySession();
+  const t = nextToday() ? null : todaySession();
   if (t) {
     Object.assign(s, { id: t.id, startedAt: t.startedAt, manual: !!t.manual, feel: t.feel, note: t.note });
     s.blocks = s.blocks.map(b => { const did = b.slot === slot ? null : (t.blocks || []).find(x => x.slot === b.slot && isDone(x)); return did ? clone(did) : b; });
@@ -2658,8 +2672,14 @@ const ACT = {
   dismissNotice() { LS.set('d330.noticeSeen', S.notice); S.notice = ''; render(); },
   reload() { location.reload(); },
   signOut() { if (WEB) WEB.signOut(); },
-  /* A tap on Workout A, B or C on the home screen: the cards show that workout. */
-  pickTpl(el) { const t = el.dataset.tpl; UI.tpl = t === nextTpl(S.uid) ? null : t; render(); },
+  /* A tap on Workout A, B or C on the home screen: the cards show that workout. A tap on the one the screen
+     shows without a pick (today's when it is complete, else the next in line) clears the pick. */
+  pickTpl(el) {
+    const t = el.dataset.tpl, today = todaySession();
+    const shown = today && isComplete(today) ? today.tpl : nextTpl(S.uid);
+    UI.tpl = t === shown ? null : t;
+    render();
+  },
   /* "Change" on a card: the sheet for that exercise. */
   editEx(el) { showSheet(exState(el.dataset.tpl, el.dataset.slot)); },
   // Another weight type for the exercise in the sheet: only one it may switch to.

@@ -48,7 +48,9 @@ Uitgangspunten:
 - Meldingen of herinneringen.
 - Andere talen.
 - Het gewicht wisselen terwijl de klok loopt.
-- Een tweede training op dezelfde dag via de kaarten. Met de hand toevoegen kan.
+- Een tweede training op dezelfde dag via de kaarten, behalve met A, B en C aan
+  nadat de training van vandaag compleet is (2.12, sinds 13 oktober). Met de hand
+  toevoegen kan altijd.
 - Kilo's getild op het scherm. Ze staan nog in het Excel-bestand.
 
 ### Verschillen met de tekeningen
@@ -413,6 +415,14 @@ Kies je in "Settings" voor "3 workouts that take turns", dan:
   kaart open is. (Gevraagd door Steef op 13 oktober: "mijn workout van vorige
   week A, B, C opnieuw doen door er simpelweg op te klikken". Dit vervangt de
   tekstknop "Do another workout" en het blad "Swap workout".);
+- staan de knoppen er weer zodra alle drie oefeningen van vandaag klaar zijn
+  ("Done for today"), met de workout van vandaag gekozen. Tik op een andere en de
+  kaarten tonen die workout om te starten; een tik op de workout van vandaag
+  toont die weer. Start je een oefening van de andere workout, dan is dat een
+  tweede training van vandaag, met een eigen plek in het log; de training van
+  eerder blijft zoals hij was. Halverwege een workout staan de knoppen er niet.
+  (Gevraagd door Steef op 13 oktober: "vandaag op het startscherm mijn workout
+  zien en de volgende kunnen starten".);
 - loopt de volgorde door zoals nu: na A komt B, na B komt C;
 - staan in "My results" boven de tabel de knoppen "Workout A", "Workout B" en
   "Workout C". De tabel en de grafieken tonen die training. Standaard staat de

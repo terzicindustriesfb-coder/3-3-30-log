@@ -51,7 +51,9 @@ Uitgangspunten:
 - Een tweede training op dezelfde dag via de kaarten, behalve met A, B en C aan
   nadat de training van vandaag compleet is (2.12, sinds 13 oktober). Met de hand
   toevoegen kan altijd.
-- Kilo's getild op het scherm. Ze staan nog in het Excel-bestand.
+- Kilo's getild per week of per training op het scherm. Ze staan nog in het
+  Excel-bestand. (Per oefening per dag staan ze sinds 14 oktober weer op het
+  scherm: 2.3 en 2.8.)
 
 ### Verschillen met de tekeningen
 
@@ -149,6 +151,12 @@ Een kaart heeft één van vier vormen.
 **Klaar**
 
 - Het gewicht is het gewicht waarmee je de oefening deed.
+- Onder het gewicht staan de kilo's getild: "2,485 kg lifted", reps × kg, set
+  voor set, afgerond op hele kilo's. Bij een paar dumbbells tellen beide mee.
+  Een bodyweight-oefening heeft geen kilo's, ook niet met extra gewicht. Terwijl
+  een andere kaart open is, staat de regel er niet, zodat de open kaart past.
+  (Gevraagd door Steef op 14 oktober: "totaal aantal kg per oefening per dag,
+  dus reps × kg".)
 - Het oordeel vergelijkt met de te verslaan score van vóór de training van
   vandaag:
 
@@ -314,6 +322,9 @@ Van boven naar beneden:
   "practice".
 - In een cel staat het aantal reps. Had je meer reps dan de te verslaan score
   op hetzelfde gewicht, dan staat er een groen "▲" achter.
+- Klein onder de reps staan de kilo's getild ("2,485 kg"), met dezelfde regels
+  als op de kaart (2.3). In de uitleg onder de tabel staat dan ook "The small
+  number is reps × kg." (Sinds 14 oktober.)
 - Een oefening die je die dag niet deed is een streepje.
 - Deed je die dag in die groep een andere oefening dan die in de kop, dan staat
   er een sterretje achter het getal. Onder de tabel staat dan
@@ -551,8 +562,9 @@ Het profiel krijgt één nieuw, optioneel veld. Trainingen houden hun vorm.
   in de plaats.
 - Het blad met de historie van één oefening. De grafieken staan nu in
   "My results".
-- Kilo's getild op het scherm: per week, per training ("Lifted in total") en als
-  grafiek. Ze staan nog in het Excel-bestand.
+- Kilo's getild per week, per training ("Lifted in total") en als grafiek. Ze
+  staan nog in het Excel-bestand. Per oefening per dag zijn ze sinds 14 oktober
+  terug (2.3 en 2.8).
 - Het aparte trainingsscherm: "Block 1 of 3", het kruisje met het menu ("Keep
   going", "Finish later", "Stop and save what I did", "Discard workout"), "Skip
   this exercise", "End block", "Next: Pull →", het eindscherm "Workout done" met

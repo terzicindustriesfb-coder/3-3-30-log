@@ -19,7 +19,7 @@ test('a row per workout, newest first, with the reps of push, pull and legs', as
   assert.deepEqual(await row(page, 0), ['Mon 19 Oct', '68▲', '80▲', '79']);          // legs went up to 80 kg: named on the card, no arrow here
   assert.deepEqual(await row(page, 1), ['Mon 12 Oct', '65▲', '78▲', '88▲']);
   assert.deepEqual(await row(page, 2), ['Mon 5 Oct', '62', '77', '85']);
-  assert.equal(await txt(page, '#view .rt-note'), '▲ means you beat your last score. Tap a day to see or fix that workout.');
+  assert.equal(await txt(page, '#view .rt-note'), '▲ means you beat your last score. The small number is reps × kg. Tap a day to see or fix that workout.');
   assert.equal(await page.locator('#view .rt-star, #view [data-act="logAll"]').count(), 0);
   assert.equal(await txt(page, '#view [data-act="manual"]'), 'Add a workout by hand');
 });
@@ -30,8 +30,8 @@ test('not done is a dash, another exercise gets a star, practice is named', asyn
   assert.deepEqual(await row(page, 0), ['Mon 12 Oct', '40*', '78▲', '–']);
   assert.deepEqual(await row(page, 2), ['Wed 30 Sept practice', '5', '5', '5']);
   assert.equal(await txt(page, '#view .rt-star'), '* another exercise that day');
-  assert.equal(await page.locator('.rt-row').nth(0).getAttribute('aria-label'), 'Mon 12 Oct: push 40, another exercise; pull 78, beat the last score; legs not done. Edit');
-  assert.equal(await page.locator('.rt-row').nth(2).getAttribute('aria-label'), 'Wed 30 Sept, practice: push 5; pull 5; legs 5. Edit');
+  assert.equal(await page.locator('.rt-row').nth(0).getAttribute('aria-label'), 'Mon 12 Oct: push 40, 1,600 kg lifted, another exercise; pull 78, 5,070 kg lifted, beat the last score; legs not done. Edit');
+  assert.equal(await page.locator('.rt-row').nth(2).getAttribute('aria-label'), 'Wed 30 Sept, practice: push 5, 175 kg lifted; pull 5, 325 kg lifted; legs 5, 375 kg lifted. Edit');
 });
 test('six at first, then all of them', async () => {
   const ten = Array.from({ length: 10 }, (_, i) => session('2026-10-' + String(i + 5).padStart(2, '0'), 'A', [10, 10, 10]));
@@ -70,7 +70,7 @@ test('a buddy’s results: his name, his rows to read, nothing to add', async ()
   await page.click('[data-act="person"][data-id="sam"]');
   assert.equal(await txt(page, '#view .title'), 'Sam’s results');
   assert.equal(await txt(page, '#view .head .lead-s'), 'Sam’s workouts, newest first. The numbers are the reps in 10 minutes.');
-  assert.equal(await txt(page, '#view .rt-note'), '▲ means Sam beat the last score. Tap a day to see that workout.');
+  assert.equal(await txt(page, '#view .rt-note'), '▲ means Sam beat the last score. The small number is reps × kg. Tap a day to see that workout.');
   assert.equal(await page.locator('.rt-row').count(), 3);
   assert.equal(await page.locator('#view [data-act="manual"]').count(), 0);
   await page.click('.rt-row');

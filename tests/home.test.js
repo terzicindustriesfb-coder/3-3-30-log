@@ -38,7 +38,7 @@ test('one done: its card shows the reps and the verdict, and the title counts do
   assert.deepEqual([await txt(page, push + '.xc-grp'), await txt(page, push + '.ex-n'), await txt(page, push + '.ex-kg')], ['Push · done', 'Overhead press', '35 kg']);
   assert.deepEqual([await txt(page, push + '.goal-n'), await txt(page, push + '.xc-u'), await txt(page, push + '.xc-verdict')], ['68', 'reps', '▲ 6 more']);
   assert.equal(await page.locator(push + '.xc-verdict.pos').count(), 1);
-  assert.equal(await page.locator('.xc[data-slot="push"]').getAttribute('aria-label'), 'Push, done: Overhead press, 68 reps, ▲ 6 more. Fix it');
+  assert.equal(await page.locator('.xc[data-slot="push"]').getAttribute('aria-label'), 'Push, done: Overhead press, 68 reps, 2,380 kg lifted, ▲ 6 more. Fix it');
   assert.deepEqual(await primary(page), [true, false]);                // the first card that is still to do
   assert.equal(await txt(page, '#view .hint'), 'Something wrong? Tap an exercise to fix its reps.');
 });

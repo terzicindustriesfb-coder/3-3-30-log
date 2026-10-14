@@ -315,7 +315,9 @@ input[type="search"] { width: 100%; border: 0; box-shadow: inset 0 0 0 1.5px var
 .rt-row { width: 100%; align-items: center; border: 0; border-top: 1px solid var(--surface-2); background: transparent; text-align: left; padding: 6px 4px; min-height: 52px; }
 .rt-date { font-weight: 700; font-size: 15px; line-height: 1.2; }
 .rt-date small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.rt-cell { display: grid; gap: 3px; min-width: 0; }
 .rt-c { font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rt-l { font-size: 12px; line-height: 1.2; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rt-c i { font-style: normal; font-size: 13px; color: var(--good); margin-left: 3px; }
 .rt-c sup { font-size: 14px; color: var(--muted); }
 .rt-all { width: 100%; min-height: 44px; border-top: 1px solid var(--surface-2); border-radius: 0; color: var(--ink); }
@@ -372,6 +374,7 @@ button.xc { width: 100%; border: 0; text-align: left; color: inherit; }
 .xc-grp.push { color: var(--bad); } .xc-grp.pull { color: var(--pull); } .xc-grp.legs { color: var(--legs-mark); } .xc-grp.done { color: var(--good); }
 .xc .ex-n { font-size: 18px; line-height: 1.15; }
 .xc .ex-kg { font-size: 13.5px; font-weight: 400; color: var(--ink-2); white-space: normal; }
+.xc-lift { font-size: 13.5px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
 .xc .goal { gap: 2px; }
 .xc .goal-l { font-size: 10.5px; }
 .xc .goal-n { font-size: 28px; font-weight: 800; line-height: 1; }
@@ -1096,6 +1099,12 @@ function blockVolume(b) {
   if (sets.length) return sets.reduce((a, x) => a + (x.kg != null ? Number(x.kg) : (Number(b.kg) || 0)) * x.r, 0);
   return (Number(b.kg) || 0) * (b.total || 0);
 }
+/* The kilos lifted in a block, in whole kilos; null for bodyweight and when there is nothing to count. */
+function liftedKg(b) {
+  const kg = Math.round(blockVolume(b));
+  return kg > 0 ? kg : null;
+}
+const kgTotal = n => `${fmtNum(n)} kg`;
 function setKgs(b) { return [...new Set((b.sets || []).map(x => Number(x.kg ?? b.kg)))]; }
 function setsText(b, info) {
   const sets = b.sets || [];
@@ -1278,7 +1287,7 @@ function cardModel(today = todayYmd()) {
     const b = s ? (s.blocks || []).find(x => x.slot === slot && isDone(x)) : null;
     if (b) {
       const info = Object.assign({}, exInfo(b.ex, p), { bw: !!b.bw });
-      return { slot, form: 'done', name: blockName(b, p), kgText: blockKgLabel(b, info), n: b.total, verdict: verdict(b, S.uid, s.id) };
+      return { slot, form: 'done', name: blockName(b, p), kgText: blockKgLabel(b, info), n: b.total, lift: liftedKg(b), verdict: verdict(b, S.uid, s.id) };
     }
     const key = plan[slot], info = exInfo(key, p);
     const kg = plannedKg(p, key).kg;
@@ -1314,8 +1323,8 @@ function weekCount(id, today = todayYmd()) {
 /* The table under "My results", for one person and one workout. `head`: the three exercises now in that
    plan, each with its name and the weight it is set to, as text. `rows`: a row per workout that is shown,
    newest first; with turns on only the workouts of that letter. A cell is null when that group was not
-   done; else the reps, `up` (more reps than the score to beat at the same weight; never in a practice
-   workout) and `other` (another exercise than the one in the head). */
+   done; else the reps, the kilos lifted (`kg`, null for bodyweight), `up` (more reps than the score to beat
+   at the same weight; never in a practice workout) and `other` (another exercise than the one in the head). */
 function resultRows(pid, tpl) {
   const prof = S.members.get(pid)?.profile;
   const plan = planFor(prof, tpl);
@@ -1327,7 +1336,7 @@ function resultRows(pid, tpl) {
     const practice = isTrial(s, pid);
     const cells = head.map(h => {
       const b = (s.blocks || []).find(x => x.slot === h.slot && isDone(x));
-      return b ? { reps: b.total, up: !practice && verdict(b, pid, s.id).kind === 'up', other: b.ex !== h.key } : null;
+      return b ? { reps: b.total, kg: liftedKg(b), up: !practice && verdict(b, pid, s.id).kind === 'up', other: b.ex !== h.key } : null;
     });
     return { id: s.id, date: s.date, practice, cells };
   });
@@ -1510,23 +1519,25 @@ function viewResults() {
   const t = resultRows(pid, tpl);
   return head + pick + resultsTableHtml(pid, tpl, t) + chartsHtml(pid, t.head) + add;
 }
-/* The table: a head with the three exercises, then a row per workout, six at first. Your own row opens to
-   fix that workout, a buddy's to read it. A weight in the head may wrap, so that it stays in its own column. */
+/* The table: a head with the three exercises, then a row per workout, six at first. A cell has the reps and,
+   small under them, the kilos lifted. Your own row opens to fix that workout, a buddy's to read it. A weight in
+   the head may wrap, so that it stays in its own column. */
 function resultsTableHtml(pid, tpl, t) {
   const mine = pid === S.uid;
   const list = UI.logAll ? t.rows : t.rows.slice(0, 6);
   const head = `<div class="rt-head"><span class="rt-day">Day</span>${t.head.map(h => `<span class="rt-ex"><b class="rt-grp ${h.slot}">${SLOT[h.slot].label}</b><span class="rt-name">${esc(h.name)}</span><span class="rt-kg">${esc(h.kg).replace(/\u00a0/g, ' ').replace('bodyweight', 'body<wbr>weight')}</span></span>`).join('')}</div>`;
   const rows = list.map(r => {
-    const said = r.cells.map((c, i) => (c ? `${t.head[i].slot} ${c.reps}${c.up ? ', beat the last score' : ''}${c.other ? ', another exercise' : ''}` : `${t.head[i].slot} not done`)).join('; ');
+    const said = r.cells.map((c, i) => (c ? `${t.head[i].slot} ${c.reps}${c.kg ? `, ${kgTotal(c.kg)} lifted` : ''}${c.up ? ', beat the last score' : ''}${c.other ? ', another exercise' : ''}` : `${t.head[i].slot} not done`)).join('; ');
     const label = `${dayShort(r.date)}${r.practice ? ', practice' : ''}: ${said}. ${mine ? 'Edit' : 'View'}`;
     return `<button type="button" class="rt-row" data-act="${mine ? 'edit' : 'viewSession'}" data-id="${esc(r.id)}" aria-label="${esc(label)}">
-      <span class="rt-date">${esc(dayShort(r.date))}${r.practice ? ' <small>practice</small>' : ''}</span>${r.cells.map(c => `<span class="rt-c">${c ? `${c.reps}${c.up ? '<i>▲</i>' : ''}${c.other ? '<sup>*</sup>' : ''}` : '–'}</span>`).join('')}
+      <span class="rt-date">${esc(dayShort(r.date))}${r.practice ? ' <small>practice</small>' : ''}</span>${r.cells.map(c => `<span class="rt-cell"><span class="rt-c">${c ? `${c.reps}${c.up ? '<i>▲</i>' : ''}${c.other ? '<sup>*</sup>' : ''}` : '–'}</span>${c && c.kg ? `<span class="rt-l">${kgTotal(c.kg)}</span>` : ''}</span>`).join('')}
     </button>`;
   }).join('');
   const none = t.rows.length ? '' : `<p class="small rt-none">No Workout ${tpl} yet.</p>`;
   const more = t.rows.length > list.length ? `<button type="button" class="btn link rt-all" data-act="logAll">Show all ${t.rows.length} workouts</button>` : '';
+  const kilos = list.some(r => r.cells.some(c => c && c.kg)) ? ' The small number is reps × kg.' : '';
   const note = t.rows.length
-    ? `<p class="rt-note"><b>▲</b> means ${mine ? 'you beat your last score' : esc(displayName(pid)) + ' beat the last score'}. Tap a day to see ${mine ? 'or fix ' : ''}that workout.</p>` : '';
+    ? `<p class="rt-note"><b>▲</b> means ${mine ? 'you beat your last score' : esc(displayName(pid)) + ' beat the last score'}.${kilos} Tap a day to see ${mine ? 'or fix ' : ''}that workout.</p>` : '';
   const star = list.some(r => r.cells.some(c => c && c.other)) ? '<p class="rt-star">* another exercise that day</p>' : '';
   return `<section class="card rt" aria-label="Workouts">${head}${rows}${none}${more}</section>${note}${star}`;
 }
@@ -1593,13 +1604,15 @@ function cardTodoHtml(c, tpl, first, p) {
       <button type="button" class="btn" data-act="editEx" data-tpl="${tpl}" data-slot="${c.slot}" aria-label="Change ${nm}">Change</button></div>
   </section>`;
 }
-/* A card that is done: what you did, the reps large and the verdict under them. The whole card is a button
-   that opens today's workout to fix it; while another card is open (`still`) it is not a button. */
+/* A card that is done: what you did, the kilos lifted, the reps large and the verdict under them. The whole card
+   is a button that opens today's workout to fix it; while another card is open (`still`) it is not a button,
+   and leaves the kilos out so that the open card keeps its room. */
 function cardDoneHtml(c, still) {
   const nm = esc(c.name), v = c.verdict;
-  const label = `${SLOT[c.slot].label}, done: ${nm}, ${c.n} reps, ${esc(v.text)}`;
+  const lift = !still && c.lift ? `${kgTotal(c.lift)} lifted` : '';
+  const label = `${SLOT[c.slot].label}, done: ${nm}, ${c.n} reps${lift ? ', ' + lift : ''}, ${esc(v.text)}`;
   const inner = `<span class="xc-top"><span class="xc-tick" aria-hidden="true">${ICON.check}</span>
-      <span class="ex-main"><span class="xc-grp done">${SLOT[c.slot].label} · done</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span></span>
+      <span class="ex-main"><span class="xc-grp done">${SLOT[c.slot].label} · done</span><span class="ex-n">${nm}</span><span class="ex-kg">${esc(c.kgText)}</span>${lift ? `<span class="xc-lift">${lift}</span>` : ''}</span>
       <span class="goal"><span class="goal-n">${c.n}</span><span class="xc-u">reps</span><span class="xc-verdict${v.tone ? ' ' + v.tone : ''}">${esc(v.text)}</span></span></span>`;
   return still
     ? `<section class="card xc" data-slot="${c.slot}" data-form="done" aria-label="${label}">${inner}</section>`
